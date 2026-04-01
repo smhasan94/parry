@@ -1,12 +1,17 @@
+import asyncio
+import json
 import uuid
+from collections.abc import AsyncGenerator
 
 import structlog
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sse_starlette.sse import EventSourceResponse
 
 from app.core.dependencies import get_current_org, get_org_from_sdk_key
-from app.db.models import Org
-from app.db.session import get_db
+from app.db.models import AgentEvent, Org
+from app.db.session import async_session_factory, get_db
 from app.schemas.event import EventIngest, EventListResponse, EventResponse
 from app.services import event_service
 
@@ -63,6 +68,37 @@ async def list_events(
         next_cursor=next_cursor,
         has_more=next_cursor is not None,
     )
+
+
+@router.get("/stream")
+async def stream_events(
+    agent_id: uuid.UUID = Query(...),
+) -> EventSourceResponse:
+    """SSE endpoint for real-time event streaming for a given agent."""
+
+    async def event_generator() -> AsyncGenerator[dict[str, str], None]:
+        last_seen: uuid.UUID | None = None
+        while True:
+            async with async_session_factory() as db:
+                query = (
+                    select(AgentEvent)
+                    .where(AgentEvent.agent_id == agent_id)
+                    .order_by(AgentEvent.timestamp.desc())
+                    .limit(1)
+                )
+                result = await db.execute(query)
+                event = result.scalar_one_or_none()
+
+                if event and event.id != last_seen:
+                    last_seen = event.id
+                    data = json.dumps(
+                        EventResponse.model_validate(event).model_dump(mode="json")
+                    )
+                    yield {"data": data}
+
+            await asyncio.sleep(2)
+
+    return EventSourceResponse(event_generator())
 
 
 @router.get("/{event_id}", response_model=EventResponse)
