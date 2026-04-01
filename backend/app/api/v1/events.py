@@ -1,5 +1,6 @@
 import uuid
 
+import structlog
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +9,8 @@ from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.event import EventIngest, EventListResponse, EventResponse
 from app.services import event_service
+
+log = structlog.get_logger()
 
 router = APIRouter()
 
@@ -34,6 +37,15 @@ async def ingest_event(
         metadata=body.metadata,
     )
     await db.commit()
+
+    # Dispatch detection pipeline async via Celery
+    try:
+        from app.workers.detection_task import run_detection_pipeline
+
+        run_detection_pipeline.delay(str(event.id))
+    except Exception:
+        log.warning("detection.dispatch_failed", event_id=str(event.id), exc_info=True)
+
     return {"event_id": str(event.id), "status": "accepted"}
 
 
