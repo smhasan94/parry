@@ -1,0 +1,156 @@
+import { useState } from "react";
+import { Header } from "@/components/Header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { SeverityBadge, Badge } from "@/components/ui/badge";
+import { useIncidents, useUpdateIncident } from "@/hooks/useIncidents";
+import type { IncidentStatus, Severity } from "@/lib/types";
+import { AlertTriangle, CheckCircle, Eye, XCircle } from "lucide-react";
+
+const SEVERITY_OPTIONS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
+const STATUS_OPTIONS: (IncidentStatus | "all")[] = ["all", "open", "acknowledged", "resolved", "dismissed"];
+
+export function IncidentsPage() {
+  const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<IncidentStatus | "all">("all");
+
+  const filters = {
+    ...(severityFilter !== "all" ? { severity: severityFilter } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+  };
+
+  const { data, isLoading } = useIncidents(
+    Object.keys(filters).length > 0 ? filters : undefined
+  );
+  const updateIncident = useUpdateIncident();
+  const incidents = data?.incidents ?? [];
+
+  return (
+    <div>
+      <Header title="Incidents" description="Security incidents requiring review" />
+
+      <div className="space-y-4 p-6">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground mr-1">Severity:</span>
+            {SEVERITY_OPTIONS.map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={severityFilter === s ? "secondary" : "ghost"}
+                onClick={() => setSeverityFilter(s)}
+                className="text-xs"
+              >
+                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground mr-1">Status:</span>
+            {STATUS_OPTIONS.map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? "secondary" : "ghost"}
+                onClick={() => setStatusFilter(s)}
+                className="text-xs"
+              >
+                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Incident List */}
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading incidents...</p>
+        ) : incidents.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <CheckCircle className="mb-4 h-12 w-12 text-green-500" />
+              <p className="text-sm text-muted-foreground">No incidents match your filters.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {incidents.map((incident) => (
+              <Card key={incident.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="font-medium">{incident.title}</h3>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <SeverityBadge severity={incident.severity} />
+                        <Badge variant="outline">{incident.status}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(incident.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      {incident.detections.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {incident.detections.map((d) => (
+                            <p key={d.id} className="text-xs text-muted-foreground">
+                              [{d.detector}] {d.reason} (confidence: {(d.confidence * 100).toFixed(0)}%)
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      {incident.status === "open" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            updateIncident.mutate({
+                              incidentId: incident.id,
+                              data: { status: "acknowledged" },
+                            })
+                          }
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {(incident.status === "open" || incident.status === "acknowledged") && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              updateIncident.mutate({
+                                incidentId: incident.id,
+                                data: { status: "resolved" },
+                              })
+                            }
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              updateIncident.mutate({
+                                incidentId: incident.id,
+                                data: { status: "dismissed" },
+                              })
+                            }
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
