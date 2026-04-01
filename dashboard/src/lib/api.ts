@@ -1,6 +1,8 @@
 import type {
   Agent,
   AgentEvent,
+  ApiKey,
+  ApiKeyCreated,
   Incident,
   IncidentStatus,
   Policy,
@@ -129,6 +131,22 @@ class ApiClient {
 
   async deletePolicy(policyId: string): Promise<void> {
     return this.request(`/api/v1/policies/${policyId}`, { method: "DELETE" });
+  }
+
+  // API Keys
+  async listApiKeys(): Promise<ApiKey[]> {
+    return this.request("/api/v1/api-keys");
+  }
+
+  async createApiKey(name: string): Promise<ApiKeyCreated> {
+    return this.request("/api/v1/api-keys", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async revokeApiKey(keyId: string): Promise<ApiKey> {
+    return this.request(`/api/v1/api-keys/${keyId}`, { method: "DELETE" });
   }
 }
 

@@ -4,40 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Key, Copy, ExternalLink, Plus, Eye, EyeOff } from "lucide-react";
+import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/hooks/useApiKeys";
+import { Key, Copy, ExternalLink, Plus, Eye, EyeOff, Ban } from "lucide-react";
 
 export function SettingsPage() {
+  const { data: apiKeys = [], isLoading } = useApiKeys();
+  const createApiKey = useCreateApiKey();
+  const revokeApiKey = useRevokeApiKey();
+
   const [showCreateKey, setShowCreateKey] = useState(false);
   const [keyName, setKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
 
-  // Mock API keys for display — in production these come from the backend
-  const apiKeys = [
-    {
-      id: "1",
-      name: "Production SDK",
-      key_prefix: "sk-parry-prod",
-      is_active: true,
-      last_used_at: "2026-03-31T14:22:00Z",
-      created_at: "2026-01-15T10:00:00Z",
-    },
-    {
-      id: "2",
-      name: "Staging SDK",
-      key_prefix: "sk-parry-stg",
-      is_active: true,
-      last_used_at: null,
-      created_at: "2026-02-20T10:00:00Z",
-    },
-  ];
-
   const handleCreateKey = () => {
     if (!keyName.trim()) return;
-    // In production, this calls the backend
-    setCreatedKey("sk-parry-" + Math.random().toString(36).substring(2, 34));
-    setKeyName("");
-    setShowCreateKey(false);
+    createApiKey.mutate(keyName.trim(), {
+      onSuccess: (data) => {
+        setCreatedKey(data.raw_key);
+        setKeyName("");
+        setShowCreateKey(false);
+      },
+    });
   };
 
   const copyToClipboard = (text: string) => {
@@ -76,7 +64,9 @@ export function SettingsPage() {
                     placeholder="e.g. Production SDK"
                   />
                 </div>
-                <Button onClick={handleCreateKey}>Create</Button>
+                <Button onClick={handleCreateKey} disabled={createApiKey.isPending}>
+                  {createApiKey.isPending ? "Creating..." : "Create"}
+                </Button>
               </div>
             )}
 
@@ -87,7 +77,7 @@ export function SettingsPage() {
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <code className="flex-1 rounded bg-background px-3 py-2 text-sm font-mono">
-                    {showKey ? createdKey : "•".repeat(40)}
+                    {showKey ? createdKey : createdKey.slice(0, 12) + "\u2022".repeat(30)}
                   </code>
                   <Button size="icon" variant="ghost" onClick={() => setShowKey(!showKey)}>
                     {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -99,34 +89,53 @@ export function SettingsPage() {
               </div>
             )}
 
-            <div className="space-y-2">
-              {apiKeys.map((key) => (
-                <div
-                  key={key.id}
-                  className="flex items-center justify-between rounded-md border border-border p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Key className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{key.name}</p>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {key.key_prefix}...
-                      </p>
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground">Loading API keys...</p>
+            ) : apiKeys.length === 0 && !createdKey ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Key className="mb-3 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No API keys yet. Create one to get started.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {apiKeys.map((key) => (
+                  <div
+                    key={key.id}
+                    className="flex items-center justify-between rounded-md border border-border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Key className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{key.name}</p>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {key.key_prefix}...
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={key.is_active ? "secondary" : "outline"}>
+                        {key.is_active ? "Active" : "Revoked"}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {key.last_used_at
+                          ? `Last used ${new Date(key.last_used_at).toLocaleDateString()}`
+                          : "Never used"}
+                      </span>
+                      {key.is_active && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => revokeApiKey.mutate(key.id)}
+                          title="Revoke key"
+                        >
+                          <Ban className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={key.is_active ? "secondary" : "outline"}>
-                      {key.is_active ? "Active" : "Revoked"}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {key.last_used_at
-                        ? `Last used ${new Date(key.last_used_at).toLocaleDateString()}`
-                        : "Never used"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
