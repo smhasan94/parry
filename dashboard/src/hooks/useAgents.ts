@@ -1,0 +1,38 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { Agent } from "@/lib/types";
+
+export function useAgents() {
+  return useQuery({
+    queryKey: ["agents"],
+    queryFn: () => api.listAgents(),
+  });
+}
+
+export function useAgent(agentId: string) {
+  return useQuery({
+    queryKey: ["agents", agentId],
+    queryFn: () => api.getAgent(agentId),
+    enabled: !!agentId,
+  });
+}
+
+export function useCreateAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; description?: string }) => api.createAgent(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["agents"] }),
+  });
+}
+
+export function useUpdateAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, data }: { agentId: string; data: Partial<Agent> }) =>
+      api.updateAgent(agentId, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      qc.invalidateQueries({ queryKey: ["agents", vars.agentId] });
+    },
+  });
+}
