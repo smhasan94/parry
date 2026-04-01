@@ -1,8 +1,6 @@
 import type {
   Agent,
   AgentEvent,
-  ApiKey,
-  ApiKeyCreated,
   Incident,
   IncidentStatus,
   Policy,

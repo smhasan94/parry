@@ -1,7 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SeverityBadge } from "@/components/ui/badge";
 import { useAgent } from "@/hooks/useAgents";
 import { useEvents } from "@/hooks/useEvents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
