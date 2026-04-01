@@ -1,0 +1,65 @@
+import uuid
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.dependencies import get_current_org, verify_internal_secret
+from app.db.models import Org
+from app.db.session import get_db
+from app.schemas.event import EventIngest, EventListResponse, EventResponse
+from app.services import event_service
+
+router = APIRouter()
+
+
+@router.post("/ingest", status_code=202)
+async def ingest_event(
+    body: EventIngest,
+    _: None = Depends(verify_internal_secret),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Receive an event from the SDK. Authenticated via internal secret."""
+    # For now, we need org context — use a default org or extract from API key
+    # TODO: resolve org from SDK API key passed in separate header
+    event = await event_service.ingest_event(
+        db,
+        org_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),  # placeholder
+        agent_name=body.agent_id,
+        prompt=body.prompt,
+        response=body.response,
+        model=body.model,
+        tool_calls=body.tool_calls,
+        latency_ms=body.latency_ms,
+        token_count=body.token_count,
+        session_id=body.session_id,
+        timestamp=body.timestamp,
+        metadata=body.metadata,
+    )
+    await db.commit()
+    return {"event_id": str(event.id), "status": "accepted"}
+
+
+@router.get("", response_model=EventListResponse)
+async def list_events(
+    agent_id: uuid.UUID = Query(...),
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+    cursor: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+) -> EventListResponse:
+    events, next_cursor = await event_service.list_events(db, agent_id, cursor, limit)
+    return EventListResponse(
+        events=[EventResponse.model_validate(e) for e in events],
+        next_cursor=next_cursor,
+        has_more=next_cursor is not None,
+    )
+
+
+@router.get("/{event_id}", response_model=EventResponse)
+async def get_event(
+    event_id: uuid.UUID,
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> EventResponse:
+    event = await event_service.get_event(db, event_id)
+    return EventResponse.model_validate(event)
