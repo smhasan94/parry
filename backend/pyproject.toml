@@ -52,6 +52,9 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
 [build-system]
 requires = ["hatchling"]
-build-backend = "hatchling.backends"
+build-backend = "hatchling.build"
