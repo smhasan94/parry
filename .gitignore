@@ -1,0 +1,131 @@
+# ── Environment ──────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# uv
+.uv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+*.whl
+sdist/
+pip-wheel-metadata/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+nosetests.xml
+test-results/
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+**/CLAUDE.md
+!CLAUDE.md
+.claude/
+
+# ── Node / Dashboard ─────────────────────────────────────────
+node_modules/
+dashboard/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Build output
+dashboard/dist/
+dashboard/build/
+dashboard/.vite/
+
+# ── Docker ───────────────────────────────────────────────────
+# (docker-compose.override.yml is gitignored — use for local overrides)
+docker-compose.override.yml
+
+# ── Database ─────────────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+postgres-data/
+
+# ── Secrets & keys ───────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# ── IDE / Editor ─────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.iml
+*.iws
+*.ipr
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+celery*.log
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Claude Code ──────────────────────────────────────────────
+# Personal local overrides — never commit these
+CLAUDE.local.md
+**/CLAUDE.local.md
+
+# ── Misc ─────────────────────────────────────────────────────
+.cache/
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
