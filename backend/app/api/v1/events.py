@@ -73,20 +73,32 @@ async def list_events(
 @router.get("/stream")
 async def stream_events(
     agent_id: uuid.UUID = Query(...),
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
 ) -> EventSourceResponse:
-    """SSE endpoint for real-time event streaming for a given agent."""
+    """SSE endpoint for real-time event streaming. Scoped to org's agents."""
+    from app.db.models import Agent
+
+    # Verify agent belongs to this org
+    result = await db.execute(
+        select(Agent).where(Agent.id == agent_id, Agent.org_id == org.id)
+    )
+    if result.scalar_one_or_none() is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Agent not found")
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
         last_seen: uuid.UUID | None = None
         while True:
-            async with async_session_factory() as db:
+            async with async_session_factory() as session:
                 query = (
                     select(AgentEvent)
                     .where(AgentEvent.agent_id == agent_id)
                     .order_by(AgentEvent.timestamp.desc())
                     .limit(1)
                 )
-                result = await db.execute(query)
+                result = await session.execute(query)
                 event = result.scalar_one_or_none()
 
                 if event and event.id != last_seen:
