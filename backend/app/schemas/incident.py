@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from pydantic import Field
+
 from app.db.models import IncidentStatus, Severity
 from app.schemas.base import ParrySchema
 from app.schemas.detection import DetectionResponse
@@ -20,7 +22,7 @@ class IncidentResponse(ParrySchema):
     severity: Severity
     status: IncidentStatus
     resolved_at: datetime | None = None
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = Field(None, validation_alias="metadata_")
     detections: list[DetectionResponse] = []
     created_at: datetime
     updated_at: datetime

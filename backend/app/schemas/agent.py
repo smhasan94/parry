@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from pydantic import Field
+
 from app.schemas.base import ParrySchema
 
 
@@ -25,6 +27,6 @@ class AgentResponse(ParrySchema):
     description: str | None = None
     is_active: bool
     baseline: dict[str, Any] | None = None
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = Field(None, validation_alias="metadata_")
     created_at: datetime
     updated_at: datetime

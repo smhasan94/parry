@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.Column("org_id", UUID(as_uuid=True), sa.ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("key_hash", sa.String(255), unique=True, nullable=False),
-        sa.Column("key_prefix", sa.String(12), nullable=False),
+        sa.Column("key_prefix", sa.String(20), nullable=False),
         sa.Column("is_active", sa.Boolean(), default=True, nullable=False),
         sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
@@ -87,9 +87,10 @@ def upgrade() -> None:
     )
 
     # ── Agent Events (TimescaleDB hypertable) ──
+    # TimescaleDB requires the partitioning column (timestamp) to be part of the PK
     op.create_table(
         "agent_events",
-        sa.Column("id", UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),
+        sa.Column("id", UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False),
         sa.Column("agent_id", UUID(as_uuid=True), sa.ForeignKey("agents.id", ondelete="CASCADE"), nullable=False, index=True),
         sa.Column("session_id", UUID(as_uuid=True), sa.ForeignKey("agent_sessions.id", ondelete="SET NULL"), nullable=True),
         sa.Column("timestamp", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False, index=True),
@@ -100,6 +101,7 @@ def upgrade() -> None:
         sa.Column("latency_ms", sa.Integer(), nullable=True),
         sa.Column("token_count", sa.Integer(), nullable=True),
         sa.Column("metadata", JSONB(), nullable=True),
+        sa.PrimaryKeyConstraint("id", "timestamp"),
     )
 
     # Convert agent_events to TimescaleDB hypertable
@@ -108,10 +110,12 @@ def upgrade() -> None:
     )
 
     # ── Detections ──
+    # Note: no FK to agent_events — TimescaleDB hypertables don't support inbound FKs.
+    # Referential integrity is enforced at the application layer.
     op.create_table(
         "detections",
         sa.Column("id", UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),
-        sa.Column("event_id", UUID(as_uuid=True), sa.ForeignKey("agent_events.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("event_id", UUID(as_uuid=True), nullable=False, index=True),
         sa.Column("incident_id", UUID(as_uuid=True), sa.ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True),
         sa.Column("detector", sa.String(100), nullable=False),
         sa.Column("severity", sa.Enum("critical", "high", "medium", "low", name="severity", create_type=False), nullable=False),

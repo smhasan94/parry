@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from pydantic import Field
+
 from app.schemas.base import ParrySchema
 
 
@@ -31,7 +33,7 @@ class EventResponse(ParrySchema):
     tool_calls: list[dict[str, Any]] | None = None
     latency_ms: int | None = None
     token_count: int | None = None
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = Field(None, validation_alias="metadata_")
 
 
 class EventListResponse(ParrySchema):

@@ -8,6 +8,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    PrimaryKeyConstraint,
     String,
     Text,
     UniqueConstraint,
@@ -65,7 +66,7 @@ class ApiKey(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     key_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    key_prefix: Mapped[str] = mapped_column(String(12), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(20), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -112,9 +113,20 @@ class AgentSession(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 # ── Event (TimescaleDB hypertable) ───────────────────────────────
 
 
-class AgentEvent(Base, UUIDPrimaryKeyMixin):
-    __tablename__ = "agent_events"
+class AgentEvent(Base, TimestampMixin):
+    """TimescaleDB hypertable — composite PK (id, timestamp) required for partitioning."""
 
+    __tablename__ = "agent_events"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", "timestamp"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), server_default=func.gen_random_uuid(), nullable=False
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
     agent_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -122,9 +134,6 @@ class AgentEvent(Base, UUIDPrimaryKeyMixin):
         UUID(as_uuid=True),
         ForeignKey("agent_sessions.id", ondelete="SET NULL"),
         nullable=True,
-    )
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     response: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -135,7 +144,6 @@ class AgentEvent(Base, UUIDPrimaryKeyMixin):
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     session: Mapped["AgentSession | None"] = relationship(back_populates="events")
-    detections: Mapped[list["Detection"]] = relationship(back_populates="event", lazy="selectin")
 
 
 # ── Detection ────────────────────────────────────────────────────
@@ -144,8 +152,9 @@ class AgentEvent(Base, UUIDPrimaryKeyMixin):
 class Detection(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "detections"
 
+    # No FK to agent_events — TimescaleDB hypertables don't support inbound FKs.
     event_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("agent_events.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), nullable=False, index=True
     )
     incident_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True
@@ -157,7 +166,6 @@ class Detection(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     triggered: Mapped[bool] = mapped_column(Boolean, nullable=False)
     details: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    event: Mapped["AgentEvent"] = relationship(back_populates="detections")
     incident: Mapped["Incident | None"] = relationship(back_populates="detections")
 
 
