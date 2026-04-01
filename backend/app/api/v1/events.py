@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_org, verify_internal_secret
+from app.core.dependencies import get_current_org, get_org_from_sdk_key
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.event import EventIngest, EventListResponse, EventResponse
@@ -15,15 +15,13 @@ router = APIRouter()
 @router.post("/ingest", status_code=202)
 async def ingest_event(
     body: EventIngest,
-    _: None = Depends(verify_internal_secret),
+    org: Org = Depends(get_org_from_sdk_key),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """Receive an event from the SDK. Authenticated via internal secret."""
-    # For now, we need org context — use a default org or extract from API key
-    # TODO: resolve org from SDK API key passed in separate header
+    """Receive an event from the SDK. Authenticated via X-Parry-Secret API key."""
     event = await event_service.ingest_event(
         db,
-        org_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),  # placeholder
+        org_id=org.id,
         agent_name=body.agent_id,
         prompt=body.prompt,
         response=body.response,
