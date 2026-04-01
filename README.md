@@ -145,7 +145,7 @@ parry/
 │   ├── eslint.config.js
 │   ├── package.json
 │   └── vite.config.ts
-├── docker-compose.yml            # Full stack: TimescaleDB, Redis, backend, Celery worker
+├── docker-compose.yml            # Full stack: TimescaleDB, Redis, backend, Celery worker, dashboard
 ├── .env.example                  # All required environment variables
 └── README.md
 ```
@@ -232,7 +232,15 @@ All routes under `/api/v1/`. Dashboard routes use `Authorization: Bearer sk-parr
 
 ### Option 1: Docker Compose (recommended)
 
-Starts PostgreSQL (TimescaleDB), Redis, the FastAPI backend, and the Celery worker:
+Starts the full stack with hot reload on all services — edit code on your host and changes reflect immediately:
+
+| Service | Port | Hot Reload |
+|---------|------|------------|
+| **Backend** (FastAPI) | `:8000` | `./backend/app` mounted, uvicorn `--reload` |
+| **Worker** (Celery) | — | `./backend/app` mounted, `watchmedo` auto-restart on `*.py` changes |
+| **Dashboard** (Vite) | `:5173` | `./dashboard/src` mounted, Vite HMR |
+| **PostgreSQL** (TimescaleDB) | `:5432` | Persistent volume |
+| **Redis** | `:6379` | — |
 
 ```bash
 git clone https://github.com/sharukhhasan/parry.git
@@ -244,28 +252,26 @@ cp .env.example .env
 #   ANTHROPIC_API_KEY (for LLM fallback detector)
 #   CLERK_SECRET_KEY + CLERK_PUBLISHABLE_KEY (for auth)
 
-# Start all services
+cp dashboard/.env.example dashboard/.env
+# Edit dashboard/.env — set VITE_CLERK_PUBLISHABLE_KEY
+
+# Start all services (first run builds images)
 docker compose up -d
 
 # Apply database migrations
 docker compose exec backend uv run alembic upgrade head
 
-# Verify backend is running
+# Verify everything is running
 curl http://localhost:8000/health
 # → {"status": "ok", "version": "0.1.0"}
+
+# Dashboard at http://localhost:5173
+# API docs at http://localhost:8000/docs
 ```
 
-Then start the dashboard separately:
-
-```bash
-cd dashboard
-cp .env.example .env
-# Edit .env — set VITE_CLERK_PUBLISHABLE_KEY
-
-npm install
-npm run dev
-# → http://localhost:5173
-```
+Now edit any file:
+- Change `backend/app/**/*.py` → backend auto-reloads, worker auto-restarts
+- Change `dashboard/src/**` → Vite HMR updates the browser instantly
 
 ### Option 2: Manual (no Docker)
 
@@ -345,11 +351,15 @@ response = client.chat.completions.create(
 
 ```bash
 docker compose up -d                          # start all services
-docker compose up -d --build backend          # rebuild backend image
+docker compose up -d --build                  # rebuild all images (after dependency changes)
+docker compose up -d --build backend worker   # rebuild backend + worker only
 docker compose logs -f backend                # tail backend logs
 docker compose logs -f worker                 # tail Celery worker logs
+docker compose logs -f dashboard              # tail dashboard logs
 docker compose exec backend uv run alembic upgrade head   # run migrations
 docker compose exec backend uv run alembic revision --autogenerate -m "description"  # new migration
+docker compose exec backend uv run pytest     # run backend tests inside container
+docker compose restart worker                 # restart worker (if watchmedo misses a change)
 docker compose down                           # stop all services
 docker compose down -v                        # stop + delete volumes (wipes DB)
 ```

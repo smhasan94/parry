@@ -38,6 +38,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/tests:/app/tests
     depends_on:
       db:
         condition: service_healthy
@@ -48,6 +52,7 @@ services:
       --host 0.0.0.0
       --port 8000
       --reload
+      --reload-dir app
 
   worker:
     build:
@@ -60,15 +65,38 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./backend/app:/app/app
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     command: >
+      watchmedo auto-restart
+      --directory=./app
+      --pattern=*.py
+      --recursive
+      --
       uv run celery -A app.workers.celery_app worker
       --loglevel=info
       --concurrency=2
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    env_file:
+      - dashboard/.env
+    volumes:
+      - ./dashboard/src:/app/src
+      - ./dashboard/index.html:/app/index.html
+      - ./dashboard/vite.config.ts:/app/vite.config.ts
+      - ./dashboard/tailwind.config.ts:/app/tailwind.config.ts
+    depends_on:
+      - backend
 
 volumes:
   postgres-data:
