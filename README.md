@@ -261,6 +261,10 @@ docker compose up -d
 # Apply database migrations
 docker compose exec backend uv run alembic upgrade head
 
+# Seed demo data (org, API key, sample agent, policy)
+docker compose exec backend uv run python scripts/seed.py
+# ⚠️  Save the API key printed — it's shown only once
+
 # Verify everything is running
 curl http://localhost:8000/health
 # → {"status": "ok", "version": "0.1.0"}
@@ -308,6 +312,9 @@ uv sync
 
 # Apply migrations
 uv run alembic upgrade head
+
+# Seed demo data (org, API key, sample agent, policy)
+uv run python scripts/seed.py
 
 # Start the API server
 uv run uvicorn app.main:app --reload --port 8000
