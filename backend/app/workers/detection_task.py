@@ -8,14 +8,36 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(name="run_detection_pipeline")
-def run_detection_pipeline(event_id: str) -> dict:
+@celery_app.task(
+    name="run_detection_pipeline",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=60,
+    max_retries=3,
+    soft_time_limit=30,
+    time_limit=60,
+)
+def run_detection_pipeline(self, event_id: str) -> dict:  # type: ignore[no-untyped-def]
     """Run the full detection pipeline on an ingested event.
 
     Called async after event ingestion returns 202 to the SDK.
     Loads the event from DB, runs detectors, persists results + incidents.
+
+    Retries up to 3 times with exponential backoff on any failure.
+    Soft timeout at 30s, hard kill at 60s.
     """
-    return asyncio.run(_run_pipeline(event_id))
+    try:
+        return asyncio.run(_run_pipeline(event_id))
+    except Exception:
+        log.error(
+            "detection.task_failed",
+            event_id=event_id,
+            attempt=self.request.retries + 1,
+            max_retries=self.max_retries,
+            exc_info=True,
+        )
+        raise
 
 
 async def _run_pipeline(event_id: str) -> dict:
