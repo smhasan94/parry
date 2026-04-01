@@ -6,9 +6,11 @@ import { AgentDetailPage } from "@/pages/AgentDetailPage";
 import { IncidentsPage } from "@/pages/IncidentsPage";
 import { PoliciesPage } from "@/pages/PoliciesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
+  notFoundComponent: NotFoundPage,
 });
 
 const indexRoute = createRoute({
