@@ -54,6 +54,10 @@ class _CompletionsNamespace:
         prompt = messages[-1].get("content", "") if messages else ""
         model = kwargs.get("model")
 
+        # Streaming: collect chunks, intercept after completion, return generator
+        if kwargs.get("stream"):
+            return self._create_streaming(prompt, model, **kwargs)
+
         with TimingContext() as timing:
             result = self._wrapper._client.chat.completions.create(**kwargs)
 
@@ -92,3 +96,34 @@ class _CompletionsNamespace:
         )
 
         return result
+
+    def _create_streaming(self, prompt: str, model: str | None, **kwargs: Any) -> Any:
+        """Wrap streaming response: yield chunks to caller, intercept on completion."""
+        chunks: list[str] = []
+        timing = TimingContext()
+        timing.__enter__()
+
+        stream = self._wrapper._client.chat.completions.create(**kwargs)
+
+        def _intercept_stream() -> Any:
+            for chunk in stream:
+                try:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        chunks.append(delta.content)
+                except (IndexError, AttributeError):
+                    pass
+                yield chunk
+
+            timing.__exit__(None, None, None)
+
+            intercept_completion(
+                prompt=prompt,
+                response="".join(chunks) if chunks else None,
+                model=model,
+                latency_ms=timing.latency_ms,
+                agent_id=self._wrapper._agent_id,
+                session_id=self._wrapper._session_id,
+            )
+
+        return _intercept_stream()

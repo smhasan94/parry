@@ -45,16 +45,12 @@ class _MessagesNamespace:
 
     def create(self, **kwargs: Any) -> Any:
         messages = kwargs.get("messages", [])
-        prompt = ""
-        if messages:
-            last = messages[-1]
-            if isinstance(last.get("content"), str):
-                prompt = last["content"]
-            elif isinstance(last.get("content"), list):
-                text_parts = [b["text"] for b in last["content"] if b.get("type") == "text"]
-                prompt = " ".join(text_parts)
-
+        prompt = _extract_prompt(messages)
         model = kwargs.get("model")
+
+        # Streaming: collect chunks, intercept after completion
+        if kwargs.get("stream"):
+            return self._create_streaming(prompt, model, **kwargs)
 
         with TimingContext() as timing:
             result = self._wrapper._client.messages.create(**kwargs)
@@ -92,3 +88,45 @@ class _MessagesNamespace:
         )
 
         return result
+
+    def _create_streaming(self, prompt: str, model: str | None, **kwargs: Any) -> Any:
+        """Wrap streaming response: yield events to caller, intercept on completion."""
+        chunks: list[str] = []
+        timing = TimingContext()
+        timing.__enter__()
+
+        stream = self._wrapper._client.messages.create(**kwargs)
+
+        def _intercept_stream() -> Any:
+            for event in stream:
+                try:
+                    if hasattr(event, "delta") and hasattr(event.delta, "text"):
+                        chunks.append(event.delta.text)
+                except AttributeError:
+                    pass
+                yield event
+
+            timing.__exit__(None, None, None)
+
+            intercept_completion(
+                prompt=prompt,
+                response="".join(chunks) if chunks else None,
+                model=model,
+                latency_ms=timing.latency_ms,
+                agent_id=self._wrapper._agent_id,
+                session_id=self._wrapper._session_id,
+            )
+
+        return _intercept_stream()
+
+
+def _extract_prompt(messages: list[dict[str, Any]]) -> str:
+    if not messages:
+        return ""
+    last = messages[-1]
+    if isinstance(last.get("content"), str):
+        return last["content"]
+    if isinstance(last.get("content"), list):
+        text_parts = [b["text"] for b in last["content"] if b.get("type") == "text"]
+        return " ".join(text_parts)
+    return ""
