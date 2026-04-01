@@ -1,0 +1,108 @@
+import uuid
+from datetime import datetime, timezone
+
+import structlog
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import NotFoundError
+from app.db.models import Agent, AgentEvent, AgentSession
+
+log = structlog.get_logger()
+
+
+async def ingest_event(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    agent_name: str,
+    prompt: str | None = None,
+    response: str | None = None,
+    model: str | None = None,
+    tool_calls: list | None = None,
+    latency_ms: int | None = None,
+    token_count: int | None = None,
+    session_id: str | None = None,
+    timestamp: datetime | None = None,
+    metadata: dict | None = None,
+) -> AgentEvent:
+    # Resolve agent by name within org (auto-create if not exists)
+    result = await db.execute(
+        select(Agent).where(Agent.org_id == org_id, Agent.name == agent_name)
+    )
+    agent = result.scalar_one_or_none()
+
+    if agent is None:
+        agent = Agent(org_id=org_id, name=agent_name)
+        db.add(agent)
+        await db.flush()
+        log.info("agent.auto_created", agent_id=str(agent.id), name=agent_name)
+
+    # Resolve or create session
+    db_session_id: uuid.UUID | None = None
+    if session_id:
+        try:
+            db_session_id = uuid.UUID(session_id)
+        except ValueError:
+            pass
+
+    event = AgentEvent(
+        agent_id=agent.id,
+        session_id=db_session_id,
+        prompt=prompt,
+        response=response,
+        model=model,
+        tool_calls=tool_calls,
+        latency_ms=latency_ms,
+        token_count=token_count,
+        timestamp=timestamp or datetime.now(timezone.utc),
+        metadata_=metadata,
+    )
+    db.add(event)
+    await db.flush()
+    await db.refresh(event)
+
+    log.info(
+        "event.ingested",
+        event_id=str(event.id),
+        agent_id=str(agent.id),
+        model=model,
+    )
+    return event
+
+
+async def list_events(
+    db: AsyncSession,
+    agent_id: uuid.UUID,
+    cursor: str | None = None,
+    limit: int = 50,
+) -> tuple[list[AgentEvent], str | None]:
+    query = (
+        select(AgentEvent)
+        .where(AgentEvent.agent_id == agent_id)
+        .order_by(AgentEvent.timestamp.desc())
+    )
+
+    if cursor:
+        cursor_id = uuid.UUID(cursor)
+        cursor_event = await db.get(AgentEvent, cursor_id)
+        if cursor_event:
+            query = query.where(AgentEvent.timestamp < cursor_event.timestamp)
+
+    query = query.limit(limit + 1)
+    result = await db.execute(query)
+    events = list(result.scalars().all())
+
+    next_cursor = None
+    if len(events) > limit:
+        events = events[:limit]
+        next_cursor = str(events[-1].id)
+
+    return events, next_cursor
+
+
+async def get_event(db: AsyncSession, event_id: uuid.UUID) -> AgentEvent:
+    result = await db.execute(select(AgentEvent).where(AgentEvent.id == event_id))
+    event = result.scalar_one_or_none()
+    if event is None:
+        raise NotFoundError("Event", str(event_id))
+    return event
