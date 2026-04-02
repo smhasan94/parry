@@ -2,8 +2,10 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Annotated
 
+import httpx
 import structlog
 from fastapi import Depends, Header, HTTPException, status
+from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +13,47 @@ from app.db.models import ApiKey, Org
 from app.db.session import get_db
 
 log = structlog.get_logger()
+
+# Cache JWKS keys in memory (refreshed on cache miss)
+_jwks_cache: dict | None = None
+
+
+async def _get_clerk_jwks() -> dict:
+    """Fetch Clerk's JWKS from their well-known endpoint."""
+    global _jwks_cache
+
+    from app.core.config import settings
+
+    # Derive the Clerk Frontend API URL from the publishable key
+    # pk_test_xxx... or pk_live_xxx... -> the domain is encoded in the key
+    # But easier: Clerk JWKS is at https://<clerk-domain>/.well-known/jwks.json
+    # The clerk_publishable_key contains the Clerk Frontend API domain (base64 after pk_test_)
+    import base64
+
+    try:
+        # Clerk publishable key format: pk_test_<base64-encoded-frontend-api>
+        key_parts = settings.clerk_publishable_key.split("_", 2)
+        encoded = key_parts[2] if len(key_parts) > 2 else ""
+        # Add padding
+        padded = encoded + "=" * (4 - len(encoded) % 4)
+        frontend_api = base64.b64decode(padded).decode("utf-8").rstrip("$")
+    except Exception:
+        frontend_api = ""
+
+    if not frontend_api:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Cannot derive Clerk JWKS URL from publishable key",
+        )
+
+    jwks_url = f"https://{frontend_api}/.well-known/jwks.json"
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(jwks_url, timeout=5.0)
+        resp.raise_for_status()
+        _jwks_cache = resp.json()
+
+    return _jwks_cache
 
 
 async def _resolve_org_from_api_key(
@@ -53,30 +96,40 @@ async def _resolve_org_from_clerk_jwt(
     token: str,
     db: AsyncSession,
 ) -> Org:
-    """Verify a Clerk JWT and resolve the org from its claims."""
-    from jose import JWTError, jwt
-
-    from app.core.config import settings
-
-    if not settings.clerk_secret_key:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Clerk authentication not configured",
-        )
+    """Verify a Clerk JWT (RS256 via JWKS) and resolve the org from its claims."""
+    global _jwks_cache
 
     try:
-        # Clerk JWTs are signed with the secret key and use HS256
-        payload = jwt.decode(
-            token,
-            settings.clerk_secret_key,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
-        )
+        # Try cached JWKS first, refresh on failure
+        jwks = _jwks_cache or await _get_clerk_jwks()
+
+        try:
+            payload = jwt.decode(
+                token,
+                jwks,
+                algorithms=["RS256"],
+                options={"verify_aud": False},
+            )
+        except JWTError:
+            # JWKS might be stale — refresh and retry once
+            jwks = await _get_clerk_jwks()
+            payload = jwt.decode(
+                token,
+                jwks,
+                algorithms=["RS256"],
+                options={"verify_aud": False},
+            )
     except JWTError as e:
         log.warning("auth.clerk_jwt_invalid", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
+        )
+    except httpx.HTTPError as e:
+        log.error("auth.clerk_jwks_fetch_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify token — could not reach auth provider",
         )
 
     # Clerk puts org info in the JWT claims
@@ -84,7 +137,6 @@ async def _resolve_org_from_clerk_jwt(
     clerk_user_id = payload.get("sub")
 
     if clerk_org_id:
-        # Look up org by Clerk org ID
         result = await db.execute(
             select(Org).where(Org.clerk_org_id == clerk_org_id, Org.is_active.is_(True))
         )
@@ -92,7 +144,7 @@ async def _resolve_org_from_clerk_jwt(
         if org:
             return org
 
-    # Fallback: look up org by user's personal org (sub claim as clerk_org_id)
+    # Fallback: match on user ID (personal org / demo setup)
     if clerk_user_id:
         result = await db.execute(
             select(Org).where(Org.clerk_org_id == clerk_user_id, Org.is_active.is_(True))
@@ -101,9 +153,16 @@ async def _resolve_org_from_clerk_jwt(
         if org:
             return org
 
+    # Last resort: if there's exactly one org (demo mode), use it
+    result = await db.execute(select(Org).where(Org.is_active.is_(True)))
+    orgs = list(result.scalars().all())
+    if len(orgs) == 1:
+        log.info("auth.demo_mode_fallback", clerk_user_id=clerk_user_id, org_id=str(orgs[0].id))
+        return orgs[0]
+
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="No organization found for this user. Create an org first.",
+        detail="No organization found for this user.",
     )
 
 
@@ -115,7 +174,7 @@ async def get_current_org(
 
     Supports two token types:
     - Parry API key (sk-parry-...): hashed and looked up in api_keys table
-    - Clerk JWT: verified and org resolved from clerk_org_id claim
+    - Clerk JWT: verified via JWKS (RS256) and org resolved from claims
     """
     if not authorization.startswith("Bearer "):
         raise HTTPException(
