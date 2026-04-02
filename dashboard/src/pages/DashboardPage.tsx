@@ -1,6 +1,8 @@
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
+import { SeverityBreakdown } from "@/components/charts/SeverityBreakdown";
+import { IncidentTrend } from "@/components/charts/IncidentTrend";
 import { useAgents } from "@/hooks/useAgents";
 import { useIncidents } from "@/hooks/useIncidents";
 import { Bot, AlertTriangle, Shield, Activity } from "lucide-react";
@@ -48,6 +50,26 @@ export function DashboardPage() {
             icon={Activity}
             loading={agentsLoading}
           />
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Incident Trend (7 days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <IncidentTrend incidents={incidents} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Severity Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SeverityBreakdown incidents={incidents} />
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

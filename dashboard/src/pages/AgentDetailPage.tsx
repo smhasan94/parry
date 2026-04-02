@@ -1,8 +1,12 @@
+import { useMemo } from "react";
 import { useParams } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkline } from "@/components/charts/Sparkline";
+import { DetectorBreakdown } from "@/components/charts/DetectorBreakdown";
 import { useAgent } from "@/hooks/useAgents";
 import { useEvents } from "@/hooks/useEvents";
+import { useIncidents } from "@/hooks/useIncidents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
 import { Activity, Clock, Cpu, Zap } from "lucide-react";
 
@@ -12,8 +16,25 @@ export function AgentDetailPage() {
   const { data: eventData, isLoading: eventsLoading } = useEvents(agentId);
   const { events: liveEvents, connected } = useAgentEventStream(agentId);
 
+  const { data: incidentData } = useIncidents();
   const events = eventData?.events ?? [];
   const displayEvents = liveEvents.length > 0 ? liveEvents : events;
+
+  // Filter incidents for this agent
+  const agentIncidents = useMemo(
+    () => (incidentData?.incidents ?? []).filter((i) => i.agent_id === agentId),
+    [incidentData, agentId]
+  );
+
+  // Sparkline data from recent events (newest last for chart direction)
+  const latencyData = useMemo(
+    () => displayEvents.filter((e) => e.latency_ms != null).map((e) => e.latency_ms!).reverse(),
+    [displayEvents]
+  );
+  const tokenData = useMemo(
+    () => displayEvents.filter((e) => e.token_count != null).map((e) => e.token_count!).reverse(),
+    [displayEvents]
+  );
 
   if (agentLoading) {
     return (
@@ -67,12 +88,29 @@ export function AgentDetailPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <Zap className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Events</p>
-                <p className="font-medium">{events.length}</p>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Zap className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Tokens</p>
+                  <p className="font-medium">{events.length} events</p>
+                </div>
               </div>
+              <Sparkline data={tokenData} color="#3b82f6" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Latency</p>
+                  <p className="font-medium">
+                    {events[0]?.latency_ms != null ? `${events[0].latency_ms}ms` : "—"}
+                  </p>
+                </div>
+              </div>
+              <Sparkline data={latencyData} color="#f97316" />
             </CardContent>
           </Card>
           <Card>
@@ -81,19 +119,6 @@ export function AgentDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Model</p>
                 <p className="font-medium">{events[0]?.model ?? "—"}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Last Active</p>
-                <p className="font-medium">
-                  {events[0]
-                    ? new Date(events[0].timestamp).toLocaleString()
-                    : "—"}
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -155,6 +180,17 @@ export function AgentDetailPage() {
             )}
           </CardContent>
         </Card>
+        {/* Detection Breakdown */}
+        {agentIncidents.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Detection Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DetectorBreakdown incidents={agentIncidents} />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
