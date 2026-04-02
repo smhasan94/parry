@@ -12,10 +12,10 @@ import type {
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 class ApiClient {
-  private token: string | null = null;
+  private tokenGetter: (() => Promise<string | null>) | null = null;
 
-  setToken(token: string) {
-    this.token = token;
+  setTokenGetter(getter: () => Promise<string | null>) {
+    this.tokenGetter = getter;
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -24,8 +24,11 @@ class ApiClient {
       ...((options.headers as Record<string, string>) || {}),
     };
 
-    if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+    if (this.tokenGetter) {
+      const token = await this.tokenGetter();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
     }
 
     const res = await fetch(`${BASE_URL}${path}`, {

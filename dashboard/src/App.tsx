@@ -5,15 +5,18 @@ import { router } from "./routes/router";
 import { api } from "./lib/api";
 
 export function App() {
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
 
   useEffect(() => {
-    if (isSignedIn) {
-      getToken().then((token) => {
-        if (token) api.setToken(token);
-      });
+    if (isLoaded && isSignedIn) {
+      // Pass the getter so every API request fetches a fresh token
+      api.setTokenGetter(() => getToken());
     }
-  }, [isSignedIn, getToken]);
+  }, [isLoaded, isSignedIn, getToken]);
+
+  if (!isLoaded) {
+    return null;
+  }
 
   return <RouterProvider router={router} />;
 }
