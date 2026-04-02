@@ -76,8 +76,14 @@ async def seeded_db(db: AsyncSession) -> dict:
 
 
 @pytest.fixture
-async def client(db: AsyncSession, seeded_db: dict) -> AsyncGenerator[AsyncClient, None]:
-    """HTTPX async client wired to FastAPI app with DB override."""
+async def client(
+    db: AsyncSession, seeded_db: dict, monkeypatch: pytest.MonkeyPatch
+) -> AsyncGenerator[AsyncClient, None]:
+    """HTTPX async client wired to FastAPI app with DB override.
+
+    Also patches out Celery dispatch so tests don't hang on Redis connections.
+    Detection pipeline is called directly in tests via run_and_persist_detections().
+    """
     from app.db.session import get_db
     from app.main import app
 
@@ -85,6 +91,13 @@ async def client(db: AsyncSession, seeded_db: dict) -> AsyncGenerator[AsyncClien
         yield db
 
     app.dependency_overrides[get_db] = override_get_db
+
+    # Patch Celery task dispatch to no-op (we call detection directly in tests)
+    # The import happens inside the route function, so patch the source module
+    monkeypatch.setattr(
+        "app.workers.detection_task.run_detection_pipeline",
+        type("FakeTask", (), {"delay": staticmethod(lambda *a, **kw: None)})(),
+    )
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
