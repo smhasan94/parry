@@ -13,32 +13,26 @@ from app.db.models import Agent, ApiKey, Org, Policy
 
 TEST_DB_URL = "postgresql+asyncpg://parry:parry@localhost:5434/parry_test"
 
-engine = create_async_engine(TEST_DB_URL, echo=False)
-TestSessionFactory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def setup_test_db():
-    """Create all tables once per test session."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
-
 
 @pytest.fixture
 async def db() -> AsyncGenerator[AsyncSession, None]:
-    """Per-test DB session — each test starts with clean tables."""
-    # Truncate all tables between tests for full isolation
-    async with engine.begin() as conn:
+    """Per-test: create engine, ensure tables, truncate, yield session."""
+    test_engine = create_async_engine(TEST_DB_URL, echo=False)
+
+    # Ensure tables exist
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # Truncate all tables for isolation
+    async with test_engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(text(f"TRUNCATE TABLE {table.name} CASCADE"))
 
-    async with TestSessionFactory() as session:
+    factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+    async with factory() as session:
         yield session
+
+    await test_engine.dispose()
 
 
 @pytest.fixture
