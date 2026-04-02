@@ -79,6 +79,16 @@ async def run_and_persist_detections(
             detection_count=len(triggered_results),
         )
 
+    # Auto-generate baseline if agent doesn't have one yet
+    if not agent.baseline:
+        from app.services.baseline_service import compute_baseline
+
+        baseline = await compute_baseline(db, agent.id)
+        if baseline:
+            agent.baseline = baseline
+            await db.flush()
+            log.info("baseline.auto_set", agent_id=str(agent.id), event_count=baseline["event_count"])
+
     return detections
 
 
