@@ -56,7 +56,7 @@ class _CompletionsNamespace:
 
         # Streaming: collect chunks, intercept after completion, return generator
         if kwargs.get("stream"):
-            return self._create_streaming(prompt, model, **kwargs)
+            return self._create_streaming(prompt, model, kwargs)
 
         with TimingContext() as timing:
             result = self._wrapper._client.chat.completions.create(**kwargs)
@@ -97,7 +97,7 @@ class _CompletionsNamespace:
 
         return result
 
-    def _create_streaming(self, prompt: str, model: str | None, **kwargs: Any) -> Any:
+    def _create_streaming(self, prompt: str, model: str | None, kwargs: dict[str, Any]) -> Any:
         """Wrap streaming response: yield chunks to caller, intercept on completion."""
         chunks: list[str] = []
         timing = TimingContext()

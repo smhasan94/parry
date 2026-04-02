@@ -50,7 +50,7 @@ class _MessagesNamespace:
 
         # Streaming: collect chunks, intercept after completion
         if kwargs.get("stream"):
-            return self._create_streaming(prompt, model, **kwargs)
+            return self._create_streaming(prompt, model, kwargs)
 
         with TimingContext() as timing:
             result = self._wrapper._client.messages.create(**kwargs)
@@ -89,7 +89,7 @@ class _MessagesNamespace:
 
         return result
 
-    def _create_streaming(self, prompt: str, model: str | None, **kwargs: Any) -> Any:
+    def _create_streaming(self, prompt: str, model: str | None, kwargs: dict[str, Any]) -> Any:
         """Wrap streaming response: yield events to caller, intercept on completion."""
         chunks: list[str] = []
         timing = TimingContext()
