@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { toast } from "@/components/ui/toast";
 import type { Agent } from "@/lib/types";
 
 export function useAgents() {
@@ -21,7 +22,10 @@ export function useCreateAgent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { name: string; description?: string }) => api.createAgent(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["agents"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      toast("Agent created", "success");
+    },
   });
 }
 
