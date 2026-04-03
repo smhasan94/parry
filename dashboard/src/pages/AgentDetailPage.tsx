@@ -1,11 +1,12 @@
-import { useMemo } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { DetectorBreakdown } from "@/components/charts/DetectorBreakdown";
+import { EventDetailModal } from "@/components/EventDetailModal";
 import { useAgent, useDeleteAgent } from "@/hooks/useAgents";
-import { useNavigate } from "@tanstack/react-router";
+import type { AgentEvent } from "@/lib/types";
 import { useEvents } from "@/hooks/useEvents";
 import { useIncidents } from "@/hooks/useIncidents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
@@ -15,6 +16,7 @@ import { Activity, Clock, Cpu, Zap } from "lucide-react";
 export function AgentDetailPage() {
   const { agentId } = useParams({ from: "/agents/$agentId" });
   const navigate = useNavigate();
+  const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const deleteAgent = useDeleteAgent();
   const {
@@ -166,7 +168,8 @@ export function AgentDetailPage() {
                 {displayEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="rounded-md border border-border p-3"
+                    className="cursor-pointer rounded-md border border-border p-3 transition-colors hover:bg-secondary/50"
+                    onClick={() => setSelectedEvent(event)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -230,6 +233,13 @@ export function AgentDetailPage() {
           </Card>
         )}
       </div>
+
+      {selectedEvent && (
+        <EventDetailModal
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 }
