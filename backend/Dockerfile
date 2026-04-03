@@ -1,22 +1,27 @@
-FROM python:3.12-slim AS base
+# ── Build stage: install deps including build tools ──
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files first (cache layer)
 COPY pyproject.toml uv.lock ./
 RUN uv sync --no-install-project
 
-# Copy application code
 COPY . .
 RUN uv sync
+
+# ── Production stage: slim image without build tools ──
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=builder /app /app
 
 EXPOSE 8000
 

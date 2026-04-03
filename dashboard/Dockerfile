@@ -1,14 +1,34 @@
-FROM node:20-slim
+# ── Build stage ──
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy dependency files first (cache layer)
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy application code
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
+# ── Production stage: serve static files with nginx ──
+FROM nginx:alpine
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# SPA fallback: serve index.html for all routes
+RUN echo 'server { \
+    listen 80; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    location /api { \
+        proxy_pass http://backend:8000; \
+        proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
