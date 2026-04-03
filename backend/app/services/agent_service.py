@@ -93,3 +93,13 @@ async def update_agent(
     await db.refresh(agent)
     log.info("agent.updated", agent_id=str(agent_id))
     return agent
+
+
+async def delete_agent(db: AsyncSession, org_id: uuid.UUID, agent_id: uuid.UUID) -> Agent:
+    """Soft-delete an agent by marking it inactive."""
+    agent = await get_agent(db, org_id, agent_id)
+    agent.is_active = False
+    await db.flush()
+    await db.refresh(agent)
+    log.info("agent.deleted", agent_id=str(agent_id))
+    return agent

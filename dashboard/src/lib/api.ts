@@ -68,6 +68,10 @@ class ApiClient {
     });
   }
 
+  async deleteAgent(agentId: string): Promise<void> {
+    return this.request(`/api/v1/agents/${agentId}`, { method: "DELETE" });
+  }
+
   // Events
   async listEvents(
     agentId: string,

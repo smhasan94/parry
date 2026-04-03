@@ -40,3 +40,14 @@ export function useUpdateAgent() {
     },
   });
 }
+
+export function useDeleteAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (agentId: string) => api.deleteAgent(agentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      toast("Agent deleted", "success");
+    },
+  });
+}

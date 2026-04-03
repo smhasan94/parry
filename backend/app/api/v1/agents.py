@@ -65,3 +65,13 @@ async def update_agent(
     )
     await db.commit()
     return AgentResponse.model_validate(agent)
+
+
+@router.delete("/{agent_id}", status_code=204)
+async def delete_agent(
+    agent_id: uuid.UUID,
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await agent_service.delete_agent(db, org_id=org.id, agent_id=agent_id)
+    await db.commit()

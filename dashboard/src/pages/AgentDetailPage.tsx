@@ -4,7 +4,8 @@ import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { DetectorBreakdown } from "@/components/charts/DetectorBreakdown";
-import { useAgent } from "@/hooks/useAgents";
+import { useAgent, useDeleteAgent } from "@/hooks/useAgents";
+import { useNavigate } from "@tanstack/react-router";
 import { useEvents } from "@/hooks/useEvents";
 import { useIncidents } from "@/hooks/useIncidents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
@@ -13,7 +14,9 @@ import { Activity, Clock, Cpu, Zap } from "lucide-react";
 
 export function AgentDetailPage() {
   const { agentId } = useParams({ from: "/agents/$agentId" });
+  const navigate = useNavigate();
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
+  const deleteAgent = useDeleteAgent();
   const {
     data: eventData,
     isLoading: eventsLoading,
@@ -74,7 +77,21 @@ export function AgentDetailPage() {
         title={agent.name}
         description={agent.description || `Agent ID: ${agent.id}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-400 hover:text-red-300 hover:bg-red-950/50"
+              onClick={() => {
+                if (confirm("Delete this agent? This cannot be undone.")) {
+                  deleteAgent.mutate(agentId, {
+                    onSuccess: () => navigate({ to: "/agents" }),
+                  });
+                }
+              }}
+            >
+              Delete
+            </Button>
             <div
               className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-zinc-500"}`}
             />
