@@ -1,12 +1,14 @@
 # Parry
 
-Runtime security for AI agents. Detect prompt injection, tool misuse, and anomalous behavior before damage is done.
-
----
+Runtime security for AI agents. Parry sits between your AI agents and the LLMs they call, detecting prompt injection, data exfiltration, tool misuse, and anomalous behavior in real time.
 
 ## What is Parry?
 
-Parry is an inline security layer that sits between your AI agents and the LLMs they call. Every prompt and response is intercepted by a lightweight Python SDK, shipped to the detection engine, and checked against a pipeline of rule-based detectors and org-defined policies — in real time, without blocking your agent.
+AI agents are powerful but dangerous. They execute tool calls, handle sensitive data, and operate with broad permissions. A single prompt injection can hijack an agent's actions. A misconfigured tool policy can leak customer data. An anomalous behavior pattern can indicate a compromised agent.
+
+Parry is a security layer that monitors every LLM call your agents make. A lightweight Python SDK wraps your existing OpenAI, Anthropic, or LangChain client. Every prompt and response flows through a detection pipeline of 7 specialized detectors, policy enforcers, and an LLM-powered fallback classifier. When something looks wrong, Parry creates an incident, alerts your team via the dashboard, and logs the full context for investigation.
+
+The SDK adds zero latency to your agent's calls. Events are sent asynchronously in the background. If Parry's backend goes down, your agent keeps running. Fail-open by design.
 
 **Two lines to integrate:**
 
@@ -18,198 +20,155 @@ from parry.wrappers.openai import ParryOpenAI
 client = ParryOpenAI()  # drop-in replacement for openai.OpenAI()
 ```
 
-From that point on, every LLM call your agent makes is monitored. Streaming and non-streaming responses are both supported.
+Every LLM call after that is monitored. Streaming and non-streaming. OpenAI, Anthropic, and LangChain.
 
 ---
 
-## What it detects
+## Architecture Overview
 
-| Detector | Description | Type |
-|---|---|---|
-| **Prompt Injection** | Instruction override, fake system prompts, model-specific token injection (`[INST]`, `<\|system\|>`) | Rule-based |
-| **Jailbreak** | DAN, developer mode, uncensored mode, safety bypass patterns | Rule-based |
-| **Tool Misuse** | Agent calling tools outside its org policy allowlist or on the blocklist | Policy-based |
-| **Data Exfiltration** | Credit cards, SSNs, API keys, private keys, AWS credentials in model responses | Pattern matching |
-| **Privilege Escalation** | Attempts to gain sudo/admin access, disable auth/logging, modify permissions | Rule-based |
-| **Behavioral Anomaly** | Drift from agent's baseline — token count, latency, tool call frequency, unknown models | Statistical |
-| **Policy Violations** | Domain restrictions, token budget caps, forbidden pattern breaches | Policy-based |
-
-Each detector returns a `DetectionResult` with `triggered`, `severity` (critical/high/medium/low), `confidence` (0.0–1.0), and `reason`. Critical and high severity results block the call; medium flags for review; low logs only.
+```
+                         Your AI Agent
+                              │
+                              │  LLM call (sync or streaming)
+                              ▼
+                    ┌─────────────────────┐
+                    │     Parry SDK        │
+                    │                     │
+                    │  • PII stripped      │
+                    │    client-side       │
+                    │  • fire-and-forget   │
+                    │  • fail-open         │
+                    └────────┬────────────┘
+                             │ async POST /api/v1/events/ingest
+                             ▼
+                    ┌─────────────────────┐          ┌──────────────┐
+                    │  FastAPI Backend     │◄────────►│  PostgreSQL  │
+                    │                     │          │  TimescaleDB │
+                    │  • Auth (Clerk JWT  │          └──────────────┘
+                    │    + API keys)      │
+                    │  • Rate limiting    │          ┌──────────────┐
+                    │  • 202 Accepted     │◄────────►│    Redis     │
+                    └────────┬────────────┘          └──────────────┘
+                             │ Celery task
+                             ▼
+                    ┌─────────────────────┐
+                    │  Detection Pipeline  │
+                    │                     │
+                    │  6 detectors run    │
+                    │  in parallel:       │
+                    │  • Prompt Injection │
+                    │  • Jailbreak        │
+                    │  • Tool Misuse      │
+                    │  • Data Exfil       │
+                    │  • Priv Escalation  │
+                    │  • Anomaly          │
+                    │                     │
+                    │  + LLM fallback for │
+                    │    ambiguous scores  │
+                    │  + Auto-baseline    │
+                    │    generation       │
+                    └────────┬────────────┘
+                             │ persist results
+                             ▼
+                    ┌─────────────────────┐
+                    │  Incident created   │
+                    │  if HIGH/CRITICAL   │
+                    └────────┬────────────┘
+                             │ SSE stream
+                             ▼
+                    ┌─────────────────────┐
+                    │  React Dashboard    │
+                    │                     │
+                    │  • Live event feed  │
+                    │  • Incident mgmt    │
+                    │  • Charts & trends  │
+                    │  • Policy editor    │
+                    │  • API key mgmt     │
+                    └─────────────────────┘
+```
 
 ---
 
-## Architecture
+## Technical Deep Dive
 
-```
-Your AI Agent
-     │
-     │  every LLM call (streaming + non-streaming)
-     ▼
- Parry SDK (pip install parry)
-     │  • PII stripped client-side (credit cards, SSNs, emails)
-     │  • async fire-and-forget via background thread
-     │  • fail-open: if backend unreachable, call passes through
-     ▼
- FastAPI Backend (:8000)
-     │
-     ├── POST /api/v1/events/ingest  → persists event, returns 202
-     │       │
-     │       └── dispatches Celery task (async)
-     │               │
-     │               ├── 6 rule-based detectors (parallel, < 5ms)
-     │               ├── Aggregator (scores 0.4–0.7 → LLM fallback)
-     │               ├── Policy enforcer (org rules)
-     │               └── Incident correlator (groups detections)
-     │
-     ├── PostgreSQL + TimescaleDB
-     │       • agent_events hypertable (time-series, always filtered by agent_id + time)
-     │       • orgs, agents, sessions, detections, incidents, policies, api_keys
-     │
-     ├── Redis + Celery
-     │       • async detection pipeline
-     │       • 3 retries, exponential backoff, 30s soft / 60s hard timeout
-     │
-     └── SSE stream → Dashboard
-             • real-time event feed per agent
-             • auth-scoped to org
+### Detection Engine
 
- React Dashboard (:5173)
-     ├── /dashboard      — org overview, agent grid, incident feed
-     ├── /agents/:id     — event timeline, live SSE stream, model/latency stats
-     ├── /incidents       — severity + status filters, acknowledge/resolve/dismiss
-     ├── /policies        — create/edit allowed tools, blocked tools, token budgets
-     └── /settings        — API key management (create/revoke), billing, SDK quick start
-```
+Every ingested event triggers an async Celery task that runs the full detection pipeline:
 
-### Repo structure
+1. **Load context** -- fetch agent record, behavioral baseline, and all active org policies
+2. **Merge policies** -- combine allowed/blocked tools, domains, and forbidden patterns across policies
+3. **Run 6 detectors in parallel** -- ThreadPoolExecutor, each returns a `DetectionResult` with `triggered`, `severity`, `confidence`, and `reason`
+4. **LLM fallback** -- if any detector scores in the ambiguous range (0.4-0.7 confidence), call Claude to make a final judgment
+5. **Auto-baseline** -- if the agent has no behavioral baseline and has 20+ events, compute one from historical data (avg/std of latency, token count, tool calls, known models)
+6. **Persist** -- write all Detection rows to DB
+7. **Create incident** -- if any detection triggered at HIGH or CRITICAL, auto-create an Incident linking the triggered detections
+8. **Retry on failure** -- 3 retries with exponential backoff, 30s soft timeout, 60s hard kill
 
-```
-parry/
-├── backend/                      # FastAPI + Celery application
-│   ├── app/
-│   │   ├── main.py               # FastAPI entrypoint, CORS, exception handlers
-│   │   ├── api/v1/               # Route handlers
-│   │   │   ├── agents.py         # CRUD for agents
-│   │   │   ├── api_keys.py       # Create, list, revoke API keys
-│   │   │   ├── events.py         # Ingest, list, SSE stream
-│   │   │   ├── incidents.py      # List, update status
-│   │   │   └── policies.py       # CRUD for policies
-│   │   ├── core/
-│   │   │   ├── config.py         # Pydantic Settings (loads .env)
-│   │   │   ├── dependencies.py   # Auth: get_current_org, get_org_from_sdk_key
-│   │   │   ├── exceptions.py     # Domain exceptions (NotFound, Conflict, PolicyViolation)
-│   │   │   └── logging.py        # structlog configuration
-│   │   ├── db/
-│   │   │   ├── base.py           # SQLAlchemy Base, UUID + timestamp mixins
-│   │   │   ├── models.py         # All 8 domain models
-│   │   │   └── session.py        # Async engine + session factory
-│   │   ├── detection/
-│   │   │   ├── base.py           # BaseDetector protocol, DetectionResult
-│   │   │   ├── pipeline.py       # Orchestrator: parallel detect → aggregate → block?
-│   │   │   ├── registry.py       # Detector registration + lookup
-│   │   │   └── detectors/        # 6 detector implementations
-│   │   ├── schemas/              # Pydantic v2 request/response models
-│   │   ├── services/             # Business logic (no HTTP concerns)
-│   │   │   ├── agent_service.py
-│   │   │   ├── api_key_service.py
-│   │   │   ├── detection_service.py  # Run pipeline + persist + create incidents
-│   │   │   ├── event_service.py
-│   │   │   ├── incident_service.py
-│   │   │   └── policy_service.py
-│   │   └── workers/
-│   │       ├── celery_app.py     # Celery config
-│   │       └── detection_task.py # Async detection task (retry + timeout)
-│   ├── alembic/                  # Migrations (async engine)
-│   ├── tests/                    # 48 tests
-│   ├── Dockerfile
-│   └── pyproject.toml
-├── sdk/                          # pip install parry
-│   ├── parry/
-│   │   ├── __init__.py           # parry.init(), get_client()
-│   │   ├── client.py             # ParryClient — fire-and-forget event sender
-│   │   ├── interceptor.py        # PII stripping, intercept_completion(), TimingContext
-│   │   └── wrappers/
-│   │       ├── openai.py         # ParryOpenAI (streaming + non-streaming)
-│   │       └── anthropic.py      # ParryAnthropic (streaming + non-streaming)
-│   ├── tests/                    # 11 tests
-│   └── pyproject.toml
-├── dashboard/                    # React + TypeScript + Tailwind
-│   ├── src/
-│   │   ├── main.tsx              # Clerk + QueryClient + ErrorBoundary
-│   │   ├── App.tsx               # Router + auth token injection
-│   │   ├── components/           # Sidebar, Header, Layout, ErrorBoundary, shadcn/ui
-│   │   ├── pages/                # 7 pages (Dashboard, Agents, AgentDetail, Incidents, Policies, Settings, NotFound)
-│   │   ├── hooks/                # TanStack Query hooks + SSE stream hook
-│   │   ├── lib/                  # API client, types, Zustand store, utils
-│   │   └── routes/               # TanStack Router config
-│   ├── eslint.config.js
-│   ├── package.json
-│   └── vite.config.ts
-├── docker-compose.yml            # Full stack: TimescaleDB, Redis, backend, Celery worker, dashboard
-├── .env.example                  # All required environment variables
-└── README.md
-```
-
-### Tech stack
-
-| Layer | Technology | Notes |
+| Detector | What it catches | Method |
 |---|---|---|
-| **API** | FastAPI, Python 3.12, Pydantic v2 | Async everywhere, cursor-based pagination |
-| **ORM** | SQLAlchemy 2.x (async) | `select()` style, UUID PKs, JSONB metadata |
-| **Database** | PostgreSQL 16 + TimescaleDB | `agent_events` is a hypertable; never full-scan |
-| **Migrations** | Alembic | Async engine support |
-| **Queue** | Redis 7 + Celery 5 | Detection runs async after 202 response |
-| **Detection** | Custom rule engine | 6 detectors, parallel execution via thread pool |
-| **Auth (dashboard)** | Clerk | JWT verification, org-scoped |
-| **Auth (SDK)** | API key (`sk-parry-...`) | SHA256 hashed, org-resolved on every request |
-| **Billing** | Stripe | Metered per agent |
-| **Dashboard** | React 18, TypeScript strict, Tailwind CSS 4, shadcn/ui | TanStack Query + Router, Zustand, Recharts |
-| **Real-time** | Server-Sent Events | Auth-scoped, 2s polling interval |
-| **Logging** | structlog | JSON in production, console in dev |
-| **Testing** | pytest + pytest-asyncio (backend), Vitest (dashboard) | 59 total tests |
-| **Linting** | Ruff (backend), ESLint v9 (dashboard) | |
+| **Prompt Injection** | "ignore previous instructions", fake system prompts, model-specific tokens (`[INST]`, `<\|system\|>`) | 10 regex patterns, confidence-weighted |
+| **Jailbreak** | DAN, developer mode, uncensored mode, "do anything now" | 8 known jailbreak patterns |
+| **Tool Misuse** | Agent calling tools outside its org policy allowlist or on the blocklist | Policy comparison |
+| **Data Exfiltration** | Credit cards, SSNs, API keys, private keys, AWS credentials in responses | 6 PII/secret patterns |
+| **Privilege Escalation** | sudo/admin access, disable auth/logging, modify permissions | 6 escalation patterns |
+| **Anomaly** | Token count drift (3-sigma), latency drift, unknown models, excessive tool calls | Statistical comparison against agent baseline |
+| **LLM Fallback** | Ambiguous cases where rule-based detectors aren't confident | Claude-powered classification |
 
-### Data model
+### SDK
+
+The SDK provides drop-in wrappers for the three major LLM ecosystems:
+
+**Sync client** (`ParryClient`) -- sends events in background threads, never blocks the caller.
+
+**Async client** (`AsyncParryClient`) -- for async codebases like FastAPI. Uses `asyncio.create_task()` for fire-and-forget, or `send_event_blocking()` when you need delivery guarantees.
+
+**Wrappers:**
+- `ParryOpenAI` -- wraps `openai.OpenAI()`. Intercepts `chat.completions.create()` for both sync and streaming.
+- `ParryAnthropic` -- wraps `anthropic.Anthropic()`. Intercepts `messages.create()` for both sync and streaming.
+- `ParryCallbackHandler` -- LangChain `BaseCallbackHandler`. Works with any chain, model, or agent via the `callbacks` config.
+
+All wrappers strip PII (credit cards, SSNs, emails) client-side before sending events to the backend.
+
+### Data Model
 
 ```
 Org (tenant)
- ├── ApiKey[]          — hashed keys, org-scoped, last_used_at tracking
- ├── Agent[]           — named AI processes with behavioral baselines
+ ├── ApiKey[]          -- hashed keys, org-scoped, last_used_at tracking
+ ├── Agent[]           -- named AI processes with behavioral baselines
  │    ├── AgentSession[]
- │    └── AgentEvent[] — TimescaleDB hypertable (prompt, response, model, tool_calls, latency, tokens)
- │         └── Detection[] — per-detector results (triggered, severity, confidence, reason)
- ├── Incident[]        — grouped detections requiring human review (open → acknowledged → resolved/dismissed)
- └── Policy[]          — allowed_tools, blocked_tools, allowed_domains, blocked_domains, max_token_budget, forbidden_patterns
+ │    └── AgentEvent[] -- TimescaleDB hypertable (prompt, response, model, tool_calls, latency, tokens)
+ │         └── Detection[] -- per-detector results (triggered, severity, confidence, reason)
+ ├── Incident[]        -- grouped detections requiring human review (open -> acknowledged -> resolved)
+ └── Policy[]          -- allowed_tools, blocked_tools, max_token_budget, forbidden_patterns
 ```
 
-### Detection pipeline
+`agent_events` is a TimescaleDB hypertable partitioned by timestamp. Always queried with `agent_id` + time range. A 90-day retention policy auto-drops old chunks.
 
-Every ingested event triggers this pipeline via Celery:
+### Authentication
 
-1. **Load context** — fetch agent, baseline, and all active org policies from DB
-2. **Merge policies** — combine allowed/blocked tools, domains, patterns across all active policies
-3. **Run 6 detectors in parallel** — thread pool executor, each returns `DetectionResult`
-4. **Evaluate** — if any detector returns confidence 0.4–0.7, flag for LLM fallback (planned)
-5. **Persist** — write all `Detection` rows to DB
-6. **Create incident** — if any detection triggered at HIGH or CRITICAL, auto-create `Incident` linking the detections
-7. **Retry on failure** — 3 retries with exponential backoff, 30s soft timeout, 60s hard kill
+Two auth modes coexist:
 
-### API endpoints
+- **SDK requests** use `X-Parry-Secret: sk-parry-...` header. The key is SHA256-hashed and looked up in the `api_keys` table.
+- **Dashboard requests** use `Authorization: Bearer <token>`. Supports both Parry API keys (`sk-parry-...`) and Clerk JWTs (RS256, verified via JWKS).
 
-All routes under `/api/v1/`. Dashboard routes use `Authorization: Bearer sk-parry-...`. SDK ingestion uses `X-Parry-Secret: sk-parry-...`.
+### API Endpoints
+
+All routes under `/api/v1/`. Rate-limited per client via Redis sliding window.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/health` | None | Health check |
-| `POST` | `/api/v1/events/ingest` | SDK key | Ingest event from SDK (returns 202) |
-| `GET` | `/api/v1/events` | Bearer | List events for an agent (cursor-paginated) |
-| `GET` | `/api/v1/events/stream` | Bearer | SSE real-time event stream for an agent |
+| `GET` | `/health` | None | Dependency health check (DB + Redis) |
+| `POST` | `/api/v1/events/ingest` | SDK key | Ingest event (returns 202) |
+| `GET` | `/api/v1/events` | Bearer | List events for agent (cursor-paginated) |
+| `GET` | `/api/v1/events/stream` | Bearer | SSE real-time event stream |
 | `GET` | `/api/v1/events/:id` | Bearer | Get single event |
-| `GET` | `/api/v1/agents` | Bearer | List org's agents |
+| `GET` | `/api/v1/agents` | Bearer | List agents |
 | `POST` | `/api/v1/agents` | Bearer | Create agent |
 | `GET` | `/api/v1/agents/:id` | Bearer | Get agent |
 | `PATCH` | `/api/v1/agents/:id` | Bearer | Update agent |
+| `DELETE` | `/api/v1/agents/:id` | Bearer | Soft-delete agent |
 | `GET` | `/api/v1/incidents` | Bearer | List incidents (filter by severity/status) |
+| `GET` | `/api/v1/incidents/:id` | Bearer | Get incident with detections |
 | `PATCH` | `/api/v1/incidents/:id` | Bearer | Update incident status |
 | `GET` | `/api/v1/policies` | Bearer | List policies |
 | `POST` | `/api/v1/policies` | Bearer | Create policy |
@@ -218,10 +177,100 @@ All routes under `/api/v1/`. Dashboard routes use `Authorization: Bearer sk-parr
 | `GET` | `/api/v1/api-keys` | Bearer | List API keys |
 | `POST` | `/api/v1/api-keys` | Bearer | Create API key (returns raw key once) |
 | `DELETE` | `/api/v1/api-keys/:id` | Bearer | Revoke API key |
+| `POST` | `/api/v1/billing/checkout` | Bearer | Create Stripe checkout session |
+| `POST` | `/api/v1/billing/portal` | Bearer | Create Stripe billing portal session |
+| `POST` | `/api/v1/billing/webhooks/stripe` | Stripe sig | Handle subscription events |
+| `POST` | `/api/v1/webhooks/clerk` | Svix sig | Handle org lifecycle events |
+
+### Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **API** | FastAPI, Python 3.12, Pydantic v2 |
+| **ORM** | SQLAlchemy 2.x (async), Alembic |
+| **Database** | PostgreSQL 16 + TimescaleDB |
+| **Queue** | Redis 7, Celery 5 |
+| **Detection** | 6 rule-based detectors + Claude LLM fallback |
+| **Auth** | Clerk (JWT/JWKS), API keys (SHA256) |
+| **Billing** | Stripe (checkout, portal, webhooks) |
+| **Dashboard** | React 18, TypeScript, Tailwind CSS 4, shadcn/ui, Recharts |
+| **Real-time** | Server-Sent Events |
+| **Testing** | pytest + pytest-asyncio (80), Vitest (11), SDK pytest (49) -- 140 total |
+| **CI** | GitHub Actions (4 parallel jobs) |
+| **Infra** | Docker Compose (dev), multi-stage Dockerfiles (prod) |
+
+### Repo Structure
+
+```
+parry/
+├── backend/
+│   ├── app/
+│   │   ├── main.py                    # FastAPI app, middleware, health check
+│   │   ├── api/v1/
+│   │   │   ├── agents.py             # CRUD + soft-delete
+│   │   │   ├── api_keys.py           # Create, list, revoke
+│   │   │   ├── billing.py            # Stripe checkout, portal, webhooks
+│   │   │   ├── events.py             # Ingest, list, SSE stream
+│   │   │   ├── incidents.py          # List, get, update status
+│   │   │   ├── policies.py           # CRUD
+│   │   │   └── webhooks.py           # Clerk org lifecycle webhooks
+│   │   ├── core/
+│   │   │   ├── config.py             # Pydantic Settings
+│   │   │   ├── dependencies.py       # Auth: Clerk JWT + API key resolution
+│   │   │   ├── rate_limit.py         # Redis sliding window rate limiter
+│   │   │   └── exceptions.py         # Domain exceptions
+│   │   ├── db/
+│   │   │   ├── models.py             # 8 SQLAlchemy models
+│   │   │   └── session.py            # Async engine + session factory
+│   │   ├── detection/
+│   │   │   ├── pipeline.py           # Orchestrator: parallel detect -> LLM fallback -> persist
+│   │   │   ├── base.py               # BaseDetector protocol, DetectionResult
+│   │   │   ├── registry.py           # Detector registration
+│   │   │   └── detectors/            # 7 detector implementations
+│   │   ├── services/
+│   │   │   ├── baseline_service.py   # Auto-compute agent behavioral baselines
+│   │   │   ├── billing_service.py    # Stripe customer, checkout, portal
+│   │   │   ├── detection_service.py  # Run pipeline + persist + create incidents
+│   │   │   ├── event_service.py      # Ingest, list, get events
+│   │   │   ├── incident_service.py   # List, get, update incidents
+│   │   │   └── agent_service.py      # CRUD + soft-delete
+│   │   └── workers/
+│   │       └── detection_task.py     # Celery task with retry + timeout
+│   ├── alembic/versions/             # 3 migrations
+│   ├── tests/                        # 80 tests (unit + E2E)
+│   └── Dockerfile                    # Multi-stage production build
+├── sdk/
+│   ├── parry/
+│   │   ├── client.py                 # Sync client (background threads)
+│   │   ├── async_client.py           # Async client (asyncio tasks)
+│   │   ├── interceptor.py            # PII stripping, intercept_completion()
+│   │   └── wrappers/
+│   │       ├── openai.py             # ParryOpenAI (sync + streaming)
+│   │       ├── anthropic.py          # ParryAnthropic (sync + streaming)
+│   │       └── langchain.py          # ParryCallbackHandler
+│   ├── tests/                        # 49 tests
+│   ├── README.md                     # PyPI-ready documentation
+│   └── pyproject.toml
+├── dashboard/
+│   ├── src/
+│   │   ├── pages/                    # 7 pages
+│   │   ├── components/
+│   │   │   ├── charts/               # Recharts: severity donut, trend, sparklines, detector bars
+│   │   │   ├── EventDetailModal.tsx  # Full event detail view
+│   │   │   └── ui/                   # shadcn/ui + toast system
+│   │   ├── hooks/                    # TanStack Query + infinite scroll + SSE
+│   │   └── lib/                      # API client, types, chart theme
+│   ├── src/__tests__/                # 11 Vitest tests
+│   ├── Dockerfile                    # Multi-stage: npm build -> nginx
+│   └── vitest.config.ts
+├── .github/workflows/ci.yml          # 4 parallel CI jobs
+├── docker-compose.yml
+└── .env.example
+```
 
 ---
 
-## Running locally
+## Running Locally
 
 ### Prerequisites
 
@@ -230,17 +279,7 @@ All routes under `/api/v1/`. Dashboard routes use `Authorization: Bearer sk-parr
 - Node.js 20+
 - [uv](https://docs.astral.sh/uv/) (`pip install uv` or `brew install uv`)
 
-### Option 1: Docker Compose (recommended)
-
-Starts the full stack with hot reload on all services — edit code on your host and changes reflect immediately:
-
-| Service | Port | Hot Reload |
-|---------|------|------------|
-| **Backend** (FastAPI) | `:8000` | `./backend/app` mounted, uvicorn `--reload` |
-| **Worker** (Celery) | — | `./backend/app` mounted, `watchmedo` auto-restart on `*.py` changes |
-| **Dashboard** (Vite) | `:5173` | `./dashboard/src` mounted, Vite HMR |
-| **PostgreSQL** (TimescaleDB) | `:5432` | Persistent volume |
-| **Redis** | `:6379` | — |
+### Docker Compose (recommended)
 
 ```bash
 git clone https://github.com/sharukhhasan/parry.git
@@ -248,14 +287,14 @@ cd parry
 
 # Configure environment
 cp .env.example .env
-# Edit .env — at minimum set:
+# Edit .env -- set at minimum:
 #   ANTHROPIC_API_KEY (for LLM fallback detector)
 #   CLERK_SECRET_KEY + CLERK_PUBLISHABLE_KEY (for auth)
 
 cp dashboard/.env.example dashboard/.env
-# Edit dashboard/.env — set VITE_CLERK_PUBLISHABLE_KEY
+# Edit dashboard/.env -- set VITE_CLERK_PUBLISHABLE_KEY
 
-# Start all services (first run builds images)
+# Start all services
 docker compose up -d
 
 # Apply database migrations
@@ -263,63 +302,49 @@ docker compose exec backend uv run alembic upgrade head
 
 # Seed demo data (org, API key, sample agent, policy)
 docker compose exec backend uv run python scripts/seed.py
-# ⚠️  Save the API key printed — it's shown only once
+# Save the API key printed -- it's shown only once
 
-# Verify everything is running
+# Verify
 curl http://localhost:8000/health
-# → {"status": "ok", "version": "0.1.0"}
-
-# Dashboard at http://localhost:5173
-# API docs at http://localhost:8000/docs
+# -> {"status": "ok", "version": "0.1.0", "checks": {"database": "ok", "redis": "ok"}}
 ```
 
-Now edit any file:
-- Change `backend/app/**/*.py` → backend auto-reloads, worker auto-restarts
-- Change `dashboard/src/**` → Vite HMR updates the browser instantly
+| Service | URL | Hot Reload |
+|---------|-----|------------|
+| Backend API | http://localhost:8000 | Yes (uvicorn --reload) |
+| API Docs | http://localhost:8000/docs | - |
+| Dashboard | http://localhost:5173 | Yes (Vite HMR) |
+| Celery Worker | - | Yes (watchmedo) |
+| PostgreSQL | localhost:5434 | Persistent volume |
+| Redis | localhost:6380 | - |
 
-### Option 2: Manual (no Docker)
+### Manual Setup (no Docker)
 
-You'll need PostgreSQL 16 with TimescaleDB and Redis 7 running locally.
-
-**1. Database**
+**1. Start PostgreSQL + Redis**
 
 ```bash
-# If using Homebrew:
-brew install timescaledb
-# Or pull the Docker image just for the DB:
+# TimescaleDB
 docker run -d --name parry-db -p 5432:5432 \
   -e POSTGRES_USER=parry -e POSTGRES_PASSWORD=parry -e POSTGRES_DB=parry \
   timescale/timescaledb:latest-pg16
-```
 
-**2. Redis**
-
-```bash
-brew install redis && redis-server
-# Or:
+# Redis
 docker run -d --name parry-redis -p 6379:6379 redis:7-alpine
 ```
 
-**3. Backend**
+**2. Backend**
 
 ```bash
 cd backend
-cp ../.env.example ../.env
-# Edit ../.env with your database/redis URLs and API keys
-
-# Install dependencies
 uv sync
-
-# Apply migrations
 uv run alembic upgrade head
-
-# Seed demo data (org, API key, sample agent, policy)
 uv run python scripts/seed.py
-
-# Start the API server
 uv run uvicorn app.main:app --reload --port 8000
+```
 
-# In a separate terminal — start the Celery worker
+**3. Celery Worker** (separate terminal)
+
+```bash
 cd backend
 uv run celery -A app.workers.celery_app worker --loglevel=info
 ```
@@ -328,111 +353,72 @@ uv run celery -A app.workers.celery_app worker --loglevel=info
 
 ```bash
 cd dashboard
-cp .env.example .env
-# Edit .env — set VITE_CLERK_PUBLISHABLE_KEY
-
 npm install
 npm run dev
-# → http://localhost:5173
 ```
 
-**5. SDK (for testing)**
+**5. Test with the SDK**
 
 ```bash
 cd sdk
 uv sync
 
-# In a Python shell:
+python -c "
 import parry
-parry.init(api_key="sk-parry-...", base_url="http://localhost:8000")
+parry.init(api_key='sk-parry-YOUR-KEY', base_url='http://localhost:8000')
 
 from parry.wrappers.openai import ParryOpenAI
-client = ParryOpenAI(agent_id="test-agent")
+client = ParryOpenAI(agent_id='test-agent')
 response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[{"role": "user", "content": "Hello!"}]
+    model='gpt-4o',
+    messages=[{'role': 'user', 'content': 'Hello!'}]
 )
+print(response.choices[0].message.content)
+"
 ```
 
-### Docker commands reference
+### Running Tests
 
 ```bash
-docker compose up -d                          # start all services
-docker compose up -d --build                  # rebuild all images (after dependency changes)
-docker compose up -d --build backend worker   # rebuild backend + worker only
+# Backend (80 tests)
+cd backend && uv run pytest
+
+# SDK (49 tests)
+cd sdk && uv run pytest
+
+# Dashboard (11 tests)
+cd dashboard && npm test
+```
+
+### Docker Reference
+
+```bash
+docker compose up -d                          # start all
+docker compose up -d --build                  # rebuild after dep changes
 docker compose logs -f backend                # tail backend logs
-docker compose logs -f worker                 # tail Celery worker logs
-docker compose logs -f dashboard              # tail dashboard logs
-docker compose exec backend uv run alembic upgrade head   # run migrations
-docker compose exec backend uv run alembic revision --autogenerate -m "description"  # new migration
-docker compose exec backend uv run pytest     # run backend tests inside container
-docker compose restart worker                 # restart worker (if watchmedo misses a change)
-docker compose down                           # stop all services
-docker compose down -v                        # stop + delete volumes (wipes DB)
+docker compose logs -f worker                 # tail worker logs
+docker compose exec backend uv run alembic upgrade head  # run migrations
+docker compose down                           # stop all
+docker compose down -v                        # stop + wipe data
 ```
 
 ---
 
-## Development
+## Environment Variables
 
-### Running tests
-
-```bash
-# Backend (48 tests — detectors, pipeline, services)
-cd backend
-uv run pytest                              # all tests
-uv run pytest tests/detection/ -v          # detection tests only
-uv run pytest -k "test_prompt_injection"   # specific test
-
-# SDK (11 tests — PII stripping, client, interceptor)
-cd sdk
-uv run pytest
-
-# Dashboard
-cd dashboard
-npm test
-```
-
-### Code quality
-
-```bash
-# Backend
-cd backend
-uv run ruff check app/ && uv run ruff format app/   # lint + format
-uv run mypy app/                                      # type check
-
-# Dashboard
-cd dashboard
-npm run lint                                           # ESLint
-npx tsc --noEmit                                       # TypeScript check
-```
-
-### Adding a new detector
-
-1. Create `backend/app/detection/detectors/your_detector.py`
-2. Implement the `BaseDetector` protocol — must have `name: str` and `def detect(self, event_data: dict) -> DetectionResult`
-3. Register in `backend/app/detection/registry.py`
-4. Add tests in `backend/tests/detection/test_your_detector.py` — cover trigger, non-trigger, and edge cases
-5. Run `uv run pytest tests/detection/` to verify
-
----
-
-## Environment variables
-
-See `.env.example` for the full list. Critical ones:
+See `.env.example` for the full list.
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql+asyncpg://...`) |
-| `REDIS_URL` | Yes | Redis connection string |
-| `ANTHROPIC_API_KEY` | No | For LLM fallback detector (ambiguous cases) |
-| `CLERK_SECRET_KEY` | Yes | Backend auth verification |
-| `CLERK_PUBLISHABLE_KEY` | Yes | Dashboard auth |
+| `DATABASE_URL` | Yes | PostgreSQL connection (`postgresql+asyncpg://...`) |
+| `REDIS_URL` | Yes | Redis connection |
+| `ANTHROPIC_API_KEY` | No | LLM fallback detector (resolves ambiguous scores) |
+| `CLERK_SECRET_KEY` | Yes | Backend JWT verification |
+| `CLERK_PUBLISHABLE_KEY` | Yes | Used to derive JWKS URL |
+| `CLERK_WEBHOOK_SECRET` | No | Svix signature verification for Clerk webhooks |
 | `STRIPE_SECRET_KEY` | No | Billing integration |
-| `PARRY_INTERNAL_SECRET` | No | Legacy; SDK now uses API keys |
-| `ALLOWED_ORIGINS` | No | CORS origins (defaults to localhost) |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Dashboard env (same value as `CLERK_PUBLISHABLE_KEY`) |
-| `VITE_API_URL` | No | Dashboard API URL (empty = use Vite proxy) |
+| `STRIPE_WEBHOOK_SECRET` | No | Stripe webhook signature verification |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Dashboard Clerk auth |
 
 ---
 
