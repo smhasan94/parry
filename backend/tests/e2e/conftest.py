@@ -3,6 +3,8 @@ import hashlib
 import uuid
 from collections.abc import AsyncGenerator
 
+import os
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -11,7 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.db.base import Base
 from app.db.models import Agent, ApiKey, Org, Policy
 
-TEST_DB_URL = "postgresql+asyncpg://parry:parry@localhost:5434/parry_test"
+TEST_DB_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://parry:parry@localhost:5434/parry_test",
+)
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
 """Tests for baseline_service.compute_baseline()."""
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -9,7 +10,10 @@ from app.db.base import Base
 from app.db.models import Agent, AgentEvent, Org
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
 
-TEST_DB_URL = "postgresql+asyncpg://parry:parry@localhost:5434/parry_test"
+TEST_DB_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://parry:parry@localhost:5434/parry_test",
+)
 
 
 @pytest.fixture

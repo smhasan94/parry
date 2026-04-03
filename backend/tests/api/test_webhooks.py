@@ -1,4 +1,6 @@
 """Tests for Clerk webhook handler logic."""
+import os
+
 import pytest
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -12,7 +14,10 @@ from app.api.v1.webhooks import (
 from app.db.base import Base
 from app.db.models import Org
 
-TEST_DB_URL = "postgresql+asyncpg://parry:parry@localhost:5434/parry_test"
+TEST_DB_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://parry:parry@localhost:5434/parry_test",
+)
 
 
 @pytest.fixture
