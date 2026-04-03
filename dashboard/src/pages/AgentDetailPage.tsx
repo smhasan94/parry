@@ -8,21 +8,31 @@ import { useAgent } from "@/hooks/useAgents";
 import { useEvents } from "@/hooks/useEvents";
 import { useIncidents } from "@/hooks/useIncidents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
+import { Button } from "@/components/ui/button";
 import { Activity, Clock, Cpu, Zap } from "lucide-react";
 
 export function AgentDetailPage() {
   const { agentId } = useParams({ from: "/agents/$agentId" });
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
-  const { data: eventData, isLoading: eventsLoading } = useEvents(agentId);
+  const {
+    data: eventData,
+    isLoading: eventsLoading,
+    hasNextPage: hasMoreEvents,
+    fetchNextPage: fetchMoreEvents,
+    isFetchingNextPage: loadingMoreEvents,
+  } = useEvents(agentId);
   const { events: liveEvents, connected } = useAgentEventStream(agentId);
 
   const { data: incidentData } = useIncidents();
-  const events = eventData?.events ?? [];
+  const events = useMemo(
+    () => eventData?.pages.flatMap((p) => p.events) ?? [],
+    [eventData]
+  );
   const displayEvents = liveEvents.length > 0 ? liveEvents : events;
 
   // Filter incidents for this agent
   const agentIncidents = useMemo(
-    () => (incidentData?.incidents ?? []).filter((i) => i.agent_id === agentId),
+    () => (incidentData?.pages.flatMap((p) => p.incidents) ?? []).filter((i) => i.agent_id === agentId),
     [incidentData, agentId]
   );
 
@@ -176,6 +186,17 @@ export function AgentDetailPage() {
                     )}
                   </div>
                 ))}
+                {hasMoreEvents && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => fetchMoreEvents()}
+                    disabled={loadingMoreEvents}
+                  >
+                    {loadingMoreEvents ? "Loading..." : "Load more events"}
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

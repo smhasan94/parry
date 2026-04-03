@@ -19,11 +19,15 @@ export function IncidentsPage() {
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
   };
 
-  const { data, isLoading } = useIncidents(
-    Object.keys(filters).length > 0 ? filters : undefined
-  );
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useIncidents(Object.keys(filters).length > 0 ? filters : undefined);
   const updateIncident = useUpdateIncident();
-  const incidents = data?.incidents ?? [];
+  const incidents = data?.pages.flatMap((p) => p.incidents) ?? [];
 
   return (
     <div>
@@ -148,6 +152,16 @@ export function IncidentsPage() {
                 </CardContent>
               </Card>
             ))}
+            {hasNextPage && (
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? "Loading..." : "Load more incidents"}
+              </Button>
+            )}
           </div>
         )}
       </div>

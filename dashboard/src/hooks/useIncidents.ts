@@ -1,11 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { IncidentStatus, Severity } from "@/lib/types";
 
 export function useIncidents(filters?: { severity?: Severity; status?: IncidentStatus }) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["incidents", filters],
-    queryFn: () => api.listIncidents(filters),
+    queryFn: ({ pageParam }) => api.listIncidents({ ...filters, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.has_more ? lastPage.next_cursor ?? undefined : undefined,
   });
 }
 

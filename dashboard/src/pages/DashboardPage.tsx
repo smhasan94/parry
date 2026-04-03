@@ -12,7 +12,7 @@ export function DashboardPage() {
   const { data: agents = [], isLoading: agentsLoading } = useAgents();
   const { data: incidentData, isLoading: incidentsLoading } = useIncidents();
 
-  const incidents = incidentData?.incidents ?? [];
+  const incidents = incidentData?.pages.flatMap((p) => p.incidents) ?? [];
   const activeAgents = agents.filter((a) => a.is_active).length;
   const openIncidents = incidents.filter((i) => i.status === "open").length;
   const criticalIncidents = incidents.filter((i) => i.severity === "critical").length;
