@@ -51,7 +51,17 @@ class DetectionPipeline:
                 count=len(ambiguous),
                 detectors=[r.detector for r in ambiguous],
             )
-            # TODO: call LLM fallback detector for ambiguous results
+            # Call LLM fallback to resolve ambiguous results
+            from app.detection.detectors.llm_fallback import evaluate_ambiguous
+
+            fallback_result = await evaluate_ambiguous(event_data, ambiguous)
+            if fallback_result is not None:
+                results.append(fallback_result)
+                log.info(
+                    "detection.llm_fallback_triggered",
+                    severity=fallback_result.severity.value,
+                    confidence=fallback_result.confidence,
+                )
 
         return results
 
