@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
+import sqlalchemy as sa
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -86,8 +87,38 @@ async def parry_error_handler(request: Request, exc: ParryError) -> JSONResponse
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "version": "0.1.0"}
+async def health() -> dict:
+    """Health check with dependency status for DB and Redis."""
+    import redis as redis_lib
+
+    from app.db.session import engine
+
+    checks: dict[str, str] = {}
+
+    # Check database
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(sa.text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "error"
+
+    # Check Redis
+    try:
+        r = redis_lib.Redis.from_url(settings.redis_url, socket_timeout=2)
+        r.ping()
+        r.close()
+        checks["redis"] = "ok"
+    except Exception:
+        checks["redis"] = "error"
+
+    all_ok = all(v == "ok" for v in checks.values())
+
+    return {
+        "status": "ok" if all_ok else "degraded",
+        "version": "0.1.0",
+        "checks": checks,
+    }
 
 
 # ── Register API routers ────────────────────────────────────────
