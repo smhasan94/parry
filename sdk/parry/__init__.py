@@ -1,5 +1,6 @@
 """Parry SDK — AI Agent Runtime Security."""
 
+from parry.async_client import AsyncParryClient
 from parry.client import ParryClient
 
 __version__ = "0.1.0"
