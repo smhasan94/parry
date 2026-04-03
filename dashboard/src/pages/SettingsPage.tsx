@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/hooks/useApiKeys";
+import { api } from "@/lib/api";
+import { toast } from "@/components/ui/toast";
 import { Key, Copy, ExternalLink, Plus, Eye, EyeOff, Ban } from "lucide-react";
 
 export function SettingsPage() {
@@ -148,7 +150,17 @@ export function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const { url } = await api.createBillingPortal(window.location.href);
+                  window.location.href = url;
+                } catch {
+                  toast("Billing portal not available. Contact support.");
+                }
+              }}
+            >
               <ExternalLink className="h-4 w-4" />
               Open Billing Portal
             </Button>

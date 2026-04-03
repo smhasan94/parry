@@ -151,6 +151,12 @@ class ApiClient {
   async revokeApiKey(keyId: string): Promise<ApiKey> {
     return this.request(`/api/v1/api-keys/${keyId}`, { method: "DELETE" });
   }
+
+  // Billing
+  async createBillingPortal(returnUrl: string): Promise<{ url: string }> {
+    const params = new URLSearchParams({ return_url: returnUrl });
+    return this.request(`/api/v1/billing/portal?${params}`, { method: "POST" });
+  }
 }
 
 export class ApiError extends Error {

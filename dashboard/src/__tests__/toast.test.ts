@@ -10,14 +10,14 @@ describe("toast store", () => {
     toast("Something went wrong");
     const toasts = useToastStore.getState().toasts;
     expect(toasts).toHaveLength(1);
-    expect(toasts[0].message).toBe("Something went wrong");
-    expect(toasts[0].type).toBe("error");
+    expect(toasts[0]!.message).toBe("Something went wrong");
+    expect(toasts[0]!.type).toBe("error");
   });
 
   it("adds a success toast", () => {
     toast("Created successfully", "success");
     const toasts = useToastStore.getState().toasts;
-    expect(toasts[0].type).toBe("success");
+    expect(toasts[0]!.type).toBe("success");
   });
 
   it("removes a toast by id", () => {
@@ -26,9 +26,9 @@ describe("toast store", () => {
     const toasts = useToastStore.getState().toasts;
     expect(toasts).toHaveLength(2);
 
-    useToastStore.getState().remove(toasts[0].id);
+    useToastStore.getState().remove(toasts[0]!.id);
     expect(useToastStore.getState().toasts).toHaveLength(1);
-    expect(useToastStore.getState().toasts[0].message).toBe("Second");
+    expect(useToastStore.getState().toasts[0]!.message).toBe("Second");
   });
 
   it("auto-dismisses after timeout", () => {
@@ -46,6 +46,6 @@ describe("toast store", () => {
     toast("A");
     toast("B");
     const [a, b] = useToastStore.getState().toasts;
-    expect(a.id).not.toBe(b.id);
+    expect(a!.id).not.toBe(b!.id);
   });
 });
