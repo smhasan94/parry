@@ -39,6 +39,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Rate limiting (added after CORS so CORS headers are always present)
+from app.core.rate_limit import RateLimitMiddleware
+
+app.add_middleware(RateLimitMiddleware)
+
 
 # ── Exception handlers ──────────────────────────────────────────
 
