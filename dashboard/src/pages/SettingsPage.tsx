@@ -13,7 +13,20 @@ import {
 } from "@/hooks/useAlerts";
 import { api } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
-import { Key, Copy, ExternalLink, Plus, Eye, EyeOff, Ban, Bell, Send, Trash2 } from "lucide-react";
+import {
+  Key,
+  Copy,
+  ExternalLink,
+  Plus,
+  Eye,
+  EyeOff,
+  Ban,
+  Bell,
+  Send,
+  Trash2,
+  Mail,
+  X,
+} from "lucide-react";
 
 export function SettingsPage() {
   const { data: apiKeys = [], isLoading } = useApiKeys();
@@ -213,43 +226,70 @@ function AlertsCard() {
   const testAlert = useTestAlert();
 
   const [webhookUrl, setWebhookUrl] = useState("");
-  const [minSeverity, setMinSeverity] = useState("high");
-  const [editing, setEditing] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
 
-  const handleSave = () => {
+  const slackEnabled = !!config?.slack_webhook_url;
+  const emails = config?.alert_emails ?? [];
+  const minSeverity = config?.min_severity ?? "high";
+
+  const handleSaveSlack = () => {
     if (!webhookUrl.trim()) return;
     updateConfig.mutate(
-      { slack_webhook_url: webhookUrl.trim(), min_severity: minSeverity },
+      { slack_webhook_url: webhookUrl.trim() },
       {
         onSuccess: () => {
-          setEditing(false);
           setWebhookUrl("");
-          toast("Slack alerts configured", "success");
+          toast("Slack webhook saved", "success");
         },
       }
     );
   };
 
-  const handleSeverityChange = (severity: string) => {
-    setMinSeverity(severity);
-    if (config?.enabled) {
-      updateConfig.mutate(
-        { min_severity: severity },
-        { onSuccess: () => toast("Severity threshold updated", "success") }
-      );
-    }
+  const handleAddEmail = () => {
+    const email = emailInput.trim();
+    if (!email) return;
+    const next = [...emails, email];
+    updateConfig.mutate(
+      { alert_emails: next },
+      {
+        onSuccess: () => {
+          setEmailInput("");
+          toast("Email added", "success");
+        },
+      }
+    );
   };
 
-  const handleTest = () => {
-    testAlert.mutate(undefined, {
-      onSuccess: () => toast("Test alert sent! Check your Slack channel.", "success"),
+  const handleRemoveEmail = (email: string) => {
+    updateConfig.mutate(
+      { alert_emails: emails.filter((e) => e !== email) },
+      { onSuccess: () => toast("Email removed", "success") }
+    );
+  };
+
+  const handleSeverityChange = (severity: string) => {
+    updateConfig.mutate(
+      { min_severity: severity },
+      { onSuccess: () => toast("Severity threshold updated", "success") }
+    );
+  };
+
+  const handleTest = (channel: "slack" | "email") => {
+    testAlert.mutate(channel, {
+      onSuccess: () =>
+        toast(
+          channel === "slack"
+            ? "Test sent to Slack"
+            : "Test email sent",
+          "success"
+        ),
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm("Disable Slack alerts? You can re-enable them later.")) return;
+  const handleDisableAll = () => {
+    if (!confirm("Disable all alerts? You can re-enable them later.")) return;
     deleteConfig.mutate(undefined, {
-      onSuccess: () => toast("Slack alerts disabled", "success"),
+      onSuccess: () => toast("All alerts disabled", "success"),
     });
   };
 
@@ -260,10 +300,10 @@ function AlertsCard() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Slack Alerts
+              Alerts
             </CardTitle>
             <CardDescription>
-              Get notified in Slack when incidents are detected.
+              Get notified via Slack or email when incidents are detected.
             </CardDescription>
           </div>
           {config?.enabled && (
@@ -273,25 +313,20 @@ function AlertsCard() {
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : config?.enabled && !editing ? (
-          <div className="space-y-3">
-            <div className="rounded-md border border-border p-3">
-              <p className="text-xs text-muted-foreground">Webhook URL</p>
-              <p className="font-mono text-sm">
-                {config.slack_webhook_url?.slice(0, 40)}...
-              </p>
-            </div>
+        ) : (
+          <>
+            {/* Severity threshold (shared) */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Notify on severity</p>
+              <label className="text-sm font-medium">Notify on severity</label>
               <div className="flex gap-2">
                 {SEVERITY_OPTIONS.map((s) => (
                   <Button
                     key={s}
                     size="sm"
-                    variant={config.min_severity === s ? "secondary" : "ghost"}
+                    variant={minSeverity === s ? "secondary" : "ghost"}
                     onClick={() => handleSeverityChange(s)}
                     className="text-xs capitalize"
                   >
@@ -300,74 +335,147 @@ function AlertsCard() {
                 ))}
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={handleTest} disabled={testAlert.isPending}>
-                <Send className="h-4 w-4" />
-                {testAlert.isPending ? "Sending..." : "Send Test"}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleDelete}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-4 w-4" />
-                Disable
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Slack Incoming Webhook URL</label>
-              <Input
-                type="url"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://hooks.slack.com/services/..."
-              />
-              <p className="text-xs text-muted-foreground">
-                Create one at{" "}
-                <a
-                  href="https://api.slack.com/messaging/webhooks"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  api.slack.com/messaging/webhooks
-                </a>
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Minimum severity</label>
-              <div className="flex gap-2">
-                {SEVERITY_OPTIONS.map((s) => (
-                  <Button
-                    key={s}
-                    size="sm"
-                    variant={minSeverity === s ? "secondary" : "ghost"}
-                    onClick={() => setMinSeverity(s)}
-                    className="text-xs capitalize"
-                  >
-                    {s}+
-                  </Button>
-                ))}
+
+            {/* Slack channel */}
+            <div className="space-y-2 rounded-md border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                <p className="text-sm font-medium">Slack</p>
+                {slackEnabled && (
+                  <Badge variant="secondary" className="ml-auto text-xs text-green-400">
+                    Configured
+                  </Badge>
+                )}
               </div>
+              {slackEnabled ? (
+                <div className="space-y-2">
+                  <p className="break-all font-mono text-xs text-muted-foreground">
+                    {config?.slack_webhook_url?.slice(0, 60)}...
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTest("slack")}
+                      disabled={testAlert.isPending}
+                    >
+                      <Send className="h-4 w-4" />
+                      Send Test
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => updateConfig.mutate({ slack_webhook_url: "" })}
+                    >
+                      Replace
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="url"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.slack.com/services/..."
+                  />
+                  <div className="flex items-center justify-between">
+                    <a
+                      href="https://api.slack.com/messaging/webhooks"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-muted-foreground underline"
+                    >
+                      How to create a webhook
+                    </a>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSlack}
+                      disabled={updateConfig.isPending || !webhookUrl.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave} disabled={updateConfig.isPending || !webhookUrl.trim()}>
-                {updateConfig.isPending ? "Saving..." : "Save"}
-              </Button>
-              {editing && (
-                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                  Cancel
+
+            {/* Email channel */}
+            <div className="space-y-2 rounded-md border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <p className="text-sm font-medium">Email</p>
+                {emails.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-xs text-green-400">
+                    {emails.length} recipient{emails.length === 1 ? "" : "s"}
+                  </Badge>
+                )}
+              </div>
+
+              {emails.length > 0 && (
+                <div className="space-y-1">
+                  {emails.map((email) => (
+                    <div
+                      key={email}
+                      className="flex items-center justify-between rounded bg-secondary/50 px-3 py-2 text-sm"
+                    >
+                      <span className="font-mono">{email}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleRemoveEmail(email)}
+                        title="Remove"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddEmail()}
+                  placeholder="ops@yourcompany.com"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAddEmail}
+                  disabled={updateConfig.isPending || !emailInput.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+
+              {emails.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTest("email")}
+                  disabled={testAlert.isPending}
+                  className="mt-2"
+                >
+                  <Send className="h-4 w-4" />
+                  Send Test Email
                 </Button>
               )}
             </div>
-          </div>
+
+            {config?.enabled && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleDisableAll}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4" />
+                Disable all alerts
+              </Button>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

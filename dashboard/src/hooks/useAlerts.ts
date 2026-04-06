@@ -11,8 +11,11 @@ export function useAlertConfig() {
 export function useUpdateAlertConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { slack_webhook_url?: string; min_severity?: string }) =>
-      api.updateAlertConfig(data),
+    mutationFn: (data: {
+      slack_webhook_url?: string;
+      alert_emails?: string[];
+      min_severity?: string;
+    }) => api.updateAlertConfig(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["alert-config"] }),
   });
 }
@@ -27,6 +30,6 @@ export function useDeleteAlertConfig() {
 
 export function useTestAlert() {
   return useMutation({
-    mutationFn: () => api.sendTestAlert(),
+    mutationFn: (channel: "slack" | "email") => api.sendTestAlert(channel),
   });
 }

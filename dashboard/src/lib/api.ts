@@ -169,6 +169,7 @@ class ApiClient {
 
   async updateAlertConfig(data: {
     slack_webhook_url?: string;
+    alert_emails?: string[];
     min_severity?: string;
   }): Promise<AlertConfig> {
     return this.request("/api/v1/alerts", {
@@ -181,13 +182,14 @@ class ApiClient {
     return this.request("/api/v1/alerts", { method: "DELETE" });
   }
 
-  async sendTestAlert(): Promise<{ status: string }> {
-    return this.request("/api/v1/alerts/test", { method: "POST" });
+  async sendTestAlert(channel: "slack" | "email" = "slack"): Promise<{ status: string }> {
+    return this.request(`/api/v1/alerts/test?channel=${channel}`, { method: "POST" });
   }
 }
 
 export interface AlertConfig {
   slack_webhook_url: string | null;
+  alert_emails: string[];
   min_severity: string;
   enabled: boolean;
 }
