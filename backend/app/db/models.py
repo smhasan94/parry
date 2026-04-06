@@ -212,3 +212,33 @@ class Policy(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     custom_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     org: Mapped["Org"] = relationship(back_populates="policies")
+
+
+# ── Audit Log ────────────────────────────────────────────────────
+
+
+class AuditLog(Base, UUIDPrimaryKeyMixin):
+    """Tamper-evident record of who did what.
+
+    Append-only — no updates or deletes from application code. Designed for
+    compliance auditing (SOC 2, ISO 27001) and incident forensics.
+    """
+
+    __tablename__ = "audit_log"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # Actor identity (denormalized so the record survives user deletion)
+    actor_type: Mapped[str] = mapped_column(String(20), nullable=False)  # user|api_key|system
+    actor_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    actor_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # What happened
+    action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    resource_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    # Optional structured payload (before/after diff, IP, user-agent, etc.)
+    details: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
