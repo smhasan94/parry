@@ -128,24 +128,33 @@ jobs:
         run: uv run alembic upgrade head
 
       - name: Verify tables exist
+        env:
+          PGPASSWORD: parry
+        run: |
+          tables=$(psql -h localhost -U parry -d parry_test -tAc \
+            "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")
+          echo "Found tables:"
+          echo "$tables"
+          for expected in orgs api_keys agents policies agent_sessions agent_events detections incidents audit_log; do
+            if ! echo "$tables" | grep -qx "$expected"; then
+              echo "FAIL: Missing expected table: $expected"
+              exit 1
+            fi
+          done
+          echo "OK: All expected tables present"
+
+      - name: Verify alembic head matches latest migration
         working-directory: backend
         run: |
-          python -c "
-          import asyncio, sys
-          from sqlalchemy import text, create_engine
-
-          engine = create_engine('postgresql://parry:parry@localhost:5432/parry_test')
-          with engine.connect() as conn:
-              result = conn.execute(text(\"SELECT tablename FROM pg_tables WHERE schemaname='public'\"))
-              tables = {row[0] for row in result}
-
-          expected = {'orgs', 'api_keys', 'agents', 'policies', 'agent_sessions', 'agent_events', 'detections', 'incidents'}
-          missing = expected - tables
-          if missing:
-              print(f'FAIL: Missing tables: {missing}')
-              sys.exit(1)
-          print(f'OK: All {len(expected)} tables present: {sorted(tables & expected)}')
-          "
+          current=$(uv run alembic current 2>&1 | grep -oE '[0-9]+ \(head\)' | grep -oE '[0-9]+' || echo "")
+          latest=$(ls alembic/versions/[0-9]*.py | sort | tail -1 | grep -oE '[0-9]+_' | tr -d '_')
+          echo "Current migration: $current"
+          echo "Latest file:       $latest"
+          if [ "$current" != "$latest" ]; then
+            echo "FAIL: alembic head ($current) does not match latest migration file ($latest)"
+            exit 1
+          fi
+          echo "OK: alembic head matches latest migration"
 
   sdk:
     name: SDK tests
