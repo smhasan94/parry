@@ -153,6 +153,47 @@ export function AgentDetailPage() {
           </Card>
         </div>
 
+        {/* Baseline Info */}
+        {agent.baseline && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Behavioral Baseline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Tokens</p>
+                  <p className="text-lg font-semibold">
+                    {Math.round(agent.baseline.avg_token_count as number)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Latency</p>
+                  <p className="text-lg font-semibold">
+                    {Math.round(agent.baseline.avg_latency_ms as number)}ms
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Known Models</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {((agent.baseline.known_models as string[]) ?? []).map((m) => (
+                      <span key={m} className="rounded bg-secondary px-1.5 py-0.5 text-xs">
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Events Analyzed</p>
+                  <p className="text-lg font-semibold">
+                    {agent.baseline.event_count as number}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Event Timeline */}
         <Card>
           <CardHeader>
