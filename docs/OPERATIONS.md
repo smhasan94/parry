@@ -37,7 +37,27 @@ ANTHROPIC_API_KEY=sk-ant-...
 # Optional (billing)
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Optional (email alerts via SMTP — works with SendGrid, Mailgun, SES, Postmark, etc.)
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASSWORD=SG....
+SMTP_FROM=alerts@yourcompany.com
+SMTP_USE_TLS=true
+
+# Used in alert messages as the dashboard link
+DASHBOARD_URL=https://parry.yourcompany.com
 ```
+
+### Alerting
+
+Parry sends incident alerts to Slack and email, configured per org from the dashboard Settings page.
+
+- **Slack**: each org pastes an [incoming webhook URL](https://api.slack.com/messaging/webhooks). No backend setup required.
+- **Email**: requires SMTP credentials in the backend `.env` (see above). Each org then adds recipient addresses in Settings.
+
+Alerts only fire for incidents at or above the org's configured severity threshold (default: HIGH). Failed alert deliveries are logged at WARN level but never block detection.
 
 3. Start services:
 
