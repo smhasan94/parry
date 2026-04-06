@@ -146,7 +146,7 @@ Org (tenant)
 
 ### Authentication
 
-Two auth modes coexist:
+Two auth modes coexist (see [docs/CLERK_SETUP.md](docs/CLERK_SETUP.md) for full setup):
 
 - **SDK requests** use `X-Parry-Secret: sk-parry-...` header. The key is SHA256-hashed and looked up in the `api_keys` table.
 - **Dashboard requests** use `Authorization: Bearer <token>`. Supports both Parry API keys (`sk-parry-...`) and Clerk JWTs (RS256, verified via JWKS).
@@ -195,7 +195,7 @@ All routes under `/api/v1/`. Rate-limited per client via Redis sliding window.
 | **Billing** | Stripe (checkout, portal, webhooks) |
 | **Dashboard** | React 18, TypeScript, Tailwind CSS 4, shadcn/ui, Recharts |
 | **Real-time** | Server-Sent Events |
-| **Testing** | pytest + pytest-asyncio (80), Vitest (11), SDK pytest (49) -- 140 total |
+| **Testing** | pytest + pytest-asyncio (75+), Vitest (15), SDK pytest (49) -- 139+ total |
 | **CI** | GitHub Actions (4 parallel jobs) |
 | **Infra** | Docker Compose (dev), multi-stage Dockerfiles (prod) |
 
@@ -263,8 +263,12 @@ parry/
 │   ├── src/__tests__/                # 11 Vitest tests
 │   ├── Dockerfile                    # Multi-stage: npm build -> nginx
 │   └── vitest.config.ts
-├── .github/workflows/ci.yml          # 4 parallel CI jobs
-├── docker-compose.yml
+├── docs/
+│   ├── CLERK_SETUP.md                # Clerk auth + webhook setup guide
+│   └── OPERATIONS.md                 # Deployment, monitoring, troubleshooting runbook
+├── .github/workflows/ci.yml          # 5 parallel CI jobs (incl. migration test)
+├── docker-compose.yml                # Development (hot reload, debug ports)
+├── docker-compose.prod.yml           # Production (nginx, restart policies)
 └── .env.example
 ```
 
@@ -294,11 +298,8 @@ cp .env.example .env
 cp dashboard/.env.example dashboard/.env
 # Edit dashboard/.env -- set VITE_CLERK_PUBLISHABLE_KEY
 
-# Start all services
+# Start all services (migrations run automatically)
 docker compose up -d
-
-# Apply database migrations
-docker compose exec backend uv run alembic upgrade head
 
 # Seed demo data (org, API key, sample agent, policy)
 docker compose exec backend uv run python scripts/seed.py
@@ -380,13 +381,13 @@ print(response.choices[0].message.content)
 ### Running Tests
 
 ```bash
-# Backend (80 tests)
+# Backend (75+ unit tests, 25 integration tests requiring DB)
 cd backend && uv run pytest
 
 # SDK (49 tests)
 cd sdk && uv run pytest
 
-# Dashboard (11 tests)
+# Dashboard (15 tests)
 cd dashboard && npm test
 ```
 
@@ -403,6 +404,14 @@ docker compose down -v                        # stop + wipe data
 ```
 
 ---
+
+## Production Deployment
+
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for full deployment guide, monitoring, and troubleshooting.
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ## Environment Variables
 
