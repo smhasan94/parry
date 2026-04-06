@@ -8,6 +8,7 @@ import httpx
 import structlog
 
 from app.core.config import settings
+from app.core.metrics import record_alert_sent
 from app.db.models import Incident, Org, Severity
 
 log = structlog.get_logger()
@@ -104,6 +105,7 @@ async def send_slack_alert(
             incident_id=str(incident.id),
             severity=incident.severity.value,
         )
+        record_alert_sent(channel="slack", success=True)
         return True
     except httpx.HTTPError as e:
         log.warning(
@@ -111,6 +113,7 @@ async def send_slack_alert(
             incident_id=str(incident.id),
             error=str(e),
         )
+        record_alert_sent(channel="slack", success=False)
         return False
 
 
@@ -212,6 +215,7 @@ async def send_email_alert(
             incident_id=str(incident.id),
             recipients=len(to_addresses),
         )
+        record_alert_sent(channel="email", success=True)
         return True
     except (smtplib.SMTPException, OSError) as e:
         log.warning(
@@ -219,6 +223,7 @@ async def send_email_alert(
             incident_id=str(incident.id),
             error=str(e),
         )
+        record_alert_sent(channel="email", success=False)
         return False
 
 

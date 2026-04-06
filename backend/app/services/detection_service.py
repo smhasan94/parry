@@ -4,6 +4,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.metrics import record_detection_triggered, record_incident_created
 from app.db.models import Agent, AgentEvent, Detection, Incident, Org, Policy, Severity
 
 log = structlog.get_logger()
@@ -59,6 +60,8 @@ async def run_and_persist_detections(
         )
         db.add(detection)
         detections.append(detection)
+        if r.triggered:
+            record_detection_triggered(detector=r.detector, severity=r.severity.value)
 
     await db.flush()
 
@@ -78,6 +81,7 @@ async def run_and_persist_detections(
             severity=incident.severity.value,
             detection_count=len(triggered_results),
         )
+        record_incident_created(severity=incident.severity.value)
 
         # Dispatch alerts (Slack, etc.) if the org has alert_config
         from app.core.config import settings

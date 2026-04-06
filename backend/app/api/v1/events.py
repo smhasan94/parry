@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.dependencies import get_current_org, get_org_from_sdk_key
+from app.core.metrics import record_event_ingested
 from app.db.models import AgentEvent, Org
 from app.db.session import async_session_factory, get_db
 from app.schemas.event import EventIngest, EventListResponse, EventResponse
@@ -42,6 +43,7 @@ async def ingest_event(
         metadata=body.metadata,
     )
     await db.commit()
+    record_event_ingested()
 
     # Dispatch detection pipeline async via Celery
     try:
