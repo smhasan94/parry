@@ -59,6 +59,19 @@ Parry sends incident alerts to Slack and email, configured per org from the dash
 
 Alerts only fire for incidents at or above the org's configured severity threshold (default: HIGH). Failed alert deliveries are logged at WARN level but never block detection.
 
+### Error tracking (Sentry)
+
+Both backend and frontend support optional Sentry integration. When `SENTRY_DSN` (backend) and `VITE_SENTRY_DSN` (frontend) are set, errors and 5xx responses are reported with full stack traces.
+
+```env
+SENTRY_DSN=https://...@o0.ingest.sentry.io/0
+SENTRY_TRACES_SAMPLE_RATE=0.1
+SENTRY_ENVIRONMENT=production
+VITE_SENTRY_DSN=https://...@o0.ingest.sentry.io/0
+```
+
+PII protection: prompt/response bodies, `Authorization`, `X-Parry-Secret`, and `Cookie` headers are stripped before events are sent. Frontend reports only 5xx mutation errors (4xx are user errors and not actionable). Sentry is fully optional — Parry runs identically when both DSNs are unset.
+
 3. Start services:
 
 ```bash
