@@ -46,6 +46,11 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]
 # B008: FastAPI uses Depends()/Query() in argument defaults — that's the canonical pattern
 ignore = ["B008"]
 
+[tool.ruff.lint.per-file-ignores]
+# N803: test mocks use the convention `MockClassName` for patched class injection
+# E501: tests often contain long fixture strings (prompts, payloads) that don't benefit from wrapping
+"tests/**" = ["N803", "E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 

@@ -2,7 +2,7 @@
 import os
 import socket
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -71,7 +71,7 @@ async def _add_events(
         db.add(
             AgentEvent(
                 agent_id=agent.id,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 prompt="test prompt",
                 response="test response",
                 model=model,
@@ -128,7 +128,7 @@ async def test_null_fields_handled(db: AsyncSession):
         db.add(
             AgentEvent(
                 agent_id=agent.id,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 prompt="test",
                 response="test",
                 model="gpt-4o",

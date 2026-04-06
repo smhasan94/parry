@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -8,7 +8,6 @@ from app.db.models import (
     Agent,
     AgentEvent,
     ApiKey,
-    Detection,
     Incident,
     IncidentStatus,
     Org,
@@ -63,7 +62,7 @@ def sample_event(sample_agent: Agent) -> AgentEvent:
     return AgentEvent(
         id=uuid.uuid4(),
         agent_id=sample_agent.id,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         prompt="What is 2 + 2?",
         response="4",
         model="gpt-4o",
