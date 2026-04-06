@@ -89,6 +89,64 @@ jobs:
         working-directory: backend
         run: uv run pytest tests/e2e/ -v --tb=short -q
 
+  migrations:
+    name: Database migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: parry
+          POSTGRES_PASSWORD: parry
+          POSTGRES_DB: parry_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U parry"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://parry:parry@localhost:5432/parry_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv pip install --system -e ".[dev]"
+
+      - name: Run migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Verify tables exist
+        working-directory: backend
+        run: |
+          python -c "
+          import asyncio, sys
+          from sqlalchemy import text, create_engine
+
+          engine = create_engine('postgresql://parry:parry@localhost:5432/parry_test')
+          with engine.connect() as conn:
+              result = conn.execute(text(\"SELECT tablename FROM pg_tables WHERE schemaname='public'\"))
+              tables = {row[0] for row in result}
+
+          expected = {'orgs', 'api_keys', 'agents', 'policies', 'agent_sessions', 'agent_events', 'detections', 'incidents'}
+          missing = expected - tables
+          if missing:
+              print(f'FAIL: Missing tables: {missing}')
+              sys.exit(1)
+          print(f'OK: All {len(expected)} tables present: {sorted(tables & expected)}')
+          "
+
   sdk:
     name: SDK tests
     runs-on: ubuntu-latest
