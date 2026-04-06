@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     # Dashboard URL (used in alert links)
     dashboard_url: str = ""
 
+    # SMTP (email alerts)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "alerts@parry.dev"
+    smtp_use_tls: bool = True
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]
