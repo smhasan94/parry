@@ -26,7 +26,10 @@ async def create_checkout(
 ) -> dict[str, str]:
     """Create a Stripe Checkout session for subscribing to a plan."""
     if not settings.stripe_secret_key:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Billing not configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Billing not configured",
+        )
 
     customer_id = await billing_service.ensure_stripe_customer(db, org)
     await db.commit()
@@ -43,7 +46,10 @@ async def create_portal(
 ) -> dict[str, str]:
     """Create a Stripe Billing Portal session for managing subscription."""
     if not settings.stripe_secret_key:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Billing not configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Billing not configured",
+        )
 
     customer_id = await billing_service.ensure_stripe_customer(db, org)
     await db.commit()
@@ -59,12 +65,17 @@ async def stripe_webhook(request: Request) -> dict[str, str]:
     sig_header = request.headers.get("stripe-signature", "")
 
     if not settings.stripe_webhook_secret:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook secret not configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook secret not configured",
+        )
 
     try:
         event = stripe.Webhook.construct_event(body, sig_header, settings.stripe_webhook_secret)
-    except stripe.SignatureVerificationError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
+    except stripe.SignatureVerificationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
+        ) from e
 
     log.info("billing.webhook_received", event_type=event["type"])
 

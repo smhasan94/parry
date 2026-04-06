@@ -1,7 +1,5 @@
 """Stripe billing service — customer management, checkout, and portal."""
 
-import uuid
-
 import stripe
 import structlog
 from sqlalchemy import select
@@ -58,17 +56,13 @@ def create_portal_session(customer_id: str, return_url: str) -> str:
     return session.url
 
 
-async def handle_subscription_event(
-    db: AsyncSession, event_type: str, data: dict
-) -> None:
+async def handle_subscription_event(db: AsyncSession, event_type: str, data: dict) -> None:
     """Handle Stripe subscription lifecycle events."""
     subscription = data.get("object", {})
     customer_id = subscription.get("customer", "")
     status = subscription.get("status", "")
 
-    result = await db.execute(
-        select(Org).where(Org.stripe_customer_id == customer_id)
-    )
+    result = await db.execute(select(Org).where(Org.stripe_customer_id == customer_id))
     org = result.scalar_one_or_none()
 
     if org is None:

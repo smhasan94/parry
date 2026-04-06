@@ -21,12 +21,8 @@ async def list_policies(
     return list(result.scalars().all())
 
 
-async def get_policy(
-    db: AsyncSession, org_id: uuid.UUID, policy_id: uuid.UUID
-) -> Policy:
-    result = await db.execute(
-        select(Policy).where(Policy.id == policy_id, Policy.org_id == org_id)
-    )
+async def get_policy(db: AsyncSession, org_id: uuid.UUID, policy_id: uuid.UUID) -> Policy:
+    result = await db.execute(select(Policy).where(Policy.id == policy_id, Policy.org_id == org_id))
     policy = result.scalar_one_or_none()
     if policy is None:
         raise NotFoundError("Policy", str(policy_id))
@@ -65,9 +61,7 @@ async def update_policy(
     return policy
 
 
-async def delete_policy(
-    db: AsyncSession, org_id: uuid.UUID, policy_id: uuid.UUID
-) -> None:
+async def delete_policy(db: AsyncSession, org_id: uuid.UUID, policy_id: uuid.UUID) -> None:
     policy = await get_policy(db, org_id, policy_id)
     await db.delete(policy)
     await db.flush()

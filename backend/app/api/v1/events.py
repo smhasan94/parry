@@ -80,9 +80,7 @@ async def stream_events(
     from app.db.models import Agent
 
     # Verify agent belongs to this org
-    result = await db.execute(
-        select(Agent).where(Agent.id == agent_id, Agent.org_id == org.id)
-    )
+    result = await db.execute(select(Agent).where(Agent.id == agent_id, Agent.org_id == org.id))
     if result.scalar_one_or_none() is None:
         from fastapi import HTTPException
 
@@ -103,9 +101,7 @@ async def stream_events(
 
                 if event and event.id != last_seen:
                     last_seen = event.id
-                    data = json.dumps(
-                        EventResponse.model_validate(event).model_dump(mode="json")
-                    )
+                    data = json.dumps(EventResponse.model_validate(event).model_dump(mode="json"))
                     yield {"data": data}
 
             await asyncio.sleep(2)

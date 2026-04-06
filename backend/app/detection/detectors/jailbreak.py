@@ -36,9 +36,7 @@ JAILBREAK_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
         0.8,
     ),
     (
-        re.compile(
-            r"(?i)(uncensored|unfiltered|unmoderated)\s+(mode|version|response)", re.I
-        ),
+        re.compile(r"(?i)(uncensored|unfiltered|unmoderated)\s+(mode|version|response)", re.I),
         "Uncensored mode request",
         0.85,
     ),
@@ -60,10 +58,9 @@ class JailbreakDetector:
         matched_reason = ""
 
         for pattern, reason, weight in JAILBREAK_PATTERNS:
-            if pattern.search(prompt):
-                if weight > max_confidence:
-                    max_confidence = weight
-                    matched_reason = reason
+            if pattern.search(prompt) and weight > max_confidence:
+                max_confidence = weight
+                matched_reason = reason
 
         triggered = max_confidence >= 0.7
 

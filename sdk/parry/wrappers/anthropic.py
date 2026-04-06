@@ -27,8 +27,8 @@ class ParryAnthropic:
     ) -> None:
         try:
             import anthropic
-        except ImportError:
-            raise ImportError("Install anthropic: pip install parry[anthropic]")
+        except ImportError as e:
+            raise ImportError("Install anthropic: pip install parry[anthropic]") from e
 
         self._client = anthropic.Anthropic(**kwargs)
         self._agent_id = agent_id
@@ -66,10 +66,7 @@ class _MessagesNamespace:
 
             tool_blocks = [b for b in result.content if b.type == "tool_use"]
             if tool_blocks:
-                tool_calls_data = [
-                    {"name": b.name, "arguments": b.input}
-                    for b in tool_blocks
-                ]
+                tool_calls_data = [{"name": b.name, "arguments": b.input} for b in tool_blocks]
 
             if result.usage:
                 token_count = result.usage.input_tokens + result.usage.output_tokens

@@ -26,11 +26,11 @@ def _verify_webhook(payload: bytes, headers: dict[str, str]) -> dict:
     wh = Webhook(settings.clerk_webhook_secret)
     try:
         return wh.verify(payload, headers)
-    except WebhookVerificationError:
+    except WebhookVerificationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid webhook signature",
-        )
+        ) from e
 
 
 @router.post("/clerk", status_code=200)

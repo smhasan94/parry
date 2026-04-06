@@ -8,6 +8,16 @@ from parry.wrappers.openai import ParryOpenAI
 
 __version__ = "0.1.0"
 
+__all__ = [
+    "AsyncParryClient",
+    "ParryAnthropic",
+    "ParryCallbackHandler",
+    "ParryClient",
+    "ParryOpenAI",
+    "get_client",
+    "init",
+]
+
 _client: ParryClient | None = None
 
 

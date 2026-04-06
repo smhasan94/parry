@@ -1,5 +1,5 @@
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import sqlalchemy as sa
 import structlog
@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ParryError, PolicyViolationError
 from app.core.logging import setup_logging
+from app.core.rate_limit import RateLimitMiddleware
 
 log = structlog.get_logger()
 
@@ -43,8 +44,6 @@ app.add_middleware(
 )
 
 # Rate limiting (added after CORS so CORS headers are always present)
-from app.core.rate_limit import RateLimitMiddleware
-
 app.add_middleware(RateLimitMiddleware)
 
 
@@ -68,9 +67,7 @@ async def conflict_handler(request: Request, exc: ConflictError) -> JSONResponse
 
 
 @app.exception_handler(PolicyViolationError)
-async def policy_violation_handler(
-    request: Request, exc: PolicyViolationError
-) -> JSONResponse:
+async def policy_violation_handler(request: Request, exc: PolicyViolationError) -> JSONResponse:
     return JSONResponse(
         status_code=403,
         content={"detail": exc.message, "code": exc.code},

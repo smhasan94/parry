@@ -38,9 +38,7 @@ async def list_agents(
 
 
 async def get_agent(db: AsyncSession, org_id: uuid.UUID, agent_id: uuid.UUID) -> Agent:
-    result = await db.execute(
-        select(Agent).where(Agent.id == agent_id, Agent.org_id == org_id)
-    )
+    result = await db.execute(select(Agent).where(Agent.id == agent_id, Agent.org_id == org_id))
     agent = result.scalar_one_or_none()
     if agent is None:
         raise NotFoundError("Agent", str(agent_id))
@@ -55,9 +53,7 @@ async def create_agent(
     metadata: dict[str, Any] | None = None,
 ) -> Agent:
     # Check for duplicate name within org
-    result = await db.execute(
-        select(Agent).where(Agent.org_id == org_id, Agent.name == name)
-    )
+    result = await db.execute(select(Agent).where(Agent.org_id == org_id, Agent.name == name))
     if result.scalar_one_or_none():
         raise ConflictError(f"Agent with name '{name}' already exists in this org")
 
@@ -85,7 +81,7 @@ async def update_agent(
     for key, value in updates.items():
         if value is not None:
             if key == "metadata":
-                setattr(agent, "metadata_", value)
+                agent.metadata_ = value
             else:
                 setattr(agent, key, value)
 

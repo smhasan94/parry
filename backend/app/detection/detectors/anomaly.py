@@ -51,8 +51,7 @@ class AnomalyDetector:
             threshold = max(baseline_std_latency * 3, baseline_avg_latency * 0.5)
             if deviation > threshold:
                 anomalies.append(
-                    f"Latency {latency}ms deviates from baseline "
-                    f"avg {baseline_avg_latency:.0f}ms"
+                    f"Latency {latency}ms deviates from baseline avg {baseline_avg_latency:.0f}ms"
                 )
 
         # Tool call count anomaly
@@ -63,7 +62,8 @@ class AnomalyDetector:
             tool_count = len(tool_calls)
             if tool_count > baseline_avg_tools * 3 and tool_count > 3:
                 anomalies.append(
-                    f"Tool call count {tool_count} far exceeds baseline avg {baseline_avg_tools:.1f}"
+                    f"Tool call count {tool_count} far exceeds baseline avg "
+                    f"{baseline_avg_tools:.1f}"
                 )
 
         # Unseen model usage

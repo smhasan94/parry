@@ -87,7 +87,11 @@ async def run_and_persist_detections(
         if baseline:
             agent.baseline = baseline
             await db.flush()
-            log.info("baseline.auto_set", agent_id=str(agent.id), event_count=baseline["event_count"])
+            log.info(
+                "baseline.auto_set",
+                agent_id=str(agent.id),
+                event_count=baseline["event_count"],
+            )
 
     return detections
 

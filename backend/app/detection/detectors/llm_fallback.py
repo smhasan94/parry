@@ -50,8 +50,7 @@ async def evaluate_ambiguous(
 
     # Build the analysis prompt
     ambiguous_summary = "\n".join(
-        f"- [{r.detector}] confidence={r.confidence:.2f}: {r.reason}"
-        for r in ambiguous_results
+        f"- [{r.detector}] confidence={r.confidence:.2f}: {r.reason}" for r in ambiguous_results
     )
 
     user_prompt = f"""Analyze this AI agent LLM call for security threats:

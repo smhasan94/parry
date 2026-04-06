@@ -14,14 +14,14 @@ log = structlog.get_logger()
 
 # Rate limits per endpoint pattern (requests per minute)
 RATE_LIMITS: dict[str, int] = {
-    "/api/v1/events/ingest": 300,   # SDK ingestion — high volume
-    "/api/v1/events": 60,           # Event listing
+    "/api/v1/events/ingest": 300,  # SDK ingestion — high volume
+    "/api/v1/events": 60,  # Event listing
     "/api/v1/agents": 60,
     "/api/v1/incidents": 60,
     "/api/v1/policies": 60,
     "/api/v1/api-keys": 30,
     "/api/v1/billing": 20,
-    "/api/v1/webhooks": 100,        # Webhooks from external services
+    "/api/v1/webhooks": 100,  # Webhooks from external services
 }
 
 DEFAULT_LIMIT = 60  # requests per minute
@@ -65,9 +65,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self._redis = redis.Redis.from_url(settings.redis_url, decode_responses=True)
         return self._redis
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip rate limiting for health checks
         if request.url.path in ("/health", "/docs", "/redoc", "/openapi.json"):
             return await call_next(request)

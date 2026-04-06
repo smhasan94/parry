@@ -42,9 +42,7 @@ async def list_incidents(
     return incidents, next_cursor
 
 
-async def get_incident(
-    db: AsyncSession, org_id: uuid.UUID, incident_id: uuid.UUID
-) -> Incident:
+async def get_incident(db: AsyncSession, org_id: uuid.UUID, incident_id: uuid.UUID) -> Incident:
     result = await db.execute(
         select(Incident).where(Incident.id == incident_id, Incident.org_id == org_id)
     )

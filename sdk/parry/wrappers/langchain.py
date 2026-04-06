@@ -22,8 +22,8 @@ try:
     from langchain_core.callbacks import BaseCallbackHandler
     from langchain_core.messages import BaseMessage
     from langchain_core.outputs import LLMResult
-except ImportError:
-    raise ImportError("Install langchain-core: pip install parry[langchain]")
+except ImportError as e:
+    raise ImportError("Install langchain-core: pip install parry[langchain]") from e
 
 
 class ParryCallbackHandler(BaseCallbackHandler):
@@ -65,7 +65,8 @@ class ParryCallbackHandler(BaseCallbackHandler):
                 prompt = last_msg.content
             elif isinstance(last_msg.content, list):
                 text_parts = [
-                    b["text"] for b in last_msg.content
+                    b["text"]
+                    for b in last_msg.content
                     if isinstance(b, dict) and b.get("type") == "text"
                 ]
                 prompt = " ".join(text_parts)
@@ -139,7 +140,9 @@ class ParryCallbackHandler(BaseCallbackHandler):
 
         # Extract tool calls from AIMessage if present
         tool_calls_data = None
-        gen = response.generations[0][0] if response.generations and response.generations[0] else None
+        gen = (
+            response.generations[0][0] if response.generations and response.generations[0] else None
+        )
         if gen and hasattr(gen, "message"):
             msg = gen.message
             if hasattr(msg, "tool_calls") and msg.tool_calls:

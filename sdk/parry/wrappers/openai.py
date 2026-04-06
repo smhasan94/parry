@@ -27,8 +27,8 @@ class ParryOpenAI:
     ) -> None:
         try:
             import openai
-        except ImportError:
-            raise ImportError("Install openai: pip install parry[openai]")
+        except ImportError as e:
+            raise ImportError("Install openai: pip install parry[openai]") from e
 
         self._client = openai.OpenAI(**kwargs)
         self._agent_id = agent_id

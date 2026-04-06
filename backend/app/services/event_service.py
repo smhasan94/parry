@@ -1,12 +1,12 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
-from app.db.models import Agent, AgentEvent, AgentSession
+from app.db.models import Agent, AgentEvent
 
 log = structlog.get_logger()
 
@@ -26,9 +26,7 @@ async def ingest_event(
     metadata: dict | None = None,
 ) -> AgentEvent:
     # Resolve agent by name within org (auto-create if not exists)
-    result = await db.execute(
-        select(Agent).where(Agent.org_id == org_id, Agent.name == agent_name)
-    )
+    result = await db.execute(select(Agent).where(Agent.org_id == org_id, Agent.name == agent_name))
     agent = result.scalar_one_or_none()
 
     if agent is None:
@@ -55,7 +53,7 @@ async def ingest_event(
         tool_calls=tool_calls,
         latency_ms=latency_ms,
         token_count=token_count,
-        timestamp=timestamp or datetime.now(timezone.utc),
+        timestamp=timestamp or datetime.now(UTC),
         metadata_=metadata,
     )
     db.add(event)

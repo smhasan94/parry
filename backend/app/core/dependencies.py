@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 import httpx
@@ -22,13 +22,13 @@ async def _get_clerk_jwks() -> dict:
     """Fetch Clerk's JWKS from their well-known endpoint."""
     global _jwks_cache
 
-    from app.core.config import settings
-
     # Derive the Clerk Frontend API URL from the publishable key
     # pk_test_xxx... or pk_live_xxx... -> the domain is encoded in the key
     # But easier: Clerk JWKS is at https://<clerk-domain>/.well-known/jwks.json
     # The clerk_publishable_key contains the Clerk Frontend API domain (base64 after pk_test_)
     import base64
+
+    from app.core.config import settings
 
     try:
         # Clerk publishable key format: pk_test_<base64-encoded-frontend-api>
@@ -76,11 +76,9 @@ async def _resolve_org_from_api_key(
         )
 
     if update_last_used:
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
 
-    result = await db.execute(
-        select(Org).where(Org.id == api_key.org_id, Org.is_active.is_(True))
-    )
+    result = await db.execute(select(Org).where(Org.id == api_key.org_id, Org.is_active.is_(True)))
     org = result.scalar_one_or_none()
 
     if org is None:
@@ -124,13 +122,13 @@ async def _resolve_org_from_clerk_jwt(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-        )
+        ) from e
     except httpx.HTTPError as e:
         log.error("auth.clerk_jwks_fetch_failed", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to verify token — could not reach auth provider",
-        )
+        ) from e
 
     # Clerk puts org info in the JWT claims
     clerk_org_id = payload.get("org_id")

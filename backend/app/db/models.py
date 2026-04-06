@@ -19,18 +19,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
-
 # ── Enums ────────────────────────────────────────────────────────
 
 
-class Severity(str, enum.Enum):
+class Severity(enum.StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
-class IncidentStatus(str, enum.Enum):
+class IncidentStatus(enum.StrEnum):
     OPEN = "open"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -117,9 +116,7 @@ class AgentEvent(Base, TimestampMixin):
     """TimescaleDB hypertable — composite PK (id, timestamp) required for partitioning."""
 
     __tablename__ = "agent_events"
-    __table_args__ = (
-        PrimaryKeyConstraint("id", "timestamp"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("id", "timestamp"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), server_default=func.gen_random_uuid(), nullable=False
@@ -153,9 +150,7 @@ class Detection(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "detections"
 
     # No FK to agent_events — TimescaleDB hypertables don't support inbound FKs.
-    event_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
-    )
+    event_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     incident_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True
     )

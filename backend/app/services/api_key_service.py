@@ -54,9 +54,7 @@ async def list_api_keys(
     org_id: uuid.UUID,
 ) -> list[ApiKey]:
     result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.org_id == org_id)
-        .order_by(ApiKey.created_at.desc())
+        select(ApiKey).where(ApiKey.org_id == org_id).order_by(ApiKey.created_at.desc())
     )
     return list(result.scalars().all())
 
@@ -66,9 +64,7 @@ async def revoke_api_key(
     org_id: uuid.UUID,
     key_id: uuid.UUID,
 ) -> ApiKey:
-    result = await db.execute(
-        select(ApiKey).where(ApiKey.id == key_id, ApiKey.org_id == org_id)
-    )
+    result = await db.execute(select(ApiKey).where(ApiKey.id == key_id, ApiKey.org_id == org_id))
     api_key = result.scalar_one_or_none()
     if api_key is None:
         raise NotFoundError("ApiKey", str(key_id))

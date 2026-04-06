@@ -29,8 +29,7 @@ class DetectionPipeline:
         # Run all sync detectors in parallel via thread pool
         loop = asyncio.get_running_loop()
         tasks = [
-            loop.run_in_executor(_executor, detector.detect, event_data)
-            for detector in detectors
+            loop.run_in_executor(_executor, detector.detect, event_data) for detector in detectors
         ]
         results: list[DetectionResult] = await asyncio.gather(*tasks)
 

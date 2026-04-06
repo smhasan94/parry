@@ -1,6 +1,7 @@
 """Auto-generate behavioral baselines for agents from their event history."""
+
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -70,7 +71,7 @@ async def compute_baseline(
         "avg_tool_calls": avg_tool_calls,
         "known_models": known_models,
         "event_count": event_count,
-        "computed_at": datetime.now(timezone.utc).isoformat(),
+        "computed_at": datetime.now(UTC).isoformat(),
     }
 
     log.info(
