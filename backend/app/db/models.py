@@ -47,6 +47,8 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    # Alert config: {"slack_webhook_url": "...", "min_severity": "high"}
+    alert_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     agents: Mapped[list["Agent"]] = relationship(back_populates="org", lazy="selectin")
