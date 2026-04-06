@@ -68,6 +68,7 @@ pnpm-debug.log*
 dashboard/dist/
 dashboard/build/
 dashboard/.vite/
+*.tsbuildinfo
 
 # ── Docker ───────────────────────────────────────────────────
 # (docker-compose.override.yml is gitignored — use for local overrides)
