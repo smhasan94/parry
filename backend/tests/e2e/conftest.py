@@ -1,9 +1,9 @@
 """E2E test fixtures — real async DB, FastAPI test client, seeded org + API key."""
 import hashlib
+import os
+import socket
 import uuid
 from collections.abc import AsyncGenerator
-
-import os
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -17,6 +17,25 @@ TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://parry:parry@localhost:5434/parry_test",
 )
+
+
+def _db_port_open() -> bool:
+    try:
+        sock = socket.create_connection(("localhost", 5434), timeout=1)
+        sock.close()
+        return True
+    except OSError:
+        return False
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip all E2E tests when the test database is not reachable."""
+    if _db_port_open():
+        return
+    skip_marker = pytest.mark.skip(reason="PostgreSQL test database not available on localhost:5434")
+    for item in items:
+        if "/e2e/" in str(item.fspath):
+            item.add_marker(skip_marker)
 
 
 @pytest.fixture

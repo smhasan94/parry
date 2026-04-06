@@ -2,6 +2,9 @@
 
 from parry.async_client import AsyncParryClient
 from parry.client import ParryClient
+from parry.wrappers.anthropic import ParryAnthropic
+from parry.wrappers.langchain import ParryCallbackHandler
+from parry.wrappers.openai import ParryOpenAI
 
 __version__ = "0.1.0"
 

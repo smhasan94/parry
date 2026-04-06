@@ -1,5 +1,6 @@
 """Tests for Clerk webhook handler logic."""
 import os
+import socket
 
 import pytest
 from sqlalchemy import select, text
@@ -17,6 +18,21 @@ from app.db.models import Org
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://parry:parry@localhost:5434/parry_test",
+)
+
+
+def _db_port_open() -> bool:
+    try:
+        sock = socket.create_connection(("localhost", 5434), timeout=1)
+        sock.close()
+        return True
+    except OSError:
+        return False
+
+
+pytestmark = pytest.mark.skipif(
+    not _db_port_open(),
+    reason="PostgreSQL test database not available on localhost:5434",
 )
 
 

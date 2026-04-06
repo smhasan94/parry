@@ -43,7 +43,8 @@ async def ingest_event(
         try:
             db_session_id = uuid.UUID(session_id)
         except ValueError:
-            pass
+            log.warning("event.invalid_session_id", session_id=session_id)
+            db_session_id = uuid.uuid4()
 
     event = AgentEvent(
         agent_id=agent.id,
