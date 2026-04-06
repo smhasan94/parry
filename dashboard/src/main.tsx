@@ -6,7 +6,10 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Toaster, toast } from "./components/ui/toast";
 import { App } from "./App";
 import { ApiError } from "./lib/api";
+import { initSentry, Sentry } from "./lib/sentry";
 import "./index.css";
+
+initSentry();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,8 +22,13 @@ const queryClient = new QueryClient({
     onError: (error) => {
       if (error instanceof ApiError) {
         toast(error.message || `Request failed (${error.status})`);
+        // Only report 5xx — 4xx are user errors and not actionable
+        if (error.status >= 500) {
+          Sentry.captureException(error);
+        }
       } else {
         toast(error.message || "An unexpected error occurred");
+        Sentry.captureException(error);
       }
     },
   }),
