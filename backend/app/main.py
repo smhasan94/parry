@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ParryError, PolicyViolationError
 from app.core.logging import setup_logging
 from app.core.rate_limit import RateLimitMiddleware
+from app.core.sentry import init_sentry
 
 log = structlog.get_logger()
 
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging()
     settings.validate_for_production()
     settings.log_startup_warnings()
+    init_sentry()
     log.info("parry.startup", env=settings.app_env)
     yield
     log.info("parry.shutdown")

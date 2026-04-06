@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     smtp_from: str = "alerts@parry.dev"
     smtp_use_tls: bool = True
 
+    # Sentry (error tracking — optional)
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+    sentry_environment: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]

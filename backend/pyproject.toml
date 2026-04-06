@@ -24,6 +24,7 @@ dependencies = [
     "sse-starlette>=2.1.0",
     "svix>=1.80.0",
     "watchdog>=6.0.0",
+    "sentry-sdk[fastapi]>=2.20.0",
 ]
 
 [project.optional-dependencies]
