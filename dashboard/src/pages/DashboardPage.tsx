@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SeverityBadge } from "@/components/ui/badge";
 import { SeverityBreakdown } from "@/components/charts/SeverityBreakdown";
 import { IncidentTrend } from "@/components/charts/IncidentTrend";
@@ -22,6 +23,20 @@ export function DashboardPage() {
       <Header title="Dashboard" description="AI Agent Runtime Security overview" />
 
       <div className="space-y-6 p-6">
+        {!agentsLoading && !incidentsLoading && agents.length === 0 && (
+          <Card className="border-blue-500/30 bg-blue-500/10">
+            <CardContent className="flex items-center justify-between p-4">
+              <div>
+                <p className="font-medium text-blue-400">Welcome to Parry!</p>
+                <p className="text-sm text-muted-foreground">Set up your first agent in minutes.</p>
+              </div>
+              <Link to="/setup">
+                <Button size="sm">Get Started</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
