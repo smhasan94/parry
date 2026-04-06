@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   FileCheck,
   Settings,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ const navItems = [
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/policies", label: "Policies", icon: FileCheck },
+  { to: "/audit-log", label: "Audit Log", icon: Activity },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

@@ -101,3 +101,16 @@ export interface PaginatedResponse<T> {
   next_cursor: string | null;
   has_more: boolean;
 }
+
+export interface AuditEntry {
+  id: string;
+  org_id: string;
+  actor_type: string;
+  actor_id: string | null;
+  actor_label: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}

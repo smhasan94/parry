@@ -8,6 +8,7 @@ import { PoliciesPage } from "@/pages/PoliciesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
+import { AuditLogPage } from "@/pages/AuditLogPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -64,6 +65,12 @@ const setupRoute = createRoute({
   component: OnboardingPage,
 });
 
+const auditRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/audit-log",
+  component: AuditLogPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -73,6 +80,7 @@ const routeTree = rootRoute.addChildren([
   policiesRoute,
   settingsRoute,
   setupRoute,
+  auditRoute,
 ]);
 
 export const router = createRouter({ routeTree });

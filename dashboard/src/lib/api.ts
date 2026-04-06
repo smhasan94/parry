@@ -3,6 +3,7 @@ import type {
   AgentEvent,
   ApiKey,
   ApiKeyCreated,
+  AuditEntry,
   Incident,
   IncidentStatus,
   Policy,
@@ -184,6 +185,21 @@ class ApiClient {
 
   async sendTestAlert(channel: "slack" | "email" = "slack"): Promise<{ status: string }> {
     return this.request(`/api/v1/alerts/test?channel=${channel}`, { method: "POST" });
+  }
+
+  // Audit log
+  async listAuditLog(filters?: {
+    action?: string;
+    resource_type?: string;
+    resource_id?: string;
+    cursor?: string;
+  }): Promise<{ entries: AuditEntry[]; next_cursor: string | null; has_more: boolean }> {
+    const params = new URLSearchParams();
+    if (filters?.action) params.set("action", filters.action);
+    if (filters?.resource_type) params.set("resource_type", filters.resource_type);
+    if (filters?.resource_id) params.set("resource_id", filters.resource_id);
+    if (filters?.cursor) params.set("cursor", filters.cursor);
+    return this.request(`/api/v1/audit-log?${params}`);
   }
 }
 
