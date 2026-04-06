@@ -158,6 +158,7 @@ All routes under `/api/v1/`. Rate-limited per client via Redis sliding window.
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/health` | None | Dependency health check (DB + Redis) |
+| `GET` | `/metrics` | None | Prometheus scrape endpoint |
 | `POST` | `/api/v1/events/ingest` | SDK key | Ingest event (returns 202) |
 | `GET` | `/api/v1/events` | Bearer | List events for agent (cursor-paginated) |
 | `GET` | `/api/v1/events/stream` | Bearer | SSE real-time event stream |

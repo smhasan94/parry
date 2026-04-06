@@ -59,6 +59,36 @@ Parry sends incident alerts to Slack and email, configured per org from the dash
 
 Alerts only fire for incidents at or above the org's configured severity threshold (default: HIGH). Failed alert deliveries are logged at WARN level but never block detection.
 
+### Metrics (Prometheus)
+
+Parry exposes a Prometheus scrape endpoint at `/metrics` (unauthenticated — firewall at the network layer).
+
+Available metrics:
+
+| Metric | Type | Labels | Notes |
+|---|---|---|---|
+| `parry_http_requests_total` | counter | method, route, status | One per HTTP request |
+| `parry_http_request_duration_seconds` | histogram | method, route | Buckets: 5ms–10s |
+| `parry_events_ingested_total` | counter | — | SDK ingest endpoint |
+| `parry_detections_triggered_total` | counter | detector, severity | One per triggered detection |
+| `parry_incidents_created_total` | counter | severity | One per new incident |
+| `parry_alerts_sent_total` | counter | channel, outcome | Slack/email × success/failure |
+
+Example Prometheus scrape config:
+
+```yaml
+scrape_configs:
+  - job_name: parry-backend
+    static_configs:
+      - targets: ['parry-backend:8000']
+    metrics_path: /metrics
+```
+
+Sample alert rules to start with:
+- `rate(parry_alerts_sent_total{outcome="failure"}[5m]) > 0` — alert delivery is failing
+- `histogram_quantile(0.95, rate(parry_http_request_duration_seconds_bucket[5m])) > 1` — P95 latency above 1s
+- `rate(parry_incidents_created_total{severity="critical"}[1h]) > 0` — at least one critical incident in the last hour
+
 ### Error tracking (Sentry)
 
 Both backend and frontend support optional Sentry integration. When `SENTRY_DSN` (backend) and `VITE_SENTRY_DSN` (frontend) are set, errors and 5xx responses are reported with full stack traces.
