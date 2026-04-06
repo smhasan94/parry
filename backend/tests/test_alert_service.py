@@ -1,10 +1,12 @@
-"""Tests for alert_service: should_alert, build_slack_payload."""
+"""Tests for alert_service: should_alert, build_slack_payload, email helpers."""
 import uuid
 from datetime import UTC, datetime
 
 from app.db.models import Detection, Incident, IncidentStatus, Org, Severity
 from app.services.alert_service import (
     SEVERITY_RANK,
+    build_email_html,
+    build_email_subject,
     build_slack_payload,
     should_alert,
 )
@@ -58,9 +60,29 @@ class TestShouldAlert:
         org = _make_org(alert_config={})
         assert should_alert(org, Severity.CRITICAL) is False
 
-    def test_no_webhook_url_returns_false(self) -> None:
+    def test_no_channel_returns_false(self) -> None:
         org = _make_org(alert_config={"min_severity": "low"})
         assert should_alert(org, Severity.CRITICAL) is False
+
+    def test_emails_only_is_a_valid_channel(self) -> None:
+        org = _make_org(
+            alert_config={
+                "alert_emails": ["ops@example.com"],
+                "min_severity": "high",
+            }
+        )
+        assert should_alert(org, Severity.HIGH) is True
+        assert should_alert(org, Severity.MEDIUM) is False
+
+    def test_both_channels_configured(self) -> None:
+        org = _make_org(
+            alert_config={
+                "slack_webhook_url": "https://hooks.slack.com/x",
+                "alert_emails": ["ops@example.com"],
+                "min_severity": "low",
+            }
+        )
+        assert should_alert(org, Severity.LOW) is True
 
     def test_default_min_severity_is_high(self) -> None:
         org = _make_org(alert_config={"slack_webhook_url": "https://hooks.slack.com/x"})
@@ -148,6 +170,55 @@ class TestBuildSlackPayload:
         incident = _make_incident()
         payload = build_slack_payload(incident)
         assert "title_link" not in payload["attachments"][0]
+
+
+class TestBuildEmailSubject:
+    def test_includes_severity_and_title(self) -> None:
+        incident = _make_incident(severity=Severity.CRITICAL)
+        subject = build_email_subject(incident)
+        assert "CRITICAL" in subject
+        assert "Parry" in subject
+        assert incident.title in subject
+
+
+class TestBuildEmailHtml:
+    def test_contains_severity_label(self) -> None:
+        incident = _make_incident(severity=Severity.HIGH)
+        html = build_email_html(incident)
+        assert "HIGH severity" in html
+        assert incident.title in html
+
+    def test_includes_detector_table_when_detections_present(self) -> None:
+        detections = [
+            _make_detection("anomaly", confidence=0.5),
+            _make_detection("prompt_injection", confidence=0.95),
+        ]
+        incident = _make_incident(detections=detections)
+        html = build_email_html(incident)
+        assert "prompt_injection" in html
+        assert "anomaly" in html
+        assert "95%" in html
+
+    def test_no_detector_table_when_empty(self) -> None:
+        incident = _make_incident(detections=[])
+        html = build_email_html(incident)
+        assert "<table" not in html
+
+    def test_dashboard_link_added_when_url_provided(self) -> None:
+        incident = _make_incident()
+        html = build_email_html(incident, dashboard_url="https://parry.example.com")
+        assert "https://parry.example.com/incidents" in html
+        assert "View in Dashboard" in html
+
+    def test_no_link_when_no_dashboard_url(self) -> None:
+        incident = _make_incident()
+        html = build_email_html(incident)
+        assert "View in Dashboard" not in html
+
+    def test_critical_uses_red_color(self) -> None:
+        incident = _make_incident(severity=Severity.CRITICAL)
+        html = build_email_html(incident)
+        assert "#dc2626" in html
 
 
 class TestSeverityRank:
