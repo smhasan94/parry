@@ -161,6 +161,35 @@ class ApiClient {
     const params = new URLSearchParams({ return_url: returnUrl });
     return this.request(`/api/v1/billing/portal?${params}`, { method: "POST" });
   }
+
+  // Alerts
+  async getAlertConfig(): Promise<AlertConfig> {
+    return this.request("/api/v1/alerts");
+  }
+
+  async updateAlertConfig(data: {
+    slack_webhook_url?: string;
+    min_severity?: string;
+  }): Promise<AlertConfig> {
+    return this.request("/api/v1/alerts", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAlertConfig(): Promise<void> {
+    return this.request("/api/v1/alerts", { method: "DELETE" });
+  }
+
+  async sendTestAlert(): Promise<{ status: string }> {
+    return this.request("/api/v1/alerts/test", { method: "POST" });
+  }
+}
+
+export interface AlertConfig {
+  slack_webhook_url: string | null;
+  min_severity: string;
+  enabled: boolean;
 }
 
 export class ApiError extends Error {
