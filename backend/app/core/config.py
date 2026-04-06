@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     # CORS
     allowed_origins: str = "http://localhost:5173,http://localhost:3000"
 
+    # Dashboard URL (used in alert links)
+    dashboard_url: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]

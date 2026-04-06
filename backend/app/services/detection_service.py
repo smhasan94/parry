@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Agent, AgentEvent, Detection, Incident, Policy, Severity
+from app.db.models import Agent, AgentEvent, Detection, Incident, Org, Policy, Severity
 
 log = structlog.get_logger()
 
@@ -78,6 +78,20 @@ async def run_and_persist_detections(
             severity=incident.severity.value,
             detection_count=len(triggered_results),
         )
+
+        # Dispatch alerts (Slack, etc.) if the org has alert_config
+        from app.core.config import settings
+        from app.services.alert_service import dispatch_incident_alert
+
+        org = await db.get(Org, agent.org_id)
+        if org:
+            try:
+                await dispatch_incident_alert(
+                    org, incident, dashboard_url=settings.dashboard_url or None
+                )
+            except Exception as e:
+                # Never let alerting failures break detection
+                log.warning("alert.dispatch_failed", error=str(e))
 
     # Auto-generate baseline if agent doesn't have one yet
     if not agent.baseline:
