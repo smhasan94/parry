@@ -1,5 +1,7 @@
-from pydantic import Field
+import structlog
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+log = structlog.get_logger()
 
 
 class Settings(BaseSettings):
@@ -50,6 +52,48 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    def validate_for_production(self) -> None:
+        """Fail fast if critical env vars are missing in production."""
+        if not self.is_production:
+            return
+
+        missing = []
+        if self.app_secret_key == "change-me-in-production":
+            missing.append("APP_SECRET_KEY")
+        if not self.clerk_secret_key:
+            missing.append("CLERK_SECRET_KEY")
+        if not self.clerk_webhook_secret:
+            missing.append("CLERK_WEBHOOK_SECRET")
+        if self.parry_internal_secret == "change-me":
+            missing.append("PARRY_INTERNAL_SECRET")
+
+        if missing:
+            raise ValueError(
+                f"Production requires these env vars: {', '.join(missing)}. "
+                "Set APP_ENV=development to skip this check."
+            )
+
+    def log_startup_warnings(self) -> None:
+        """Log warnings for missing optional config that limits functionality."""
+        if not self.anthropic_api_key:
+            log.warning(
+                "config.missing",
+                var="ANTHROPIC_API_KEY",
+                impact="LLM fallback detector disabled",
+            )
+        if not self.clerk_secret_key:
+            log.warning(
+                "config.missing",
+                var="CLERK_SECRET_KEY",
+                impact="Auth disabled, using demo org",
+            )
+        if not self.stripe_secret_key:
+            log.warning(
+                "config.missing",
+                var="STRIPE_SECRET_KEY",
+                impact="Billing endpoints will return 503",
+            )
 
 
 settings = Settings()

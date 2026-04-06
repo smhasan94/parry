@@ -17,6 +17,8 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging()
+    settings.validate_for_production()
+    settings.log_startup_warnings()
     log.info("parry.startup", env=settings.app_env)
     yield
     log.info("parry.shutdown")
