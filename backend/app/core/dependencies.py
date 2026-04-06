@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Annotated
 
@@ -13,6 +14,20 @@ from app.db.models import ApiKey, Org
 from app.db.session import get_db
 
 log = structlog.get_logger()
+
+
+@dataclass
+class Actor:
+    """Identity of the entity performing an action.
+
+    actor_type: 'user' (Clerk JWT), 'api_key' (sk-parry-...), or 'system'
+    actor_id:   Clerk user ID, ApiKey UUID (str), or None
+    label:      human-friendly display name (email, key name, etc.)
+    """
+
+    actor_type: str
+    actor_id: str | None = None
+    label: str | None = None
 
 # Cache JWKS keys in memory (refreshed on cache miss)
 _jwks_cache: dict | None = None
@@ -56,12 +71,12 @@ async def _get_clerk_jwks() -> dict:
     return _jwks_cache
 
 
-async def _resolve_org_from_api_key(
+async def _resolve_from_api_key(
     raw_key: str,
     db: AsyncSession,
     update_last_used: bool = False,
-) -> Org:
-    """Common logic: hash the key, look up ApiKey, resolve Org."""
+) -> tuple[Org, Actor]:
+    """Common logic: hash the key, look up ApiKey, resolve Org and Actor."""
     key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
 
     result = await db.execute(
@@ -87,7 +102,40 @@ async def _resolve_org_from_api_key(
             detail="Organization not found or inactive",
         )
 
+    actor = Actor(actor_type="api_key", actor_id=str(api_key.id), label=api_key.name)
+    return org, actor
+
+
+async def _resolve_org_from_api_key(
+    raw_key: str,
+    db: AsyncSession,
+    update_last_used: bool = False,
+) -> Org:
+    """Backward-compat shim returning just the Org."""
+    org, _ = await _resolve_from_api_key(raw_key, db, update_last_used)
     return org
+
+
+async def _resolve_from_clerk_jwt(
+    token: str,
+    db: AsyncSession,
+) -> tuple[Org, Actor]:
+    """Verify a Clerk JWT and resolve both Org and Actor from its claims."""
+    org = await _resolve_org_from_clerk_jwt(token, db)
+    # Re-decode payload to extract user info (cached JWKS makes this cheap)
+    try:
+        jwks = _jwks_cache or await _get_clerk_jwks()
+        payload = jwt.decode(
+            token, jwks, algorithms=["RS256"], options={"verify_aud": False}
+        )
+    except (JWTError, httpx.HTTPError):
+        payload = {}
+
+    user_id = payload.get("sub")
+    email = payload.get("email") or payload.get("primary_email_address")
+    label = email or user_id
+    actor = Actor(actor_type="user", actor_id=user_id, label=label)
+    return org, actor
 
 
 async def _resolve_org_from_clerk_jwt(
@@ -200,3 +248,23 @@ async def get_org_from_sdk_key(
     Also updates last_used_at on the API key.
     """
     return await _resolve_org_from_api_key(x_parry_secret, db, update_last_used=True)
+
+
+async def get_current_actor(
+    authorization: Annotated[str, Header()],
+    db: AsyncSession = Depends(get_db),
+) -> tuple[Org, Actor]:
+    """Like get_current_org but also returns the Actor identity for audit logging."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = authorization.removeprefix("Bearer ").strip()
+
+    if token.startswith("sk-parry-"):
+        return await _resolve_from_api_key(token, db)
+
+    return await _resolve_from_clerk_jwt(token, db)
