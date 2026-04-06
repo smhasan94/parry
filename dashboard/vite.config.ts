@@ -14,6 +14,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          charts: ["recharts"],
+          router: ["@tanstack/react-router"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     host: true, // listen on 0.0.0.0 for Docker
