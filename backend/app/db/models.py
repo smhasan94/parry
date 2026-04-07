@@ -36,6 +36,12 @@ class IncidentStatus(enum.StrEnum):
     DISMISSED = "dismissed"
 
 
+class ResponseScanMode(enum.StrEnum):
+    OFF = "off"
+    REDACT = "redact"
+    BLOCK = "block"
+
+
 # ── Org ──────────────────────────────────────────────────────────
 
 
@@ -55,6 +61,16 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # will reject HIGH/CRITICAL triggers before the LLM call fires.
     blocking_enabled: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False, server_default="false"
+    )
+    # Response scanning posture — off (default), redact (strip sensitive
+    # patterns before returning to the agent), or block (reject the whole
+    # response). Runs via the SDK's /proxy/scan-response call after the
+    # LLM returns, before the SDK hands the response back to the caller.
+    response_scan_mode: Mapped[ResponseScanMode] = mapped_column(
+        Enum(ResponseScanMode, name="response_scan_mode"),
+        default=ResponseScanMode.OFF,
+        nullable=False,
+        server_default=ResponseScanMode.OFF.value,
     )
 
     # Relationships
