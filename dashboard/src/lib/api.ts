@@ -264,6 +264,42 @@ class ApiClient {
     });
   }
 
+  // Custom rules
+  async listCustomRules(): Promise<CustomRule[]> {
+    return this.request("/api/v1/custom-rules");
+  }
+
+  async createCustomRule(body: CustomRuleInput): Promise<CustomRule> {
+    return this.request("/api/v1/custom-rules", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async updateCustomRule(
+    ruleId: string,
+    body: Partial<CustomRuleInput>,
+  ): Promise<CustomRule> {
+    return this.request(`/api/v1/custom-rules/${ruleId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async deleteCustomRule(ruleId: string): Promise<void> {
+    return this.request(`/api/v1/custom-rules/${ruleId}`, { method: "DELETE" });
+  }
+
+  async testCustomRule(body: {
+    pattern: string;
+    sample: string;
+  }): Promise<{ matched: boolean; error: string | null; match: string | null }> {
+    return this.request("/api/v1/custom-rules/test", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
   // Audit log
   async listAuditLog(filters?: {
     action?: string;
@@ -316,6 +352,27 @@ export interface DriftSeries {
 export interface AnomalyDriftHistogram {
   series: DriftSeries[];
   note: string;
+}
+
+export type CustomRuleTarget = "prompt" | "response" | "both";
+export type CustomRuleSeverity = "low" | "medium" | "high" | "critical";
+
+export interface CustomRule {
+  id: string;
+  name: string;
+  pattern: string;
+  target: CustomRuleTarget;
+  severity: CustomRuleSeverity;
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface CustomRuleInput {
+  name: string;
+  pattern: string;
+  target: CustomRuleTarget;
+  severity: CustomRuleSeverity;
+  enabled: boolean;
 }
 
 export class ApiError extends Error {

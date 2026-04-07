@@ -9,6 +9,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { AuditLogPage } from "@/pages/AuditLogPage";
+import { CustomRulesPage } from "@/pages/CustomRulesPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -71,6 +72,12 @@ const auditRoute = createRoute({
   component: AuditLogPage,
 });
 
+const customRulesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/custom-rules",
+  component: CustomRulesPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -78,6 +85,7 @@ const routeTree = rootRoute.addChildren([
   agentDetailRoute,
   incidentsRoute,
   policiesRoute,
+  customRulesRoute,
   settingsRoute,
   setupRoute,
   auditRoute,
