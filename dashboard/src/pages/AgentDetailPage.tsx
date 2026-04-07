@@ -153,6 +153,33 @@ export function AgentDetailPage() {
           </Card>
         </div>
 
+        {/* Baseline Info — establishing state */}
+        {!agent.baseline && (() => {
+          const MIN_EVENTS = 20;
+          const progress = Math.min(events.length, MIN_EVENTS);
+          const pct = Math.round((progress / MIN_EVENTS) * 100);
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Behavioral Baseline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Establishing baseline — {progress} of {MIN_EVENTS} events recorded.
+                  {progress < MIN_EVENTS &&
+                    " The baseline auto-generates once enough events are collected."}
+                </p>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full bg-blue-500 transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Baseline Info */}
         {agent.baseline && (() => {
           const baseline = agent.baseline;
