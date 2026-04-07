@@ -14,7 +14,7 @@ DEFAULT_DETECTOR_CONFIG: dict[str, dict[str, Any]] = {
     "privilege_escalation": {"trigger_threshold": 0.7, "enabled": True},
     "tool_misuse": {"trigger_threshold": 0.5, "enabled": True},
     "data_exfiltration": {"trigger_threshold": 0.5, "enabled": True},
-    "anomaly": {"trigger_threshold": 0.5, "enabled": True},
+    "anomaly": {"trigger_threshold": 0.5, "enabled": True, "sigma_threshold": 3.0},
     "llm_fallback": {"trigger_threshold": 0.5, "enabled": True},
 }
 
@@ -36,6 +36,8 @@ def merged_config(org_config: dict | None) -> dict[str, dict[str, Any]]:
                 merged["trigger_threshold"] = user["trigger_threshold"]
             if "enabled" in user:
                 merged["enabled"] = user["enabled"]
+            if "sigma_threshold" in user:
+                merged["sigma_threshold"] = user["sigma_threshold"]
         result[name] = merged
     return result
 
@@ -95,6 +97,13 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
             if not isinstance(value["enabled"], bool):
                 raise ValueError(f"{name}.enabled must be a boolean")
             entry["enabled"] = value["enabled"]
+        if "sigma_threshold" in value:
+            s = value["sigma_threshold"]
+            if not isinstance(s, int | float):
+                raise ValueError(f"{name}.sigma_threshold must be a number")
+            if s <= 0 or s > 10:
+                raise ValueError(f"{name}.sigma_threshold must be between 0 and 10")
+            entry["sigma_threshold"] = float(s)
 
         if entry:
             cleaned[name] = entry
