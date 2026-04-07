@@ -421,9 +421,10 @@ Quickest path on a fresh VPS:
 ```bash
 git clone https://github.com/sharukhhasan/parry.git && cd parry
 cp .env.example .env  # fill in DOMAIN, CADDY_EMAIL, Clerk keys
-docker compose -f docker-compose.prod.yml up -d
-# → automatic HTTPS via Let's Encrypt, migrations run on first boot
+make prod-up          # automatic HTTPS via Let's Encrypt, migrations run on first boot
 ```
+
+Run `make help` to see all dev/prod/backup shortcuts.
 
 ## Environment Variables
 
