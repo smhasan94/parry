@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_actor, get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.incident import IncidentListResponse, IncidentResponse, IncidentUpdate
@@ -12,7 +13,11 @@ from app.services import audit_service, incident_service
 router = APIRouter()
 
 
-@router.get("", response_model=IncidentListResponse)
+@router.get(
+    "",
+    response_model=IncidentListResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def list_incidents(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
@@ -31,7 +36,11 @@ async def list_incidents(
     )
 
 
-@router.get("/{incident_id}", response_model=IncidentResponse)
+@router.get(
+    "/{incident_id}",
+    response_model=IncidentResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def get_incident(
     incident_id: uuid.UUID,
     org: Org = Depends(get_current_org),
@@ -41,7 +50,11 @@ async def get_incident(
     return IncidentResponse.model_validate(incident)
 
 
-@router.patch("/{incident_id}", response_model=IncidentResponse)
+@router.patch(
+    "/{incident_id}",
+    response_model=IncidentResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def update_incident(
     incident_id: uuid.UUID,
     body: IncidentUpdate,

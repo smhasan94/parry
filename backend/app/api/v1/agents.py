@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import Actor, get_current_actor, get_current_org
+from app.core.dependencies import Actor, get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Agent, Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
@@ -14,7 +15,11 @@ from app.services.baseline_service import MIN_EVENTS, compute_baseline
 router = APIRouter()
 
 
-@router.get("", response_model=list[AgentResponse])
+@router.get(
+    "",
+    response_model=list[AgentResponse],
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def list_agents(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
@@ -27,7 +32,7 @@ async def list_agents(
 
 @router.post("/baselines/recompute-all")
 async def recompute_all_baselines(
-    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, int]:
     """Force-recompute baselines for every agent in the org.
@@ -72,7 +77,11 @@ async def recompute_all_baselines(
     return {"recomputed": recomputed, "skipped": skipped, "errored": errored}
 
 
-@router.get("/{agent_id}", response_model=AgentResponse)
+@router.get(
+    "/{agent_id}",
+    response_model=AgentResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def get_agent(
     agent_id: uuid.UUID,
     org: Org = Depends(get_current_org),
@@ -82,7 +91,12 @@ async def get_agent(
     return AgentResponse.model_validate(agent)
 
 
-@router.post("", response_model=AgentResponse, status_code=201)
+@router.post(
+    "",
+    response_model=AgentResponse,
+    status_code=201,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def create_agent(
     body: AgentCreate,
     org: Org = Depends(get_current_org),
@@ -99,7 +113,11 @@ async def create_agent(
     return AgentResponse.model_validate(agent)
 
 
-@router.patch("/{agent_id}", response_model=AgentResponse)
+@router.patch(
+    "/{agent_id}",
+    response_model=AgentResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def update_agent(
     agent_id: uuid.UUID,
     body: AgentUpdate,
@@ -119,7 +137,7 @@ async def update_agent(
 @router.post("/{agent_id}/baseline/recompute", response_model=AgentResponse)
 async def recompute_baseline(
     agent_id: uuid.UUID,
-    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> AgentResponse:
     """Force-recompute the agent's behavioral baseline from current event history."""
@@ -150,7 +168,11 @@ async def recompute_baseline(
     return AgentResponse.model_validate(agent)
 
 
-@router.delete("/{agent_id}", status_code=204)
+@router.delete(
+    "/{agent_id}",
+    status_code=204,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def delete_agent(
     agent_id: uuid.UUID,
     org: Org = Depends(get_current_org),

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_actor, get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.policy import PolicyCreate, PolicyResponse, PolicyUpdate
@@ -24,7 +25,11 @@ def _policy_summary(policy) -> dict:
     }
 
 
-@router.get("", response_model=list[PolicyResponse])
+@router.get(
+    "",
+    response_model=list[PolicyResponse],
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def list_policies(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
@@ -33,7 +38,11 @@ async def list_policies(
     return [PolicyResponse.model_validate(p) for p in policies]
 
 
-@router.get("/{policy_id}", response_model=PolicyResponse)
+@router.get(
+    "/{policy_id}",
+    response_model=PolicyResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def get_policy(
     policy_id: uuid.UUID,
     org: Org = Depends(get_current_org),
@@ -43,7 +52,12 @@ async def get_policy(
     return PolicyResponse.model_validate(policy)
 
 
-@router.post("", response_model=PolicyResponse, status_code=201)
+@router.post(
+    "",
+    response_model=PolicyResponse,
+    status_code=201,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def create_policy(
     body: PolicyCreate,
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
@@ -70,7 +84,11 @@ async def create_policy(
     return PolicyResponse.model_validate(policy)
 
 
-@router.patch("/{policy_id}", response_model=PolicyResponse)
+@router.patch(
+    "/{policy_id}",
+    response_model=PolicyResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def update_policy(
     policy_id: uuid.UUID,
     body: PolicyUpdate,
@@ -110,7 +128,11 @@ async def update_policy(
     return PolicyResponse.model_validate(policy)
 
 
-@router.delete("/{policy_id}", status_code=204)
+@router.delete(
+    "/{policy_id}",
+    status_code=204,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def delete_policy(
     policy_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),

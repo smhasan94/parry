@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_actor, get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
@@ -48,7 +49,11 @@ def _build_response(org_config: dict | None) -> DetectorConfigResponse:
     return DetectorConfigResponse(detectors=detectors)
 
 
-@router.get("", response_model=DetectorConfigResponse)
+@router.get(
+    "",
+    response_model=DetectorConfigResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def get_detector_config(
     org: Org = Depends(get_current_org),
 ) -> DetectorConfigResponse:
@@ -56,7 +61,11 @@ async def get_detector_config(
     return _build_response(org.detector_config)
 
 
-@router.get("/defaults", response_model=DetectorConfigResponse)
+@router.get(
+    "/defaults",
+    response_model=DetectorConfigResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def get_default_detector_config() -> DetectorConfigResponse:
     """Return Parry's built-in defaults — useful for 'reset to default' UI."""
     detectors = {
@@ -71,7 +80,11 @@ async def get_default_detector_config() -> DetectorConfigResponse:
     return DetectorConfigResponse(detectors=detectors)
 
 
-@router.put("", response_model=DetectorConfigResponse)
+@router.put(
+    "",
+    response_model=DetectorConfigResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def update_detector_config(
     body: dict[str, Any],
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
@@ -110,7 +123,11 @@ async def update_detector_config(
     return _build_response(cleaned)
 
 
-@router.delete("", status_code=204)
+@router.delete(
+    "",
+    status_code=204,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def reset_detector_config(
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),

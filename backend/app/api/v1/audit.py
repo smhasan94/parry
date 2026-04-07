@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
@@ -34,7 +35,11 @@ class AuditLogResponse(ParrySchema):
     has_more: bool = False
 
 
-@router.get("", response_model=AuditLogResponse)
+@router.get(
+    "",
+    response_model=AuditLogResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def list_audit_log(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),

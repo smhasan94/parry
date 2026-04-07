@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_actor, get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.api_key import ApiKeyCreate, ApiKeyCreatedResponse, ApiKeyResponse
@@ -12,7 +13,11 @@ from app.services import api_key_service, audit_service
 router = APIRouter()
 
 
-@router.get("", response_model=list[ApiKeyResponse])
+@router.get(
+    "",
+    response_model=list[ApiKeyResponse],
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def list_api_keys(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
@@ -21,7 +26,12 @@ async def list_api_keys(
     return [ApiKeyResponse.model_validate(k) for k in keys]
 
 
-@router.post("", response_model=ApiKeyCreatedResponse, status_code=201)
+@router.post(
+    "",
+    response_model=ApiKeyCreatedResponse,
+    status_code=201,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def create_api_key(
     body: ApiKeyCreate,
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
@@ -46,7 +56,11 @@ async def create_api_key(
     return resp
 
 
-@router.delete("/{key_id}", response_model=ApiKeyResponse)
+@router.delete(
+    "/{key_id}",
+    response_model=ApiKeyResponse,
+    dependencies=[Depends(require_role(Role.OWNER))],
+)
 async def revoke_api_key(
     key_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.dependencies import get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import async_session_factory, get_db
 from app.services import billing_service
@@ -16,7 +17,7 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
-@router.post("/checkout")
+@router.post("/checkout", dependencies=[Depends(require_role(Role.OWNER))])
 async def create_checkout(
     price_id: str = Query(..., description="Stripe price ID for the plan"),
     success_url: str = Query(...),
@@ -38,7 +39,7 @@ async def create_checkout(
     return {"url": url}
 
 
-@router.post("/portal")
+@router.post("/portal", dependencies=[Depends(require_role(Role.OWNER))])
 async def create_portal(
     return_url: str = Query(...),
     org: Org = Depends(get_current_org),

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor, get_current_org
+from app.core.rbac import Role, require_role
 from app.db.models import Detection, Incident, IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
@@ -58,7 +59,11 @@ def _config_to_response(config: dict | None) -> AlertConfigResponse:
     )
 
 
-@router.get("", response_model=AlertConfigResponse)
+@router.get(
+    "",
+    response_model=AlertConfigResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
 async def get_alert_config(
     org: Org = Depends(get_current_org),
 ) -> AlertConfigResponse:
@@ -88,7 +93,11 @@ def _audit_safe_config(config: dict | None) -> dict:
     return cfg
 
 
-@router.put("", response_model=AlertConfigResponse)
+@router.put(
+    "",
+    response_model=AlertConfigResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def update_alert_config(
     body: AlertConfigUpdate,
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
@@ -141,7 +150,11 @@ async def update_alert_config(
     return _config_to_response(config)
 
 
-@router.delete("", status_code=204)
+@router.delete(
+    "",
+    status_code=204,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def delete_alert_config(
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
@@ -190,7 +203,11 @@ def _build_test_incident(org_id: uuid.UUID) -> Incident:
     return incident
 
 
-@router.post("/test", status_code=200)
+@router.post(
+    "/test",
+    status_code=200,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
 async def send_test_alert(
     channel: str = "slack",
     org: Org = Depends(get_current_org),
