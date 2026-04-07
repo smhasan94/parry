@@ -182,7 +182,17 @@ Subsequent deploys are one command:
 
 ```bash
 cd ~/parry
-./scripts/deploy.sh
+make deploy        # or: ./scripts/deploy.sh
+```
+
+The `Makefile` (run `make help` for the full list) wraps the most common ops:
+
+```bash
+make prod-status   # see what's running
+make prod-logs     # tail all logs
+make prod-psql     # psql shell into the DB
+make backup        # dump DB to ./backups/parry_<timestamp>.dump
+make prod-health   # curl /health via Caddy
 ```
 
 The script:
