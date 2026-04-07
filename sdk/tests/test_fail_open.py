@@ -1,10 +1,12 @@
 """Fail-open regression tests.
 
 Contract: no matter what goes wrong inside Parry's interception layer —
-PII regex failure, uninitialized SDK, broken backend client, anything —
-the host app's LLM call MUST return normally. These tests exist to
-prevent a future refactor from quietly reintroducing an exception leak.
+PII regex failure, uninitialized SDK, broken backend client, slow backend,
+anything — the host app's LLM call MUST return normally and on time.
+These tests exist to prevent a future refactor from quietly
+reintroducing an exception leak or a sync blocking call.
 """
+import time
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -103,6 +105,42 @@ def test_anthropic_wrapper_returns_response_even_if_intercept_raises(
         messages=[{"role": "user", "content": "hi"}],
     )
     assert result.content[0].text == "hola"
+
+
+# ── Slow backend must not block the wrapper ──────────────────────────
+
+@patch("openai.OpenAI")
+def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
+    """Fire-and-forget contract: if the Parry backend sleeps for seconds,
+    the wrapper must still return within a few ms. Regression guard
+    against someone switching ParryClient to a sync/awaited send path."""
+    MockOpenAI.return_value.chat.completions.create.return_value = _mock_openai_response(
+        "fast"
+    )
+
+    def slow_post(*args, **kwargs):
+        time.sleep(2.0)  # simulate a backend hang
+        resp = MagicMock()
+        resp.status_code = 202
+        resp.text = ""
+        return resp
+
+    parry.init(api_key="sk-parry-test", base_url="http://localhost:8000")
+    wrapper = ParryOpenAI(agent_id="a", api_key="fake")
+
+    with patch.object(
+        parry.get_client()._http, "post", side_effect=slow_post
+    ):
+        started = time.monotonic()
+        result = wrapper.chat.completions.create(
+            model="gpt-4o", messages=[{"role": "user", "content": "?"}]
+        )
+        elapsed = time.monotonic() - started
+
+    assert result.choices[0].message.content == "fast"
+    # Fire-and-forget should return in well under the 2s backend sleep.
+    # Allow 500ms headroom for CI jitter / thread spawn.
+    assert elapsed < 0.5, f"wrapper blocked for {elapsed:.2f}s — fire-and-forget broken"
 
 
 # ── LangChain callback ────────────────────────────────────────────────
