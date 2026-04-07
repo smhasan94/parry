@@ -18,6 +18,20 @@ log = structlog.get_logger()
 # its own timeout slot rather than killing the worker process.
 ANTHROPIC_TIMEOUT_SECONDS = 20.0
 
+# Claude Sonnet 4.6 pricing, USD per 1M tokens. Update when Anthropic
+# publishes new rates — intentionally kept as plain constants so the
+# value shows up in `git blame` rather than being hidden in a config file.
+PRICE_PER_M_INPUT_USD = 3.0
+PRICE_PER_M_OUTPUT_USD = 15.0
+
+
+def _estimate_cost_usd(input_tokens: int, output_tokens: int) -> float:
+    return round(
+        (input_tokens * PRICE_PER_M_INPUT_USD
+         + output_tokens * PRICE_PER_M_OUTPUT_USD) / 1_000_000,
+        6,
+    )
+
 SYSTEM_PROMPT = """You are a security analyst for an AI agent monitoring system called Parry.
 Your job is to analyze an AI agent's LLM call and determine if it represents a security threat.
 
@@ -109,15 +123,18 @@ Respond with JSON only."""
         is_threat = result.get("is_threat", False)
         latency = time.monotonic() - started
 
+        cost_usd = _estimate_cost_usd(input_tokens, output_tokens)
+
         if not is_threat:
             log.info(
                 "llm_fallback.cleared",
                 reason=result.get("reason", ""),
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
+                cost_usd=cost_usd,
             )
             record_llm_fallback_call(
-                "cleared", input_tokens, output_tokens, latency
+                "cleared", input_tokens, output_tokens, latency, cost_usd
             )
             return None
 
@@ -128,7 +145,9 @@ Respond with JSON only."""
             "low": Severity.LOW,
         }
 
-        record_llm_fallback_call("confirmed", input_tokens, output_tokens, latency)
+        record_llm_fallback_call(
+            "confirmed", input_tokens, output_tokens, latency, cost_usd
+        )
 
         return DetectionResult(
             triggered=True,
@@ -141,6 +160,7 @@ Respond with JSON only."""
                 "llm_judgment": result,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
+                "cost_usd": cost_usd,
             },
         )
 

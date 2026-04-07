@@ -83,6 +83,13 @@ llm_fallback_latency_seconds = Histogram(
     registry=registry,
 )
 
+llm_fallback_cost_usd_total = Counter(
+    "parry_llm_fallback_cost_usd_total",
+    "Cumulative estimated USD spend on LLM fallback Anthropic calls. "
+    "Computed from token counts × Claude Sonnet 4.6 published pricing.",
+    registry=registry,
+)
+
 
 # ── Alert dispatch metrics ─────────────────────────────────────────────
 
@@ -129,6 +136,7 @@ def record_llm_fallback_call(
     input_tokens: int = 0,
     output_tokens: int = 0,
     latency_seconds: float | None = None,
+    cost_usd: float = 0.0,
 ) -> None:
     """Record an LLM fallback Anthropic call.
 
@@ -141,3 +149,5 @@ def record_llm_fallback_call(
         llm_fallback_tokens_total.labels(direction="output").inc(output_tokens)
     if latency_seconds is not None:
         llm_fallback_latency_seconds.observe(latency_seconds)
+    if cost_usd:
+        llm_fallback_cost_usd_total.inc(cost_usd)

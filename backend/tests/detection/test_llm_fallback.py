@@ -240,8 +240,26 @@ async def test_tokens_recorded_on_confirmed_threat(mock_settings, MockAnthropic)
     assert result is not None
     assert result.details["input_tokens"] == 120
     assert result.details["output_tokens"] == 40
+    # 120 * $3/M + 40 * $15/M = 0.00036 + 0.0006 = 0.00096
+    assert result.details["cost_usd"] == pytest.approx(0.00096, abs=1e-9)
     assert _counter(llm_fallback_tokens_total, direction="input") == in_before + 120
     assert _counter(llm_fallback_tokens_total, direction="output") == out_before + 40
+
+
+def test_cost_formula_matches_published_rates():
+    """Direct unit test of the cost helper so future rate updates are
+    caught by a failing test rather than silent drift in production."""
+    from app.detection.detectors.llm_fallback import (
+        PRICE_PER_M_INPUT_USD,
+        PRICE_PER_M_OUTPUT_USD,
+        _estimate_cost_usd,
+    )
+    # Pin the rates so an accidental constant tweak fails this test
+    assert PRICE_PER_M_INPUT_USD == 3.0
+    assert PRICE_PER_M_OUTPUT_USD == 15.0
+    # 1M input + 1M output should equal $3 + $15 = $18
+    assert _estimate_cost_usd(1_000_000, 1_000_000) == 18.0
+    assert _estimate_cost_usd(0, 0) == 0.0
 
 
 @pytest.mark.asyncio
