@@ -77,6 +77,40 @@ export function AgentDetailPage() {
     [displayEvents]
   );
 
+  // Per-tool sparkline data: top N tools from the baseline's tool_stats,
+  // each series = calls-per-event in chronological order.
+  const toolSeries = useMemo(() => {
+    const toolStats =
+      (agent?.baseline?.tool_stats as
+        | Record<string, { avg_calls?: number; total_calls?: number }>
+        | undefined) ?? null;
+    if (!toolStats) return [] as { name: string; data: number[]; avg: number }[];
+
+    // Pick top 4 tools by total_calls
+    const topTools = Object.entries(toolStats)
+      .map(([name, stat]) => ({
+        name,
+        avg: stat.avg_calls ?? 0,
+        total: stat.total_calls ?? 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 4);
+
+    const ordered = [...displayEvents].reverse(); // oldest → newest
+    return topTools.map(({ name, avg }) => ({
+      name,
+      avg,
+      data: ordered.map((e) => {
+        if (!e.tool_calls) return 0;
+        let n = 0;
+        for (const tc of e.tool_calls) {
+          if ((tc as Record<string, string>).name === name) n += 1;
+        }
+        return n;
+      }),
+    }));
+  }, [displayEvents, agent?.baseline]);
+
   if (agentLoading) {
     return (
       <div>
@@ -320,6 +354,37 @@ export function AgentDetailPage() {
             </Card>
           );
         })()}
+
+        {/* Per-tool sparklines */}
+        {toolSeries.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tool Usage</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Calls per event for the top {toolSeries.length} tools. Dashed line = baseline avg.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {toolSeries.map((series) => (
+                  <div key={series.name} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono text-foreground">{series.name}</span>
+                      <span className="text-muted-foreground">
+                        avg {series.avg.toFixed(1)}
+                      </span>
+                    </div>
+                    <Sparkline
+                      data={series.data}
+                      color="#a855f7"
+                      baselineMean={series.avg}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Event Timeline */}
         <Card>
