@@ -7,6 +7,7 @@ from typing import Any
 
 from parry.blocking import ParryBlockedError, check_before_call
 from parry.interceptor import TimingContext, intercept_completion
+from parry.response_scanner import scan_response_before_return
 
 logger = logging.getLogger("parry")
 
@@ -90,6 +91,8 @@ class _MessagesNamespace:
         except AttributeError:
             pass
 
+        # Async ingest always sees the ORIGINAL (pre-scan) response so
+        # the incident record in the dashboard has full forensic evidence.
         try:
             intercept_completion(
                 prompt=prompt,
@@ -103,6 +106,31 @@ class _MessagesNamespace:
             )
         except Exception:
             logger.warning("parry.intercept_failed", exc_info=True)
+
+        # Post-LLM response scan — see ParryOpenAI for the full contract.
+        # Anthropic content is a list of blocks; we redact the first text
+        # block in place and zero out subsequent text blocks so the
+        # redacted content is what the host agent actually sees.
+        if parry_client is not None and response_text is not None:
+            cleaned = scan_response_before_return(
+                parry_client,
+                response_text,
+                agent_id=self._wrapper._agent_id,
+                session_id=self._wrapper._session_id,
+            )
+            if cleaned != response_text:
+                try:
+                    text_indexes = [
+                        i
+                        for i, b in enumerate(result.content)
+                        if getattr(b, "type", None) == "text"
+                    ]
+                    if text_indexes:
+                        result.content[text_indexes[0]].text = cleaned
+                        for i in text_indexes[1:]:
+                            result.content[i].text = ""
+                except (AttributeError, TypeError):
+                    logger.warning("parry: could not apply redaction to response object")
 
         return result
 

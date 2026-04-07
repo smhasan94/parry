@@ -7,6 +7,7 @@ from typing import Any
 
 from parry.blocking import ParryBlockedError, check_before_call
 from parry.interceptor import TimingContext, intercept_completion
+from parry.response_scanner import scan_response_before_return
 
 logger = logging.getLogger("parry")
 
@@ -103,6 +104,8 @@ class _CompletionsNamespace:
         except (IndexError, AttributeError):
             pass
 
+        # Async ingest always sees the ORIGINAL (pre-scan) response so
+        # the incident record in the dashboard has full forensic evidence.
         try:
             intercept_completion(
                 prompt=prompt,
@@ -116,6 +119,22 @@ class _CompletionsNamespace:
             )
         except Exception:
             logger.warning("parry.intercept_failed", exc_info=True)
+
+        # Post-LLM response scan. May raise ParryBlockedError (propagates
+        # to the host agent) or return a redacted string we substitute
+        # into the result before handing it back.
+        if parry_client is not None and response_text is not None:
+            cleaned = scan_response_before_return(
+                parry_client,
+                response_text,
+                agent_id=self._wrapper._agent_id,
+                session_id=self._wrapper._session_id,
+            )
+            if cleaned != response_text:
+                try:
+                    result.choices[0].message.content = cleaned
+                except (IndexError, AttributeError):
+                    logger.warning("parry: could not apply redaction to response object")
 
         return result
 

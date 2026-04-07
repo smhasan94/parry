@@ -122,11 +122,19 @@ def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
     )
 
     def routed_post(url, *args, **kwargs):
-        # Proxy check must answer instantly — that's the blocking path
+        # Proxy check and response scan must answer instantly — both sit
+        # in the caller's critical path in blocking mode
         if "/proxy/check" in url:
             resp = MagicMock()
             resp.status_code = 200
             resp.json = MagicMock(return_value={"allowed": True})
+            return resp
+        if "/proxy/scan-response" in url:
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json = MagicMock(
+                return_value={"blocked": False, "response": "fast", "findings": [], "mode": "off"}
+            )
             return resp
         # Everything else (ingest) hangs for 2s to simulate a slow backend
         time.sleep(2.0)
