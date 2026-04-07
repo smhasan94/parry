@@ -151,7 +151,12 @@ export function AgentDetailPage() {
                   <p className="font-medium">{events.length} events</p>
                 </div>
               </div>
-              <Sparkline data={tokenData} color="#3b82f6" />
+              <Sparkline
+                data={tokenData}
+                color="#3b82f6"
+                baselineMean={agent.baseline?.avg_token_count as number | undefined}
+                baselineStd={agent.baseline?.std_token_count as number | undefined}
+              />
             </CardContent>
           </Card>
           <Card>
@@ -165,7 +170,12 @@ export function AgentDetailPage() {
                   </p>
                 </div>
               </div>
-              <Sparkline data={latencyData} color="#f97316" />
+              <Sparkline
+                data={latencyData}
+                color="#f97316"
+                baselineMean={agent.baseline?.avg_latency_ms as number | undefined}
+                baselineStd={agent.baseline?.std_latency_ms as number | undefined}
+              />
             </CardContent>
           </Card>
           <Card>
