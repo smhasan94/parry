@@ -76,8 +76,27 @@ async def compute_baseline(
             AgentEvent.tool_calls.is_not(None),
         )
     )
-    tool_counts = [len(row[0]) for row in tool_result.all() if isinstance(row[0], list)]
+    tool_call_arrays = [row[0] for row in tool_result.all() if isinstance(row[0], list)]
+    tool_counts = [len(arr) for arr in tool_call_arrays]
     avg_tool_calls = sum(tool_counts) / len(tool_counts) if tool_counts else 0.0
+
+    # Per-tool stats: count occurrences per tool name across all events,
+    # then compute avg calls per event for each tool.
+    per_tool_totals: dict[str, int] = {}
+    for arr in tool_call_arrays:
+        for tc in arr:
+            if isinstance(tc, dict):
+                name = tc.get("name")
+                if isinstance(name, str):
+                    per_tool_totals[name] = per_tool_totals.get(name, 0) + 1
+    n_events_with_tools = max(len(tool_call_arrays), 1)
+    tool_stats = {
+        name: {
+            "total_calls": total,
+            "avg_calls": round(total / n_events_with_tools, 3),
+        }
+        for name, total in per_tool_totals.items()
+    }
 
     baseline = {
         "avg_token_count": float(row.avg_token_count),
@@ -85,6 +104,7 @@ async def compute_baseline(
         "avg_latency_ms": float(row.avg_latency_ms),
         "std_latency_ms": float(row.std_latency_ms),
         "avg_tool_calls": avg_tool_calls,
+        "tool_stats": tool_stats,
         "known_models": known_models,
         "event_count": event_count,
         "computed_at": datetime.now(UTC).isoformat(),
