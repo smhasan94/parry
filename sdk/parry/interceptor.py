@@ -1,10 +1,13 @@
 """Core interception logic used by all wrappers."""
 
+import logging
 import re
 import time
 from typing import Any
 
 import parry
+
+logger = logging.getLogger("parry")
 
 # PII patterns to strip before sending to backend
 _PII_PATTERNS: list[tuple[re.Pattern[str], str]] = [
@@ -33,23 +36,34 @@ def intercept_completion(
     session_id: str | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> None:
-    """Called by wrappers after every LLM completion. Strips PII and sends to Parry."""
-    try:
-        client = parry.get_client()
-    except RuntimeError:
-        return  # SDK not initialized — skip silently
+    """Called by wrappers after every LLM completion. Strips PII and sends to Parry.
 
-    client.send_event(
-        agent_id=agent_id,
-        session_id=session_id,
-        prompt=strip_pii(prompt),
-        response=strip_pii(response),
-        model=model,
-        tool_calls=tool_calls,
-        latency_ms=latency_ms,
-        token_count=token_count,
-        metadata=metadata,
-    )
+    Fail-open contract: this function MUST NEVER raise. The host app's LLM
+    call already succeeded by the time we're called — any failure here
+    (PII regex blowup, uninitialized SDK, client attribute error, anything)
+    must be swallowed and logged. _send_event_sync has its own broad catch
+    but it runs on a background thread; strip_pii and client lookup happen
+    on the caller's thread and would otherwise leak into the wrapper.
+    """
+    try:
+        try:
+            client = parry.get_client()
+        except RuntimeError:
+            return  # SDK not initialized — skip silently
+
+        client.send_event(
+            agent_id=agent_id,
+            session_id=session_id,
+            prompt=strip_pii(prompt),
+            response=strip_pii(response),
+            model=model,
+            tool_calls=tool_calls,
+            latency_ms=latency_ms,
+            token_count=token_count,
+            metadata=metadata,
+        )
+    except Exception:
+        logger.warning("parry.intercept_failed", exc_info=True)
 
 
 class TimingContext:
