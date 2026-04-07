@@ -7,6 +7,11 @@ DEFAULT_SIGMA_THRESHOLD = 3.0
 MIN_BASELINE_QUALITY_FOR_ALERT = "medium"
 _QUALITY_RANK = {"low": 0, "medium": 1, "high": 2}
 
+# Per-quality multipliers applied to the configured sigma threshold.
+# Low-quality baselines have noisy std dev, so we demand stronger evidence
+# before flagging drift — or suppress alerting entirely when quality=low.
+_QUALITY_SIGMA_MULTIPLIER = {"high": 1.0, "medium": 1.33, "low": float("inf")}
+
 
 def _sigma_deviation(value: float, mean: float, std: float) -> float:
     """Return |value - mean| / std, or a mean-relative ratio when std==0.
@@ -63,8 +68,14 @@ class AnomalyDetector:
         min_rank = _QUALITY_RANK.get(MIN_BASELINE_QUALITY_FOR_ALERT, 1)
         quality_ok = quality_rank >= min_rank
 
+        # Effective threshold scales up for less-trusted baselines
+        quality_mult = _QUALITY_SIGMA_MULTIPLIER.get(baseline_quality, 1.0)
+        effective_sigma = sigma_threshold * quality_mult
+
         anomalies: list[str] = []
         drift: dict[str, float] = {}
+        max_sigma = 0.0
+        has_categorical_anomaly = False  # unknown model/tool, excessive count — binary signals
 
         # Token count anomaly
         token_count = event_data.get("token_count")
@@ -74,6 +85,7 @@ class AnomalyDetector:
         if token_count and baseline_avg_tokens:
             sigma = _sigma_deviation(token_count, baseline_avg_tokens, baseline_std_tokens)
             drift["token_sigma"] = round(sigma, 2)
+            max_sigma = max(max_sigma, sigma)
             if sigma >= sigma_threshold:
                 anomalies.append(
                     f"Token count {token_count} is {sigma:.1f}σ from baseline "
@@ -88,6 +100,7 @@ class AnomalyDetector:
         if latency and baseline_avg_latency:
             sigma = _sigma_deviation(latency, baseline_avg_latency, baseline_std_latency)
             drift["latency_sigma"] = round(sigma, 2)
+            max_sigma = max(max_sigma, sigma)
             if sigma >= sigma_threshold:
                 anomalies.append(
                     f"Latency {latency}ms is {sigma:.1f}σ from baseline "
@@ -106,6 +119,7 @@ class AnomalyDetector:
                     f"Tool call count {tool_count} far exceeds baseline avg "
                     f"{baseline_avg_tools:.1f}"
                 )
+                has_categorical_anomaly = True
 
         # Per-tool drift: if baseline has per-tool stats, flag tools called
         # far more often than their per-tool average.
@@ -124,18 +138,21 @@ class AnomalyDetector:
                     anomalies.append(
                         f"Unknown tool '{tool_name}' not in baseline tool set"
                     )
+                    has_categorical_anomaly = True
                     continue
                 avg = float(stats.get("avg_calls", 0) or 0)
                 if observed > max(avg * 3, 3):
                     anomalies.append(
                         f"Tool '{tool_name}' called {observed}x (baseline avg {avg:.1f})"
                     )
+                    has_categorical_anomaly = True
 
         # Unseen model usage
         known_models = set(baseline.get("known_models") or [])
         model = event_data.get("model")
         if model and known_models and model not in known_models:
             anomalies.append(f"Unknown model '{model}' not in baseline models")
+            has_categorical_anomaly = True
 
         if not anomalies:
             return DetectionResult(
@@ -150,15 +167,24 @@ class AnomalyDetector:
         confidence = min(0.5 + len(anomalies) * 0.15, 0.95)
         severity = Severity.HIGH if len(anomalies) >= 3 else Severity.MEDIUM
 
-        # Suppress trigger when baseline isn't trustworthy yet, but still
-        # surface the drift on the detection record so the dashboard can
-        # explain why nothing fired.
-        triggered = quality_ok
-        reason = (
-            f"Behavioral anomaly: {anomalies[0]}"
-            if triggered
-            else f"Drift observed but baseline quality '{baseline_quality}' too low to alert"
-        )
+        # Quality-tiered gate: low baselines never alert; medium ones require
+        # the max observed drift to exceed a scaled-up effective sigma.
+        if effective_sigma == float("inf"):
+            meets_effective = False
+        else:
+            meets_effective = has_categorical_anomaly or max_sigma >= effective_sigma
+        triggered = quality_ok and meets_effective
+        if triggered:
+            reason = f"Behavioral anomaly: {anomalies[0]}"
+        elif not quality_ok:
+            reason = (
+                f"Drift observed but baseline quality '{baseline_quality}' too low to alert"
+            )
+        else:
+            reason = (
+                f"Drift observed ({max_sigma:.1f}σ) but below effective threshold "
+                f"{effective_sigma:.1f}σ for quality '{baseline_quality}'"
+            )
 
         return DetectionResult(
             triggered=triggered,
@@ -171,6 +197,7 @@ class AnomalyDetector:
                 "count": len(anomalies),
                 "drift": drift,
                 "sigma_threshold": sigma_threshold,
+                "effective_sigma": round(effective_sigma, 2),
                 "baseline_quality": baseline_quality,
             },
         )
