@@ -1,0 +1,21 @@
+# Railway service config for the Parry backend (FastAPI + uvicorn).
+#
+# Run two services off this same directory:
+#   1. backend  — start command below (uvicorn)
+#   2. worker   — same image, different start command (celery)
+#
+# Both services need: DATABASE_URL, REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND
+# See docs/RAILWAY.md for the full env var list.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# The Dockerfile ENTRYPOINT runs alembic migrations before exec'ing the CMD,
+# so this start command also benefits from auto-migrations on every deploy.
+startCommand = "uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

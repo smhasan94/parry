@@ -408,9 +408,12 @@ docker compose down -v                        # stop + wipe data
 
 ## Production Deployment
 
-See [docs/OPERATIONS.md](docs/OPERATIONS.md) for full deployment guide, monitoring, and troubleshooting.
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for the full self-hosted deployment guide, monitoring, and troubleshooting.
+
+For one-click managed deployment, see [docs/RAILWAY.md](docs/RAILWAY.md) — covers all 5 services (backend, worker, dashboard, TimescaleDB, Redis) on Railway.
 
 ```bash
+# Self-hosted
 docker compose -f docker-compose.prod.yml up -d
 ```
 

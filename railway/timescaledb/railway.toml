@@ -1,0 +1,8 @@
+# Railway service config for the TimescaleDB instance.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ALWAYS"

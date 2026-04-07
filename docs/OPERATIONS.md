@@ -1,5 +1,7 @@
 # Parry Operations Runbook
 
+> **Looking for managed hosting?** See [RAILWAY.md](./RAILWAY.md) for a step-by-step Railway deployment guide. The rest of this document covers self-hosted Docker Compose.
+
 ## Deployment
 
 ### Prerequisites

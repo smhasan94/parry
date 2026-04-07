@@ -1,0 +1,14 @@
+# Railway service config for the Parry dashboard (React + nginx).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+# Build-time secret that Vite bakes into the bundle.
+# Set VITE_CLERK_PUBLISHABLE_KEY in Railway service variables.
+
+[deploy]
+# nginx listens on 80 inside the container; Railway's edge will route public
+# traffic to whatever PORT it assigns. Our nginx config serves /api proxied
+# to the backend service via Railway's private network.
+startCommand = "nginx -g 'daemon off;'"
+restartPolicyType = "ALWAYS"
