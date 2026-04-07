@@ -408,13 +408,21 @@ docker compose down -v                        # stop + wipe data
 
 ## Production Deployment
 
-See [docs/OPERATIONS.md](docs/OPERATIONS.md) for the full self-hosted deployment guide, monitoring, and troubleshooting.
+Three supported paths, in order of recommendation:
 
-For one-click managed deployment, see [docs/RAILWAY.md](docs/RAILWAY.md) — covers all 5 services (backend, worker, dashboard, TimescaleDB, Redis) on Railway.
+| Path | Best for | Guide |
+|---|---|---|
+| **DigitalOcean droplet (or any VPS)** | Simplest. One $24/mo box runs the whole stack with auto-HTTPS via Caddy. | [docs/DROPLET.md](docs/DROPLET.md) |
+| **Self-hosted docker-compose** | Existing infra you control. | [docs/OPERATIONS.md](docs/OPERATIONS.md) |
+| **Railway (managed PaaS)** | Zero ops, but more setup steps and higher per-service cost. | [docs/RAILWAY.md](docs/RAILWAY.md) |
+
+Quickest path on a fresh VPS:
 
 ```bash
-# Self-hosted
+git clone https://github.com/sharukhhasan/parry.git && cd parry
+cp .env.example .env  # fill in DOMAIN, CADDY_EMAIL, Clerk keys
 docker compose -f docker-compose.prod.yml up -d
+# → automatic HTTPS via Let's Encrypt, migrations run on first boot
 ```
 
 ## Environment Variables

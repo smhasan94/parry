@@ -1,6 +1,10 @@
 # Parry Operations Runbook
 
-> **Looking for managed hosting?** See [RAILWAY.md](./RAILWAY.md) for a step-by-step Railway deployment guide. The rest of this document covers self-hosted Docker Compose.
+> **Quick paths:**
+> - [DROPLET.md](./DROPLET.md) — full DigitalOcean droplet guide (recommended for most cases)
+> - [RAILWAY.md](./RAILWAY.md) — managed PaaS on Railway
+>
+> The rest of this document covers self-hosted Docker Compose generally — applies to any host running Docker.
 
 ## Deployment
 
