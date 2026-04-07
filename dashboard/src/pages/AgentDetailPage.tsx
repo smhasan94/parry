@@ -417,18 +417,48 @@ export function AgentDetailPage() {
                         {event.prompt}
                       </p>
                     )}
-                    {event.tool_calls && event.tool_calls.length > 0 && (
-                      <div className="mt-2 flex gap-1">
-                        {event.tool_calls.map((tc, i) => (
-                          <span
-                            key={i}
-                            className="rounded bg-secondary px-1.5 py-0.5 text-xs font-mono"
-                          >
-                            {(tc as Record<string, string>).name ?? "tool"}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    {event.tool_calls && event.tool_calls.length > 0 && (() => {
+                      const toolStats =
+                        (baseline?.tool_stats as
+                          | Record<string, { avg_calls?: number; total_calls?: number }>
+                          | undefined) ?? null;
+                      // Count per-tool occurrences in this event
+                      const counts: Record<string, number> = {};
+                      for (const tc of event.tool_calls) {
+                        const name = (tc as Record<string, string>).name ?? "tool";
+                        counts[name] = (counts[name] ?? 0) + 1;
+                      }
+                      return (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {Object.entries(counts).map(([name, n]) => {
+                            const stat = toolStats?.[name];
+                            const unknown = toolStats && !stat;
+                            const avg = stat?.avg_calls ?? 0;
+                            const excessive = stat && n > Math.max(avg * 3, 3);
+                            const cls = unknown
+                              ? "bg-red-950/50 text-red-300"
+                              : excessive
+                                ? "bg-amber-950/50 text-amber-300"
+                                : "bg-secondary";
+                            const title = unknown
+                              ? `'${name}' not in baseline tool set`
+                              : excessive
+                                ? `${name} called ${n}x (baseline avg ${avg.toFixed(1)})`
+                                : undefined;
+                            return (
+                              <span
+                                key={name}
+                                className={`rounded px-1.5 py-0.5 text-xs font-mono ${cls}`}
+                                title={title}
+                              >
+                                {name}
+                                {n > 1 && <span className="ml-1 opacity-70">×{n}</span>}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                   );
                 })}
