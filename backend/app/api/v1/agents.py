@@ -3,11 +3,11 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_org
+from app.core.dependencies import Actor, get_current_actor, get_current_org
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
-from app.services import agent_service
+from app.services import agent_service, audit_service
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
 
 router = APIRouter()
@@ -71,11 +71,13 @@ async def update_agent(
 @router.post("/{agent_id}/baseline/recompute", response_model=AgentResponse)
 async def recompute_baseline(
     agent_id: uuid.UUID,
-    org: Org = Depends(get_current_org),
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> AgentResponse:
     """Force-recompute the agent's behavioral baseline from current event history."""
+    org, actor = org_actor
     agent = await agent_service.get_agent(db, org.id, agent_id)
+    before = dict(agent.baseline) if agent.baseline else None
     baseline = await compute_baseline(db, agent.id)
     if baseline is None:
         raise HTTPException(
@@ -83,6 +85,18 @@ async def recompute_baseline(
             detail=f"Not enough events to compute baseline (need at least {MIN_EVENTS})",
         )
     agent.baseline = baseline
+    await db.flush()
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="baseline.recomputed",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="agent",
+        resource_id=str(agent.id),
+        details={"before": before, "after": baseline},
+    )
     await db.commit()
     await db.refresh(agent)
     return AgentResponse.model_validate(agent)
