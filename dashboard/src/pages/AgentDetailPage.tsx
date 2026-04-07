@@ -268,7 +268,31 @@ export function AgentDetailPage() {
               <p className="text-sm text-muted-foreground">No events recorded yet.</p>
             ) : (
               <div className="space-y-3">
-                {displayEvents.map((event) => (
+                {displayEvents.map((event) => {
+                  const baseline = agent.baseline;
+                  const baselineAvgTokens = baseline?.avg_token_count as number | undefined;
+                  const baselineAvgLatency = baseline?.avg_latency_ms as number | undefined;
+                  const knownModels = (baseline?.known_models as string[] | undefined) ?? [];
+
+                  const tokenDrift =
+                    baselineAvgTokens && event.token_count != null && baselineAvgTokens > 0
+                      ? ((event.token_count - baselineAvgTokens) / baselineAvgTokens) * 100
+                      : null;
+                  const latencyDrift =
+                    baselineAvgLatency && event.latency_ms != null && baselineAvgLatency > 0
+                      ? ((event.latency_ms - baselineAvgLatency) / baselineAvgLatency) * 100
+                      : null;
+                  const unknownModel =
+                    baseline && event.model && knownModels.length > 0 && !knownModels.includes(event.model);
+
+                  const driftClass = (d: number | null) =>
+                    d == null
+                      ? "text-muted-foreground"
+                      : Math.abs(d) > 50
+                      ? "text-amber-400"
+                      : "text-muted-foreground";
+
+                  return (
                   <div
                     key={event.id}
                     className="cursor-pointer rounded-md border border-border p-3 transition-colors hover:bg-secondary/50"
@@ -280,14 +304,37 @@ export function AgentDetailPage() {
                           {new Date(event.timestamp).toLocaleTimeString()}
                         </span>
                         {event.model && (
-                          <span className="rounded bg-secondary px-1.5 py-0.5 text-xs">
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-xs ${unknownModel ? "bg-amber-950/50 text-amber-300" : "bg-secondary"}`}
+                            title={unknownModel ? "Model not in baseline" : undefined}
+                          >
                             {event.model}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {event.latency_ms != null && <span>{event.latency_ms}ms</span>}
-                        {event.token_count != null && <span>{event.token_count} tokens</span>}
+                      <div className="flex items-center gap-3 text-xs">
+                        {event.latency_ms != null && (
+                          <span className={driftClass(latencyDrift)}>
+                            {event.latency_ms}ms
+                            {latencyDrift != null && Math.abs(latencyDrift) > 20 && (
+                              <span className="ml-1">
+                                ({latencyDrift > 0 ? "+" : ""}
+                                {latencyDrift.toFixed(0)}%)
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {event.token_count != null && (
+                          <span className={driftClass(tokenDrift)}>
+                            {event.token_count} tokens
+                            {tokenDrift != null && Math.abs(tokenDrift) > 20 && (
+                              <span className="ml-1">
+                                ({tokenDrift > 0 ? "+" : ""}
+                                {tokenDrift.toFixed(0)}%)
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {event.prompt && (
@@ -308,7 +355,8 @@ export function AgentDetailPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
                 {hasMoreEvents && (
                   <Button
                     variant="ghost"
