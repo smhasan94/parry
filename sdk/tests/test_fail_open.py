@@ -111,15 +111,25 @@ def test_anthropic_wrapper_returns_response_even_if_intercept_raises(
 
 @patch("openai.OpenAI")
 def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
-    """Fire-and-forget contract: if the Parry backend sleeps for seconds,
-    the wrapper must still return within a few ms. Regression guard
-    against someone switching ParryClient to a sync/awaited send path."""
+    """Fire-and-forget contract: if the Parry backend sleeps on the event
+    ingest path, the wrapper must still return within a few ms. The
+    blocking proxy check (/proxy/check) is intentionally synchronous in
+    blocking mode, so we short-circuit it here with a fast allow response
+    and only slow-respond to the ingest path. Regression guard against
+    someone switching ParryClient's ingest send to a sync/awaited path."""
     MockOpenAI.return_value.chat.completions.create.return_value = _mock_openai_response(
         "fast"
     )
 
-    def slow_post(*args, **kwargs):
-        time.sleep(2.0)  # simulate a backend hang
+    def routed_post(url, *args, **kwargs):
+        # Proxy check must answer instantly — that's the blocking path
+        if "/proxy/check" in url:
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json = MagicMock(return_value={"allowed": True})
+            return resp
+        # Everything else (ingest) hangs for 2s to simulate a slow backend
+        time.sleep(2.0)
         resp = MagicMock()
         resp.status_code = 202
         resp.text = ""
@@ -129,7 +139,7 @@ def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
     wrapper = ParryOpenAI(agent_id="a", api_key="fake")
 
     with patch.object(
-        parry.get_client()._http, "post", side_effect=slow_post
+        parry.get_client()._http, "post", side_effect=routed_post
     ):
         started = time.monotonic()
         result = wrapper.chat.completions.create(

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from parry.blocking import ParryBlockedError, check_before_call
 from parry.interceptor import TimingContext, intercept_completion
 
 logger = logging.getLogger("parry")
@@ -47,6 +48,22 @@ class _MessagesNamespace:
         messages = kwargs.get("messages", [])
         prompt = _extract_prompt(messages)
         model = kwargs.get("model")
+
+        # Blocking mode pre-flight — see ParryOpenAI for the full contract.
+        try:
+            import parry
+
+            parry_client = parry.get_client()
+        except RuntimeError:
+            parry_client = None
+        if parry_client is not None:
+            check_before_call(
+                parry_client,
+                prompt=prompt,
+                model=model,
+                agent_id=self._wrapper._agent_id,
+                session_id=self._wrapper._session_id,
+            )
 
         # Streaming: collect chunks, intercept after completion
         if kwargs.get("stream"):
