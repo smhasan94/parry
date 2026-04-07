@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { DetectorBreakdown } from "@/components/charts/DetectorBreakdown";
 import { EventDetailModal } from "@/components/EventDetailModal";
-import { useAgent, useDeleteAgent } from "@/hooks/useAgents";
+import { useAgent, useDeleteAgent, useRecomputeBaseline } from "@/hooks/useAgents";
 import type { AgentEvent } from "@/lib/types";
 import { useEvents } from "@/hooks/useEvents";
 import { useIncidents } from "@/hooks/useIncidents";
@@ -19,6 +19,7 @@ export function AgentDetailPage() {
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const deleteAgent = useDeleteAgent();
+  const recomputeBaseline = useRecomputeBaseline();
   const {
     data: eventData,
     isLoading: eventsLoading,
@@ -219,6 +220,14 @@ export function AgentDetailPage() {
                     </p>
                   )}
                 </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => recomputeBaseline.mutate(agentId)}
+                  disabled={recomputeBaseline.isPending}
+                >
+                  {recomputeBaseline.isPending ? "Recomputing..." : "Recompute"}
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

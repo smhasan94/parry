@@ -41,6 +41,21 @@ export function useUpdateAgent() {
   });
 }
 
+export function useRecomputeBaseline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (agentId: string) => api.recomputeBaseline(agentId),
+    onSuccess: (_data, agentId) => {
+      qc.invalidateQueries({ queryKey: ["agents", agentId] });
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      toast("Baseline recomputed", "success");
+    },
+    onError: (err: Error) => {
+      toast(err.message || "Failed to recompute baseline", "error");
+    },
+  });
+}
+
 export function useDeleteAgent() {
   const qc = useQueryClient();
   return useMutation({

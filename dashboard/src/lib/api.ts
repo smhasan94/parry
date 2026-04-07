@@ -73,6 +73,12 @@ class ApiClient {
     return this.request(`/api/v1/agents/${agentId}`, { method: "DELETE" });
   }
 
+  async recomputeBaseline(agentId: string): Promise<Agent> {
+    return this.request(`/api/v1/agents/${agentId}/baseline/recompute`, {
+      method: "POST",
+    });
+  }
+
   // Events
   async listEvents(
     agentId: string,
