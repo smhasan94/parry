@@ -1,12 +1,18 @@
 """Tests for LLM fallback detector."""
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.core.metrics import llm_fallback_calls_total, llm_fallback_tokens_total
 from app.db.models import Severity
 from app.detection.base import DetectionResult
 from app.detection.detectors.llm_fallback import evaluate_ambiguous
+
+
+def _counter(counter, **labels) -> float:
+    return counter.labels(**labels)._value.get()
 
 
 def _ambiguous_result(detector: str = "prompt_injection", confidence: float = 0.55) -> DetectionResult:
@@ -28,12 +34,21 @@ def _event_data(prompt: str = "test prompt", response: str = "test response") ->
     }
 
 
-def _mock_anthropic_response(content: dict) -> MagicMock:
+def _mock_anthropic_response(
+    content: dict, input_tokens: int = 0, output_tokens: int = 0
+) -> MagicMock:
     """Build a mock Anthropic message response."""
     block = MagicMock()
     block.text = json.dumps(content)
     msg = MagicMock()
     msg.content = [block]
+    if input_tokens or output_tokens:
+        usage = MagicMock()
+        usage.input_tokens = input_tokens
+        usage.output_tokens = output_tokens
+        msg.usage = usage
+    else:
+        msg.usage = None
     return msg
 
 
@@ -150,6 +165,83 @@ async def test_caps_confidence_at_1(mock_settings, MockAnthropic):
     result = await evaluate_ambiguous(_event_data(), [_ambiguous_result()])
     assert result is not None
     assert result.confidence == 1.0
+
+
+@pytest.mark.asyncio
+@patch("anthropic.AsyncAnthropic")
+@patch("app.core.config.settings")
+async def test_timeout_returns_none_and_records_metric(mock_settings, MockAnthropic):
+    """If the Anthropic call exceeds ANTHROPIC_TIMEOUT_SECONDS, return None
+    and increment the timeout metric — not the api_error one."""
+    mock_settings.anthropic_api_key = "sk-ant-test"
+
+    async def _hang(*args, **kwargs):
+        await asyncio.sleep(60)  # longer than the wait_for cap
+
+    mock_client = MockAnthropic.return_value
+    mock_client.messages.create = _hang
+
+    before = _counter(llm_fallback_calls_total, outcome="timeout")
+
+    # Patch the timeout constant to a tiny value so the test is fast
+    with patch(
+        "app.detection.detectors.llm_fallback.ANTHROPIC_TIMEOUT_SECONDS", 0.05
+    ):
+        result = await evaluate_ambiguous(_event_data(), [_ambiguous_result()])
+
+    assert result is None
+    assert _counter(llm_fallback_calls_total, outcome="timeout") == before + 1
+
+
+@pytest.mark.asyncio
+@patch("anthropic.AsyncAnthropic")
+@patch("app.core.config.settings")
+async def test_http_500_counted_as_api_error(mock_settings, MockAnthropic):
+    """A 5xx from Anthropic is caught by the broad except and counted as
+    api_error, not parse_error or timeout."""
+    mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_client = MockAnthropic.return_value
+
+    class FakeAPIError(Exception):
+        pass
+
+    mock_client.messages.create = AsyncMock(side_effect=FakeAPIError("500 upstream"))
+
+    before = _counter(llm_fallback_calls_total, outcome="api_error")
+    result = await evaluate_ambiguous(_event_data(), [_ambiguous_result()])
+    assert result is None
+    assert _counter(llm_fallback_calls_total, outcome="api_error") == before + 1
+
+
+@pytest.mark.asyncio
+@patch("anthropic.AsyncAnthropic")
+@patch("app.core.config.settings")
+async def test_tokens_recorded_on_confirmed_threat(mock_settings, MockAnthropic):
+    """message.usage tokens flow into metric counters and detection details."""
+    mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_client = MockAnthropic.return_value
+    mock_client.messages.create = AsyncMock(
+        return_value=_mock_anthropic_response(
+            {
+                "is_threat": True,
+                "severity": "high",
+                "reason": "confirmed",
+                "confidence": 0.9,
+            },
+            input_tokens=120,
+            output_tokens=40,
+        )
+    )
+
+    in_before = _counter(llm_fallback_tokens_total, direction="input")
+    out_before = _counter(llm_fallback_tokens_total, direction="output")
+
+    result = await evaluate_ambiguous(_event_data(), [_ambiguous_result()])
+    assert result is not None
+    assert result.details["input_tokens"] == 120
+    assert result.details["output_tokens"] == 40
+    assert _counter(llm_fallback_tokens_total, direction="input") == in_before + 120
+    assert _counter(llm_fallback_tokens_total, direction="output") == out_before + 40
 
 
 @pytest.mark.asyncio
