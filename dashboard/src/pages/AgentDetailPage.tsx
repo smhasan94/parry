@@ -17,6 +17,7 @@ export function AgentDetailPage() {
   const { agentId } = useParams({ from: "/agents/$agentId" });
   const navigate = useNavigate();
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
+  const [anomaliesOnly, setAnomaliesOnly] = useState(false);
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const deleteAgent = useDeleteAgent();
   const recomputeBaseline = useRecomputeBaseline();
@@ -34,7 +35,31 @@ export function AgentDetailPage() {
     () => eventData?.pages.flatMap((p) => p.events) ?? [],
     [eventData]
   );
-  const displayEvents = liveEvents.length > 0 ? liveEvents : events;
+  const baseEvents = liveEvents.length > 0 ? liveEvents : events;
+
+  const isAnomalous = useMemo(() => {
+    const baseline = agent?.baseline;
+    if (!baseline) return () => false;
+    const avgT = baseline.avg_token_count as number | undefined;
+    const avgL = baseline.avg_latency_ms as number | undefined;
+    const known = (baseline.known_models as string[] | undefined) ?? [];
+    return (e: AgentEvent) => {
+      if (avgT && e.token_count != null && avgT > 0) {
+        if (Math.abs((e.token_count - avgT) / avgT) > 0.5) return true;
+      }
+      if (avgL && e.latency_ms != null && avgL > 0) {
+        if (Math.abs((e.latency_ms - avgL) / avgL) > 0.5) return true;
+      }
+      if (e.model && known.length > 0 && !known.includes(e.model)) return true;
+      return false;
+    };
+  }, [agent?.baseline]);
+
+  const anomalyCount = useMemo(
+    () => baseEvents.filter(isAnomalous).length,
+    [baseEvents, isAnomalous]
+  );
+  const displayEvents = anomaliesOnly ? baseEvents.filter(isAnomalous) : baseEvents;
 
   // Filter incidents for this agent
   const agentIncidents = useMemo(
@@ -267,8 +292,18 @@ export function AgentDetailPage() {
 
         {/* Event Timeline */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Event Timeline</CardTitle>
+            {agent.baseline && (
+              <Button
+                size="sm"
+                variant={anomaliesOnly ? "default" : "ghost"}
+                onClick={() => setAnomaliesOnly((v) => !v)}
+                disabled={anomalyCount === 0 && !anomaliesOnly}
+              >
+                {anomaliesOnly ? "Show all" : `Anomalies only (${anomalyCount})`}
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {eventsLoading ? (
