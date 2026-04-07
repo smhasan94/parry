@@ -21,11 +21,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.dependencies import get_org_from_sdk_key
+from app.core.dependencies import Actor, get_current_actor, get_org_from_sdk_key
 from app.db.models import Org, Policy
 from app.db.session import get_db
 from app.proxy.check import run_blocking_check
 from app.schemas.base import ParrySchema
+from app.services import audit_service
 
 log = structlog.get_logger()
 
@@ -130,6 +131,65 @@ class ProxyCheckResponse(ParrySchema):
     detector: str = ""
     severity: str | None = None
     confidence: float = 0.0
+
+
+class BlockingSettingsResponse(ParrySchema):
+    blocking_enabled: bool
+
+
+class BlockingSettingsUpdate(ParrySchema):
+    blocking_enabled: bool
+
+
+@router.get("/settings", response_model=BlockingSettingsResponse)
+async def get_blocking_settings(
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+) -> BlockingSettingsResponse:
+    org, _ = org_actor
+    return BlockingSettingsResponse(blocking_enabled=org.blocking_enabled)
+
+
+@router.put("/settings", response_model=BlockingSettingsResponse)
+async def update_blocking_settings(
+    body: BlockingSettingsUpdate,
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db),
+) -> BlockingSettingsResponse:
+    """Flip the blocking toggle. Audit-logged so the org has a paper
+    trail of when the security posture changed and who did it."""
+    org, actor = org_actor
+    before = org.blocking_enabled
+    org.blocking_enabled = body.blocking_enabled
+    await db.flush()
+
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="blocking_mode.updated",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="org",
+        resource_id=str(org.id),
+        details={"before": before, "after": body.blocking_enabled},
+    )
+    await db.commit()
+
+    # Invalidate the policy cache so a flip takes effect immediately
+    # across workers rather than waiting out the 30s TTL.
+    r = _get_redis()
+    if r is not None:
+        try:
+            r.delete(f"{POLICY_CACHE_PREFIX}{org.id}")
+        except Exception:
+            log.debug("proxy.cache_invalidate_failed", exc_info=True)
+
+    log.info(
+        "blocking_mode.updated",
+        org_id=str(org.id),
+        enabled=body.blocking_enabled,
+    )
+    return BlockingSettingsResponse(blocking_enabled=org.blocking_enabled)
 
 
 @router.post("/check", response_model=ProxyCheckResponse)

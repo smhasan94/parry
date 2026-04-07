@@ -16,6 +16,10 @@ import {
   useUpdateDetectorConfig,
   useResetDetectorConfig,
 } from "@/hooks/useDetectorConfig";
+import {
+  useBlockingSettings,
+  useUpdateBlockingSettings,
+} from "@/hooks/useBlockingSettings";
 import { api } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
 import { DriftHistogram } from "@/components/charts/DriftHistogram";
@@ -168,6 +172,9 @@ export function SettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Active blocking mode */}
+        <BlockingModeCard />
 
         {/* Detector tuning */}
         <DetectorsCard />
@@ -841,6 +848,66 @@ function AlertsCard() {
               </Button>
             )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BlockingModeCard() {
+  const { data, isLoading } = useBlockingSettings();
+  const updateBlocking = useUpdateBlockingSettings();
+  const enabled = data?.blocking_enabled ?? false;
+  const dirty = updateBlocking.isPending;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Ban className="h-5 w-5" />
+          Active Blocking Mode
+        </CardTitle>
+        <CardDescription>
+          When enabled, Parry rejects LLM calls that trigger HIGH or CRITICAL
+          rule-based detectors before they reach the model. The SDK raises
+          <code className="mx-1 rounded bg-secondary px-1 py-0.5 text-xs">
+            ParryBlockedError
+          </code>
+          which your agent code can catch. Fail-open on any error — Parry
+          will never block a call due to its own outage.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <div className="flex items-center justify-between rounded-md border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">
+                {enabled ? "Blocking enabled" : "Observe-only (default)"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {enabled
+                  ? "HIGH and CRITICAL triggers will be rejected pre-call."
+                  : "Detections are logged but never prevent the LLM call."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => updateBlocking.mutate(!enabled)}
+              disabled={dirty}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                enabled ? "bg-red-600" : "bg-secondary"
+              } ${dirty ? "opacity-50" : ""}`}
+              aria-label="Toggle blocking mode"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                  enabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
         )}
       </CardContent>
     </Card>

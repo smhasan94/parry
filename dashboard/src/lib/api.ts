@@ -237,6 +237,20 @@ class ApiClient {
     return this.request("/api/v1/metrics/anomaly-drift");
   }
 
+  // Blocking mode settings
+  async getBlockingSettings(): Promise<{ blocking_enabled: boolean }> {
+    return this.request("/api/v1/proxy/settings");
+  }
+
+  async updateBlockingSettings(
+    body: { blocking_enabled: boolean }
+  ): Promise<{ blocking_enabled: boolean }> {
+    return this.request("/api/v1/proxy/settings", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
   // Audit log
   async listAuditLog(filters?: {
     action?: string;
