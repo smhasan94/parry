@@ -56,6 +56,23 @@ export function useRecomputeBaseline() {
   });
 }
 
+export function useRecomputeAllBaselines() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.recomputeAllBaselines(),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      const parts = [`${data.recomputed} recomputed`];
+      if (data.skipped) parts.push(`${data.skipped} skipped`);
+      if (data.errored) parts.push(`${data.errored} errored`);
+      toast(`Baselines: ${parts.join(", ")}`, data.errored ? "error" : "success");
+    },
+    onError: (err: Error) => {
+      toast(err.message || "Failed to recompute baselines", "error");
+    },
+  });
+}
+
 export function useDeleteAgent() {
   const qc = useQueryClient();
   return useMutation({

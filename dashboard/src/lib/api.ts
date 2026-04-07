@@ -79,6 +79,16 @@ class ApiClient {
     });
   }
 
+  async recomputeAllBaselines(): Promise<{
+    recomputed: number;
+    skipped: number;
+    errored: number;
+  }> {
+    return this.request(`/api/v1/agents/baselines/recompute-all`, {
+      method: "POST",
+    });
+  }
+
   // Events
   async listEvents(
     agentId: string,
