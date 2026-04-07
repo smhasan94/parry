@@ -6,6 +6,7 @@ from app.api.v1 import (
     api_keys,
     audit,
     billing,
+    custom_rules,
     detector_config,
     events,
     incidents,
@@ -29,5 +30,6 @@ api_router.include_router(audit.router, prefix="/audit-log", tags=["audit"])
 api_router.include_router(
     detector_config.router, prefix="/detector-config", tags=["detector-config"]
 )
+api_router.include_router(custom_rules.router, prefix="/custom-rules", tags=["custom-rules"])
 api_router.include_router(metrics_query.router, prefix="/metrics", tags=["metrics"])
 api_router.include_router(proxy.router, prefix="/proxy", tags=["proxy"])
