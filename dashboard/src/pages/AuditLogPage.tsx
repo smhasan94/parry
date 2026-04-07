@@ -76,13 +76,31 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
   );
 }
 
+const RECOMPUTE_REASON_OPTIONS = [
+  { value: "", label: "All reasons" },
+  { value: "manual", label: "Manual (single)" },
+  { value: "manual_bulk", label: "Manual (bulk)" },
+  { value: "stale_age", label: "Stale by age" },
+  { value: "stale_growth", label: "Stale by growth" },
+] as const;
+
 export function AuditLogPage() {
   const [actionFilter, setActionFilter] = useState("");
+  const [reasonFilter, setReasonFilter] = useState("");
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useAuditLog(
     actionFilter ? { action: actionFilter } : undefined
   );
 
-  const entries = data?.pages.flatMap((p) => p.entries) ?? [];
+  const allEntries = data?.pages.flatMap((p) => p.entries) ?? [];
+  const entries =
+    actionFilter === "baseline.recomputed" && reasonFilter
+      ? allEntries.filter((e) => {
+          const r = (e.details as Record<string, unknown> | null | undefined)?.reason;
+          // Single-agent recomputes have no reason; treat undefined as "manual"
+          if (reasonFilter === "manual") return r == null;
+          return r === reasonFilter;
+        })
+      : allEntries;
 
   return (
     <div>
@@ -98,13 +116,33 @@ export function AuditLogPage() {
               key={opt.value}
               size="sm"
               variant={actionFilter === opt.value ? "secondary" : "ghost"}
-              onClick={() => setActionFilter(opt.value)}
+              onClick={() => {
+                setActionFilter(opt.value);
+                if (opt.value !== "baseline.recomputed") setReasonFilter("");
+              }}
               className="text-xs"
             >
               {opt.label}
             </Button>
           ))}
         </div>
+
+        {actionFilter === "baseline.recomputed" && (
+          <div className="flex flex-wrap items-center gap-2 pl-1">
+            <span className="text-xs text-muted-foreground">Reason:</span>
+            {RECOMPUTE_REASON_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                size="sm"
+                variant={reasonFilter === opt.value ? "secondary" : "ghost"}
+                onClick={() => setReasonFilter(opt.value)}
+                className="text-xs"
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        )}
 
         <Card>
           <CardContent className="p-4">
