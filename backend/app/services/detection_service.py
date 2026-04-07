@@ -4,7 +4,11 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.metrics import record_detection_triggered, record_incident_created
+from app.core.metrics import (
+    record_anomaly_drift,
+    record_detection_triggered,
+    record_incident_created,
+)
 from app.db.models import Agent, AgentEvent, Detection, Incident, Org, Policy, Severity
 from app.services.detector_config_service import merged_config
 
@@ -68,6 +72,18 @@ async def run_and_persist_detections(
         detections.append(detection)
         if r.triggered:
             record_detection_triggered(detector=r.detector, severity=r.severity.value)
+
+        # Observe anomaly drift magnitude on every anomaly detection, even
+        # non-triggered ones — the histogram lets us see how close we are
+        # to firing and tune thresholds from real traffic.
+        if r.detector == "anomaly" and r.details:
+            drift = r.details.get("drift") or {}
+            quality = r.details.get("baseline_quality") or "unknown"
+            sigmas = [
+                v for k, v in drift.items() if k.endswith("_sigma") and isinstance(v, int | float)
+            ]
+            if sigmas:
+                record_anomaly_drift(max(sigmas), quality, r.triggered)
 
     await db.flush()
 

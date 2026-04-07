@@ -51,6 +51,15 @@ incidents_created_total = Counter(
     registry=registry,
 )
 
+anomaly_drift_sigma = Histogram(
+    "parry_anomaly_drift_sigma",
+    "Max observed sigma deviation per anomaly detection, labelled by "
+    "baseline quality and whether the detection triggered",
+    labelnames=("quality", "triggered"),
+    buckets=(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 7.5, 10.0),
+    registry=registry,
+)
+
 
 # ── Alert dispatch metrics ─────────────────────────────────────────────
 
@@ -83,3 +92,10 @@ def record_incident_created(severity: str) -> None:
 def record_alert_sent(channel: str, success: bool) -> None:
     outcome = "success" if success else "failure"
     alerts_sent_total.labels(channel=channel, outcome=outcome).inc()
+
+
+def record_anomaly_drift(sigma: float, quality: str, triggered: bool) -> None:
+    """Observe a drift measurement from the anomaly detector."""
+    anomaly_drift_sigma.labels(
+        quality=quality, triggered="true" if triggered else "false"
+    ).observe(sigma)
