@@ -51,6 +51,11 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     alert_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Detector config: {"prompt_injection": {"trigger_threshold": 0.6, "enabled": true}, ...}
     detector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Active blocking mode — when enabled the SDK's sync /proxy/check path
+    # will reject HIGH/CRITICAL triggers before the LLM call fires.
+    blocking_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
 
     # Relationships
     agents: Mapped[list["Agent"]] = relationship(back_populates="org", lazy="selectin")
