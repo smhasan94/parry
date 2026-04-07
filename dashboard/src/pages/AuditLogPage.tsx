@@ -21,6 +21,7 @@ const ACTION_OPTIONS = [
   { value: "alert_config.deleted", label: "Alert config deleted" },
   { value: "detector_config.updated", label: "Detector tuning updated" },
   { value: "detector_config.reset", label: "Detector tuning reset" },
+  { value: "baseline.recomputed", label: "Baseline recomputed" },
 ] as const;
 
 function ActorIcon({ type }: { type: string }) {
