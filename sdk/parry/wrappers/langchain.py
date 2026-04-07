@@ -155,16 +155,19 @@ class ParryCallbackHandler(BaseCallbackHandler):
         if run["tool_calls"] and not tool_calls_data:
             tool_calls_data = run["tool_calls"]
 
-        intercept_completion(
-            prompt=run["prompt"],
-            response=response_text,
-            model=run["model"],
-            tool_calls=tool_calls_data if tool_calls_data else None,
-            token_count=token_count,
-            latency_ms=latency_ms,
-            agent_id=self.agent_id,
-            session_id=self.session_id,
-        )
+        try:
+            intercept_completion(
+                prompt=run["prompt"],
+                response=response_text,
+                model=run["model"],
+                tool_calls=tool_calls_data if tool_calls_data else None,
+                token_count=token_count,
+                latency_ms=latency_ms,
+                agent_id=self.agent_id,
+                session_id=self.session_id,
+            )
+        except Exception:
+            logger.warning("parry.intercept_failed", exc_info=True)
 
     def on_llm_error(
         self,

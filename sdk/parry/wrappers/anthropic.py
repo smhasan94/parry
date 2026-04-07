@@ -73,16 +73,19 @@ class _MessagesNamespace:
         except AttributeError:
             pass
 
-        intercept_completion(
-            prompt=prompt,
-            response=response_text,
-            model=model,
-            tool_calls=tool_calls_data,
-            token_count=token_count,
-            latency_ms=timing.latency_ms,
-            agent_id=self._wrapper._agent_id,
-            session_id=self._wrapper._session_id,
-        )
+        try:
+            intercept_completion(
+                prompt=prompt,
+                response=response_text,
+                model=model,
+                tool_calls=tool_calls_data,
+                token_count=token_count,
+                latency_ms=timing.latency_ms,
+                agent_id=self._wrapper._agent_id,
+                session_id=self._wrapper._session_id,
+            )
+        except Exception:
+            logger.warning("parry.intercept_failed", exc_info=True)
 
         return result
 
@@ -105,14 +108,17 @@ class _MessagesNamespace:
 
             timing.__exit__(None, None, None)
 
-            intercept_completion(
-                prompt=prompt,
-                response="".join(chunks) if chunks else None,
-                model=model,
-                latency_ms=timing.latency_ms,
-                agent_id=self._wrapper._agent_id,
-                session_id=self._wrapper._session_id,
-            )
+            try:
+                intercept_completion(
+                    prompt=prompt,
+                    response="".join(chunks) if chunks else None,
+                    model=model,
+                    latency_ms=timing.latency_ms,
+                    agent_id=self._wrapper._agent_id,
+                    session_id=self._wrapper._session_id,
+                )
+            except Exception:
+                logger.warning("parry.intercept_failed", exc_info=True)
 
         return _intercept_stream()
 
