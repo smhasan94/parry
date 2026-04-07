@@ -10,14 +10,17 @@ import type { AgentEvent } from "@/lib/types";
 import { useEvents } from "@/hooks/useEvents";
 import { useIncidents } from "@/hooks/useIncidents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
+import { useResourceHistory } from "@/hooks/useAuditLog";
 import { Button } from "@/components/ui/button";
-import { Activity, Clock, Cpu, Zap } from "lucide-react";
+import { Activity, Clock, Cpu, Zap, History } from "lucide-react";
+import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
 
 export function AgentDetailPage() {
   const { agentId } = useParams({ from: "/agents/$agentId" });
   const navigate = useNavigate();
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [anomaliesOnly, setAnomaliesOnly] = useState(false);
+  const [showDriftHistory, setShowDriftHistory] = useState(false);
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const deleteAgent = useDeleteAgent();
   const recomputeBaseline = useRecomputeBaseline();
@@ -31,6 +34,16 @@ export function AgentDetailPage() {
   const { events: liveEvents, connected } = useAgentEventStream(agentId);
 
   const { data: incidentData } = useIncidents();
+  const { data: driftHistory, isLoading: driftLoading } = useResourceHistory(
+    "agent",
+    agentId,
+    showDriftHistory
+  );
+  const driftEntries = useMemo(
+    () =>
+      (driftHistory?.entries ?? []).filter((e) => e.action === "baseline.recomputed"),
+    [driftHistory]
+  );
   const events = useMemo(
     () => eventData?.pages.flatMap((p) => p.events) ?? [],
     [eventData]
@@ -354,6 +367,45 @@ export function AgentDetailPage() {
             </Card>
           );
         })()}
+
+        {/* Baseline drift history */}
+        {agent.baseline && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  Baseline Drift
+                </CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  How the baseline has shifted across recomputes (from the audit log).
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowDriftHistory((v) => !v)}
+              >
+                {showDriftHistory ? "Hide" : "Show"}
+              </Button>
+            </CardHeader>
+            {showDriftHistory && (
+              <CardContent>
+                {driftLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading drift history...</p>
+                ) : driftEntries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No recompute events recorded yet for this agent. The initial
+                    auto-generated baseline does not create an audit entry —
+                    drift history begins at the first manual or scheduled recompute.
+                  </p>
+                ) : (
+                  <BaselineDriftTimeline entries={driftEntries} />
+                )}
+              </CardContent>
+            )}
+          </Card>
+        )}
 
         {/* Per-tool sparklines */}
         {toolSeries.length > 0 && (
