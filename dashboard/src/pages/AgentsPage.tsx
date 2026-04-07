@@ -5,12 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAgents, useCreateAgent, useRecomputeAllBaselines } from "@/hooks/useAgents";
+import { useRole } from "@/hooks/useRole";
 import { Bot, Plus, RefreshCw } from "lucide-react";
 
 export function AgentsPage() {
   const { data: agents = [], isLoading } = useAgents();
   const createAgent = useCreateAgent();
   const recomputeAll = useRecomputeAllBaselines();
+  const { can } = useRole();
+  const canMutate = can("admin");
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -35,24 +38,26 @@ export function AgentsPage() {
         title="Agents"
         description="Manage your registered AI agents"
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => recomputeAll.mutate()}
-              disabled={recomputeAll.isPending || agents.length === 0}
-              title="Recompute baselines for every agent in this org"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${recomputeAll.isPending ? "animate-spin" : ""}`}
-              />
-              {recomputeAll.isPending ? "Recomputing..." : "Recompute all baselines"}
-            </Button>
-            <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
-              <Plus className="h-4 w-4" />
-              New Agent
-            </Button>
-          </div>
+          canMutate ? (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => recomputeAll.mutate()}
+                disabled={recomputeAll.isPending || agents.length === 0}
+                title="Recompute baselines for every agent in this org"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${recomputeAll.isPending ? "animate-spin" : ""}`}
+                />
+                {recomputeAll.isPending ? "Recomputing..." : "Recompute all baselines"}
+              </Button>
+              <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+                <Plus className="h-4 w-4" />
+                New Agent
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 
