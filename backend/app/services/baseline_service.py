@@ -13,6 +13,22 @@ from app.db.models import AgentEvent
 log = structlog.get_logger()
 
 MIN_EVENTS = 20
+HIGH_QUALITY_EVENTS = 200
+MEDIUM_QUALITY_EVENTS = 50
+
+
+def classify_quality(event_count: int) -> str:
+    """Classify how trustworthy a baseline is based on its sample size.
+
+    - low:    < MEDIUM_QUALITY_EVENTS — std dev is wobbly, alerts get noisy
+    - medium: < HIGH_QUALITY_EVENTS   — usable for alerts but flag in UI
+    - high:   >= HIGH_QUALITY_EVENTS  — fully trusted
+    """
+    if event_count >= HIGH_QUALITY_EVENTS:
+        return "high"
+    if event_count >= MEDIUM_QUALITY_EVENTS:
+        return "medium"
+    return "low"
 
 
 async def compute_baseline(
@@ -72,6 +88,7 @@ async def compute_baseline(
         "known_models": known_models,
         "event_count": event_count,
         "computed_at": datetime.now(UTC).isoformat(),
+        "quality": classify_quality(event_count),
     }
 
     log.info(

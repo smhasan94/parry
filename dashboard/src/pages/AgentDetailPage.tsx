@@ -226,7 +226,20 @@ export function AgentDetailPage() {
           const avgToolCalls = (baseline.avg_tool_calls as number) ?? 0;
           const computedAt = baseline.computed_at as string | undefined;
           const eventCount = baseline.event_count as number;
+          const quality = (baseline.quality as string | undefined) ?? "high";
           const currentEventCount = events.length;
+          const qualityClass =
+            quality === "high"
+              ? "bg-emerald-500/15 text-emerald-300"
+              : quality === "medium"
+                ? "bg-amber-500/15 text-amber-300"
+                : "bg-red-500/15 text-red-300";
+          const qualityHint =
+            quality === "low"
+              ? "Too few samples — drift alerts suppressed"
+              : quality === "medium"
+                ? "Usable but std dev may be noisy"
+                : "Trusted baseline";
 
           let staleness: { label: string; stale: boolean } | null = null;
           if (computedAt) {
@@ -245,7 +258,15 @@ export function AgentDetailPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div>
-                  <CardTitle>Behavioral Baseline</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Behavioral Baseline</CardTitle>
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${qualityClass}`}
+                      title={qualityHint}
+                    >
+                      {quality} quality
+                    </span>
+                  </div>
                   {computedAt && staleness && (
                     <p
                       className={`mt-1 text-xs ${staleness.stale ? "text-amber-400" : "text-muted-foreground"}`}
