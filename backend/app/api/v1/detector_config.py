@@ -26,6 +26,7 @@ class DetectorEntry(ParrySchema):
     trigger_threshold: float
     enabled: bool
     is_default: bool  # True if no org override
+    sigma_threshold: float | None = None  # anomaly detector only
 
 
 class DetectorConfigResponse(ParrySchema):
@@ -42,6 +43,7 @@ def _build_response(org_config: dict | None) -> DetectorConfigResponse:
             trigger_threshold=merged_entry["trigger_threshold"],
             enabled=merged_entry["enabled"],
             is_default=name not in overrides,
+            sigma_threshold=merged_entry.get("sigma_threshold"),
         )
     return DetectorConfigResponse(detectors=detectors)
 
@@ -62,6 +64,7 @@ async def get_default_detector_config() -> DetectorConfigResponse:
             trigger_threshold=cfg["trigger_threshold"],
             enabled=cfg["enabled"],
             is_default=True,
+            sigma_threshold=cfg.get("sigma_threshold"),
         )
         for name, cfg in DEFAULT_DETECTOR_CONFIG.items()
     }

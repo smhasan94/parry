@@ -217,7 +217,10 @@ class ApiClient {
   }
 
   async updateDetectorConfig(
-    config: Record<string, { trigger_threshold?: number; enabled?: boolean }>
+    config: Record<
+      string,
+      { trigger_threshold?: number; enabled?: boolean; sigma_threshold?: number }
+    >
   ): Promise<DetectorConfig> {
     return this.request("/api/v1/detector-config", {
       method: "PUT",
@@ -258,6 +261,7 @@ export interface DetectorEntry {
   trigger_threshold: number;
   enabled: boolean;
   is_default: boolean;
+  sigma_threshold?: number;
 }
 
 export interface DetectorConfig {

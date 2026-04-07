@@ -20,7 +20,10 @@ export function useUpdateDetectorConfig() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (
-      config: Record<string, { trigger_threshold?: number; enabled?: boolean }>
+      config: Record<
+        string,
+        { trigger_threshold?: number; enabled?: boolean; sigma_threshold?: number }
+      >
     ) => api.updateDetectorConfig(config),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["detector-config"] }),
   });

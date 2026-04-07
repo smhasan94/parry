@@ -264,6 +264,7 @@ const DETECTOR_LABELS: Record<string, { label: string; description: string }> = 
 interface DraftEntry {
   trigger_threshold: number;
   enabled: boolean;
+  sigma_threshold?: number;
 }
 
 function DetectorsCard() {
@@ -283,6 +284,7 @@ function DetectorsCard() {
       initial[name] = {
         trigger_threshold: entry.trigger_threshold,
         enabled: entry.enabled,
+        sigma_threshold: entry.sigma_threshold,
       };
     }
     // setState during render only when going from empty → seeded
@@ -313,7 +315,8 @@ function DetectorsCard() {
       if (!server || !draft) continue;
       if (
         server.trigger_threshold !== draft.trigger_threshold ||
-        server.enabled !== draft.enabled
+        server.enabled !== draft.enabled ||
+        (server.sigma_threshold ?? null) !== (draft.sigma_threshold ?? null)
       ) {
         return true;
       }
@@ -325,12 +328,19 @@ function DetectorsCard() {
     if (!serverDetectors) return;
     // Only send detectors whose effective config differs from defaults to keep
     // payloads small and the audit log readable.
-    const payload: Record<string, { trigger_threshold: number; enabled: boolean }> = {};
+    const payload: Record<
+      string,
+      { trigger_threshold: number; enabled: boolean; sigma_threshold?: number }
+    > = {};
     for (const [name, draft] of Object.entries(drafts)) {
-      payload[name] = {
+      const entry: { trigger_threshold: number; enabled: boolean; sigma_threshold?: number } = {
         trigger_threshold: draft.trigger_threshold,
         enabled: draft.enabled,
       };
+      if (draft.sigma_threshold != null) {
+        entry.sigma_threshold = draft.sigma_threshold;
+      }
+      payload[name] = entry;
     }
     updateConfig.mutate(payload, {
       onSuccess: () => {
@@ -409,6 +419,7 @@ function DetectorsCard() {
                       </button>
                     </div>
                     <div className="mt-3 flex items-center gap-3">
+                      <span className="w-20 text-xs text-muted-foreground">Sensitivity</span>
                       <input
                         type="range"
                         min="0"
@@ -425,6 +436,36 @@ function DetectorsCard() {
                         {draft.trigger_threshold.toFixed(2)}
                       </span>
                     </div>
+                    {name === "anomaly" && draft.sigma_threshold != null && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <span
+                          className="w-20 text-xs text-muted-foreground"
+                          title="How many standard deviations from the baseline mean count as drift"
+                        >
+                          σ threshold
+                        </span>
+                        <input
+                          type="range"
+                          min="1"
+                          max="6"
+                          step="0.5"
+                          value={draft.sigma_threshold}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            setDrafts((d) => {
+                              const cur = d[name];
+                              if (!cur) return d;
+                              return { ...d, [name]: { ...cur, sigma_threshold: v } };
+                            });
+                          }}
+                          disabled={!draft.enabled}
+                          className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-secondary accent-primary"
+                        />
+                        <span className="w-12 text-right font-mono text-xs text-muted-foreground">
+                          {draft.sigma_threshold.toFixed(1)}σ
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
