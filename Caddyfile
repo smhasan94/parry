@@ -1,0 +1,44 @@
+# Caddy reverse proxy for Parry production deployment.
+#
+# Caddy automatically obtains and renews Let's Encrypt certificates for the
+# DOMAIN env var. Routes:
+#   /api/*    → backend (FastAPI)
+#   /health   → backend (for uptime checks)
+#   /metrics  → backend (Prometheus scrape — keep behind a firewall in prod)
+#   /         → dashboard (nginx serving the React SPA)
+#
+# To run:
+#   DOMAIN=parry.example.com CADDY_EMAIL=ops@example.com docker compose -f docker-compose.prod.yml up -d
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	# Health, metrics, and API → backend
+	@backend {
+		path /api/* /health /metrics
+	}
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	# Everything else → dashboard (React SPA)
+	handle {
+		reverse_proxy dashboard:80
+	}
+
+	# Sensible logging — Caddy writes to stdout by default
+	log {
+		output stdout
+		format console
+	}
+
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Tell the client we're a real HTTPS endpoint behind the proxy
+		-Server
+	}
+}
