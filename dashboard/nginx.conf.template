@@ -1,0 +1,26 @@
+server {
+  listen ${PORT};
+  root /usr/share/nginx/html;
+  index index.html;
+
+  # SPA fallback — every unmatched route serves index.html so React Router can take over
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  # API + health + metrics + SSE proxy to the backend service.
+  # On docker-compose ${BACKEND_URL} resolves to http://backend:8000
+  # On other hosts (Railway/etc.) override BACKEND_URL via env var.
+  location /api {
+    proxy_pass ${BACKEND_URL};
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # SSE / event stream support — disable buffering and allow long-lived connections
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 24h;
+  }
+}

@@ -81,6 +81,7 @@ services:
       uv run celery -A app.workers.celery_app worker
       --loglevel=info
       --concurrency=2
+      --beat
 
   dashboard:
     build:
