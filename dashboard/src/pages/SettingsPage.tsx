@@ -33,6 +33,7 @@ import {
   X,
   Sliders,
   RotateCcw,
+  Webhook,
 } from "lucide-react";
 
 export function SettingsPage() {
@@ -463,8 +464,10 @@ function AlertsCard() {
 
   const [webhookUrl, setWebhookUrl] = useState("");
   const [emailInput, setEmailInput] = useState("");
+  const [genericWebhookUrl, setGenericWebhookUrl] = useState("");
 
   const slackEnabled = !!config?.slack_webhook_url;
+  const genericWebhookEnabled = !!config?.webhook_url;
   const emails = config?.alert_emails ?? [];
   const minSeverity = config?.min_severity ?? "high";
 
@@ -476,6 +479,19 @@ function AlertsCard() {
         onSuccess: () => {
           setWebhookUrl("");
           toast("Slack webhook saved", "success");
+        },
+      }
+    );
+  };
+
+  const handleSaveGenericWebhook = () => {
+    if (!genericWebhookUrl.trim()) return;
+    updateConfig.mutate(
+      { webhook_url: genericWebhookUrl.trim() },
+      {
+        onSuccess: () => {
+          setGenericWebhookUrl("");
+          toast("Webhook saved", "success");
         },
       }
     );
@@ -510,15 +526,16 @@ function AlertsCard() {
     );
   };
 
-  const handleTest = (channel: "slack" | "email") => {
+  const handleTest = (channel: "slack" | "email" | "webhook") => {
     testAlert.mutate(channel, {
-      onSuccess: () =>
-        toast(
-          channel === "slack"
-            ? "Test sent to Slack"
-            : "Test email sent",
-          "success"
-        ),
+      onSuccess: () => {
+        const labels: Record<string, string> = {
+          slack: "Test sent to Slack",
+          email: "Test email sent",
+          webhook: "Test sent to webhook",
+        };
+        toast(labels[channel] ?? "Test sent", "success");
+      },
     });
   };
 
@@ -697,6 +714,68 @@ function AlertsCard() {
                   <Send className="h-4 w-4" />
                   Send Test Email
                 </Button>
+              )}
+            </div>
+
+            {/* Generic webhook channel */}
+            <div className="space-y-2 rounded-md border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Webhook className="h-4 w-4" />
+                <p className="text-sm font-medium">Webhook</p>
+                <span className="text-xs text-muted-foreground">
+                  PagerDuty, Opsgenie, Teams, Zapier, custom
+                </span>
+                {genericWebhookEnabled && (
+                  <Badge variant="secondary" className="ml-auto text-xs text-green-400">
+                    Configured
+                  </Badge>
+                )}
+              </div>
+              {genericWebhookEnabled ? (
+                <div className="space-y-2">
+                  <p className="break-all font-mono text-xs text-muted-foreground">
+                    {config?.webhook_url?.slice(0, 60)}...
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTest("webhook")}
+                      disabled={testAlert.isPending}
+                    >
+                      <Send className="h-4 w-4" />
+                      Send Test
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => updateConfig.mutate({ webhook_url: "" })}
+                    >
+                      Replace
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="url"
+                    value={genericWebhookUrl}
+                    onChange={(e) => setGenericWebhookUrl(e.target.value)}
+                    placeholder="https://events.pagerduty.com/integration/abc/enqueue"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Receives a JSON POST with the incident payload.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveGenericWebhook}
+                      disabled={updateConfig.isPending || !genericWebhookUrl.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
 
