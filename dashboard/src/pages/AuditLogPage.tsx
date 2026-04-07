@@ -19,6 +19,8 @@ const ACTION_OPTIONS = [
   { value: "policy.deleted", label: "Policy deleted" },
   { value: "alert_config.updated", label: "Alert config updated" },
   { value: "alert_config.deleted", label: "Alert config deleted" },
+  { value: "detector_config.updated", label: "Detector tuning updated" },
+  { value: "detector_config.reset", label: "Detector tuning reset" },
 ] as const;
 
 function ActorIcon({ type }: { type: string }) {
