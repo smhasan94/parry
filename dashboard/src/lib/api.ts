@@ -232,6 +232,11 @@ class ApiClient {
     return this.request("/api/v1/detector-config", { method: "DELETE" });
   }
 
+  // Metrics query
+  async getAnomalyDriftHistogram(): Promise<AnomalyDriftHistogram> {
+    return this.request("/api/v1/metrics/anomaly-drift");
+  }
+
   // Audit log
   async listAuditLog(filters?: {
     action?: string;
@@ -266,6 +271,24 @@ export interface DetectorEntry {
 
 export interface DetectorConfig {
   detectors: Record<string, DetectorEntry>;
+}
+
+export interface DriftBucket {
+  le: number | null; // null represents the +Inf tail bucket
+  count: number;
+}
+
+export interface DriftSeries {
+  quality: string;
+  triggered: boolean;
+  total: number;
+  sum: number;
+  buckets: DriftBucket[];
+}
+
+export interface AnomalyDriftHistogram {
+  series: DriftSeries[];
+  note: string;
 }
 
 export class ApiError extends Error {

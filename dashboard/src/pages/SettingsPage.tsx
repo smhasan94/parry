@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useDetectorConfig";
 import { api } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
+import { DriftHistogram } from "@/components/charts/DriftHistogram";
 import {
   Key,
   Copy,
@@ -464,6 +465,14 @@ function DetectorsCard() {
                         <span className="w-12 text-right font-mono text-xs text-muted-foreground">
                           {draft.sigma_threshold.toFixed(1)}σ
                         </span>
+                      </div>
+                    )}
+                    {name === "anomaly" && draft.sigma_threshold != null && (
+                      <div className="mt-3 rounded-md border border-border bg-background/50 p-3">
+                        <p className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Drift distribution (live)
+                        </p>
+                        <DriftHistogram currentSigma={draft.sigma_threshold} />
                       </div>
                     )}
                   </div>

@@ -19,12 +19,15 @@ router = APIRouter()
 class DriftBucket(ParrySchema):
     """One bucket in the anomaly drift histogram.
 
-    `le` is Prometheus' "less than or equal" upper bound. `count` is the
-    CUMULATIVE count at or below that bound — i.e. `bucket[3].count` is the
-    number of observations ≤ `bucket[3].le`. The dashboard converts these
-    to per-bucket counts for rendering.
+    `le` is Prometheus' "less than or equal" upper bound; `None` means the
+    unbounded +Inf tail bucket. `count` is the CUMULATIVE count at or
+    below that bound — i.e. `bucket[3].count` is the number of observations
+    ≤ `bucket[3].le`. The dashboard converts these to per-bucket counts.
+
+    +Inf is serialized as null rather than the Python `float("inf")` value
+    because `Infinity` is not valid JSON and trips strict parsers.
     """
-    le: float
+    le: float | None
     count: float
 
 
@@ -76,7 +79,9 @@ async def get_anomaly_drift_histogram(
 
             if sample.name.endswith("_bucket"):
                 le_raw = sample.labels.get("le", "+Inf")
-                le = float("inf") if le_raw in ("+Inf", "inf") else float(le_raw)
+                le: float | None = (
+                    None if le_raw in ("+Inf", "inf") else float(le_raw)
+                )
                 series.buckets.append(DriftBucket(le=le, count=sample.value))
             elif sample.name.endswith("_count"):
                 series.total = sample.value
@@ -84,8 +89,10 @@ async def get_anomaly_drift_histogram(
                 series.sum = sample.value
 
     # Sort buckets ascending by upper bound so consumers can walk cumulative
-    # counts in order.
+    # counts in order. `None` (+Inf) sorts last.
     for series in grouped.values():
-        series.buckets.sort(key=lambda b: b.le)
+        series.buckets.sort(
+            key=lambda b: (b.le is None, b.le if b.le is not None else 0.0)
+        )
 
     return DriftHistogramResponse(series=list(grouped.values()))

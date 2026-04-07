@@ -31,11 +31,13 @@ async def test_anomaly_drift_histogram_shape():
     assert high_triggered.total >= 1
     assert high_triggered.sum >= 4.8
 
+    # Buckets sorted ascending, with None (+Inf) last
     les = [b.le for b in high_triggered.buckets]
-    assert les == sorted(les)
+    finite_les = [le for le in les if le is not None]
+    assert finite_les == sorted(finite_les)
+    assert high_triggered.buckets[-1].le is None
     # Last bucket (+Inf) count equals total since histograms are cumulative
     assert high_triggered.buckets[-1].count == high_triggered.total
-    assert high_triggered.buckets[-1].le == float("inf")
 
 
 @pytest.mark.asyncio
