@@ -1,10 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_actor, get_current_org
-from app.db.models import Org
+from app.db.models import Agent, Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.services import agent_service, audit_service
@@ -22,6 +23,53 @@ async def list_agents(
 ) -> list[AgentResponse]:
     agents, next_cursor = await agent_service.list_agents(db, org.id, cursor, limit)
     return [AgentResponse.model_validate(a) for a in agents]
+
+
+@router.post("/baselines/recompute-all")
+async def recompute_all_baselines(
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """Force-recompute baselines for every agent in the org.
+
+    Returns counts of recomputed/skipped/errored agents. Skipped agents are
+    those without enough events (< MIN_EVENTS).
+    """
+    org, actor = org_actor
+    agents = (
+        (await db.execute(select(Agent).where(Agent.org_id == org.id))).scalars().all()
+    )
+
+    recomputed = 0
+    skipped = 0
+    errored = 0
+
+    for agent in agents:
+        try:
+            before = dict(agent.baseline) if agent.baseline else None
+            baseline = await compute_baseline(db, agent.id)
+            if baseline is None:
+                skipped += 1
+                continue
+            agent.baseline = baseline
+            await db.flush()
+            await audit_service.log_action(
+                db,
+                org_id=org.id,
+                action="baseline.recomputed",
+                actor_type=actor.actor_type,
+                actor_id=actor.actor_id,
+                actor_label=actor.label,
+                resource_type="agent",
+                resource_id=str(agent.id),
+                details={"before": before, "after": baseline, "reason": "manual_bulk"},
+            )
+            recomputed += 1
+        except Exception:
+            errored += 1
+
+    await db.commit()
+    return {"recomputed": recomputed, "skipped": skipped, "errored": errored}
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
