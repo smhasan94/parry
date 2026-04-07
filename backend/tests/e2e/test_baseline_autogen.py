@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Agent, AgentEvent
+from app.db.models import AgentEvent
 from app.services.baseline_service import MIN_EVENTS
 from app.services.detection_service import run_and_persist_detections
 
