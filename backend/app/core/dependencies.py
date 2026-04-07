@@ -23,11 +23,15 @@ class Actor:
     actor_type: 'user' (Clerk JWT), 'api_key' (sk-parry-...), or 'system'
     actor_id:   Clerk user ID, ApiKey UUID (str), or None
     label:      human-friendly display name (email, key name, etc.)
+    clerk_role: raw Clerk org role claim (e.g. "org:admin"); None for
+                non-Clerk actors or when the JWT omits org context.
+                Resolved into a Role enum by app.core.rbac.actor_role.
     """
 
     actor_type: str
     actor_id: str | None = None
     label: str | None = None
+    clerk_role: str | None = None
 
 # Cache JWKS keys in memory (refreshed on cache miss)
 _jwks_cache: dict | None = None
@@ -134,7 +138,27 @@ async def _resolve_from_clerk_jwt(
     user_id = payload.get("sub")
     email = payload.get("email") or payload.get("primary_email_address")
     label = email or user_id
-    actor = Actor(actor_type="user", actor_id=user_id, label=label)
+    # Clerk puts the org role in `org_role` when the JWT was issued with
+    # an active org context. Missing claim → None → defaults to VIEWER
+    # in rbac.actor_role, which is the secure default.
+    clerk_role = payload.get("org_role")
+
+    # Demo mode: if Clerk didn't issue an org role AND this is the only
+    # active org in the DB (single-org self-hosted deployment), treat
+    # the user as owner so they aren't locked out of their own instance.
+    if not clerk_role:
+        count_result = await db.execute(
+            select(Org.id).where(Org.is_active.is_(True))
+        )
+        if len(list(count_result.scalars().all())) == 1:
+            clerk_role = "org:owner"
+
+    actor = Actor(
+        actor_type="user",
+        actor_id=user_id,
+        label=label,
+        clerk_role=clerk_role,
+    )
     return org, actor
 
 
