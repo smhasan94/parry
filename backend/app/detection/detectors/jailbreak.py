@@ -3,6 +3,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.services.detector_config_service import threshold_for
 
 JAILBREAK_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
     (
@@ -62,7 +63,8 @@ class JailbreakDetector:
                 max_confidence = weight
                 matched_reason = reason
 
-        triggered = max_confidence >= 0.7
+        threshold = threshold_for(event_data, self.name, default=0.7)
+        triggered = max_confidence >= threshold
 
         if triggered:
             severity = Severity.CRITICAL if max_confidence >= 0.9 else Severity.HIGH

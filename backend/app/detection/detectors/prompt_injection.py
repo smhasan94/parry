@@ -3,6 +3,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.services.detector_config_service import threshold_for
 
 # Common prompt injection patterns
 INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
@@ -73,7 +74,8 @@ class PromptInjectionDetector:
                 max_confidence = weight
                 matched_reason = reason
 
-        triggered = max_confidence >= 0.6
+        threshold = threshold_for(event_data, self.name, default=0.6)
+        triggered = max_confidence >= threshold
 
         if triggered:
             severity = Severity.CRITICAL if max_confidence >= 0.9 else Severity.HIGH

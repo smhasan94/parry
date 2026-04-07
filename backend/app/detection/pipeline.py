@@ -24,7 +24,9 @@ class DetectionPipeline:
     """
 
     async def run(self, event_data: dict[str, Any]) -> list[DetectionResult]:
-        detectors = get_all_detectors()
+        from app.services.detector_config_service import is_enabled
+
+        detectors = [d for d in get_all_detectors() if is_enabled(event_data, d.name)]
 
         # Run all sync detectors in parallel via thread pool
         loop = asyncio.get_running_loop()

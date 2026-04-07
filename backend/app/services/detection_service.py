@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.metrics import record_detection_triggered, record_incident_created
 from app.db.models import Agent, AgentEvent, Detection, Incident, Org, Policy, Severity
+from app.services.detector_config_service import merged_config
 
 log = structlog.get_logger()
 
@@ -26,9 +27,13 @@ async def run_and_persist_detections(
         log.warning("detection.agent_not_found", event_id=str(event.id))
         return []
 
-    # Load org policies for the agent
+    # Load org policies and detector config for the agent
     policies = await _get_active_policies(db, agent.org_id)
     merged_policy = _merge_policies(policies)
+    org_for_config = await db.get(Org, agent.org_id)
+    detector_config = merged_config(
+        org_for_config.detector_config if org_for_config else None
+    )
 
     event_data = {
         "prompt": event.prompt,
@@ -39,6 +44,7 @@ async def run_and_persist_detections(
         "token_count": event.token_count,
         "baseline": agent.baseline or {},
         "policy": merged_policy,
+        "detector_config": detector_config,
     }
 
     pipeline = DetectionPipeline()
