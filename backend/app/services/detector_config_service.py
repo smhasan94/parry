@@ -15,6 +15,7 @@ DEFAULT_DETECTOR_CONFIG: dict[str, dict[str, Any]] = {
     "tool_misuse": {"trigger_threshold": 0.5, "enabled": True},
     "data_exfiltration": {"trigger_threshold": 0.5, "enabled": True},
     "anomaly": {"trigger_threshold": 0.5, "enabled": True, "sigma_threshold": 3.0},
+    "custom_rules": {"trigger_threshold": 0.5, "enabled": True},
     "llm_fallback": {"trigger_threshold": 0.5, "enabled": True},
 }
 

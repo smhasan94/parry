@@ -1,5 +1,6 @@
 from app.detection.base import BaseDetector
 from app.detection.detectors.anomaly import AnomalyDetector
+from app.detection.detectors.custom_rules import CustomRulesDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
@@ -13,6 +14,7 @@ DETECTORS: list[BaseDetector] = [
     ToolMisuseDetector(),
     DataExfiltrationDetector(),
     PrivilegeEscalationDetector(),
+    CustomRulesDetector(),
     AnomalyDetector(),
 ]
 
