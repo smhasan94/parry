@@ -14,6 +14,11 @@ const ACTION_OPTIONS = [
   { value: "incident.dismissed", label: "Incident dismissed" },
   { value: "api_key.created", label: "API key created" },
   { value: "api_key.revoked", label: "API key revoked" },
+  { value: "policy.created", label: "Policy created" },
+  { value: "policy.updated", label: "Policy updated" },
+  { value: "policy.deleted", label: "Policy deleted" },
+  { value: "alert_config.updated", label: "Alert config updated" },
+  { value: "alert_config.deleted", label: "Alert config deleted" },
 ] as const;
 
 function ActorIcon({ type }: { type: string }) {

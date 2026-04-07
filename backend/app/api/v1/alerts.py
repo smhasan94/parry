@@ -9,10 +9,11 @@ from pydantic import EmailStr, HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.dependencies import get_current_org
+from app.core.dependencies import Actor, get_current_actor, get_current_org
 from app.db.models import Detection, Incident, IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
+from app.services import audit_service
 from app.services.alert_service import send_email_alert, send_slack_alert
 
 log = structlog.get_logger()
@@ -51,14 +52,33 @@ async def get_alert_config(
     return _config_to_response(org.alert_config)
 
 
+def _redact_webhook(url: str | None) -> str | None:
+    """Mask the secret portion of a webhook URL for audit logs."""
+    if not url:
+        return url
+    if len(url) <= 40:
+        return url[:20] + "..."
+    return url[:30] + "..." + url[-6:]
+
+
+def _audit_safe_config(config: dict | None) -> dict:
+    """Return a copy of the alert config safe to write to the audit log."""
+    cfg = dict(config or {})
+    if "slack_webhook_url" in cfg:
+        cfg["slack_webhook_url"] = _redact_webhook(cfg.get("slack_webhook_url"))
+    return cfg
+
+
 @router.put("", response_model=AlertConfigResponse)
 async def update_alert_config(
     body: AlertConfigUpdate,
-    org: Org = Depends(get_current_org),
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> AlertConfigResponse:
     """Update the alert configuration for the org."""
-    config = dict(org.alert_config or {})
+    org, actor = org_actor
+    before = dict(org.alert_config or {})
+    config = dict(before)
 
     if body.slack_webhook_url is not None:
         config["slack_webhook_url"] = str(body.slack_webhook_url)
@@ -78,6 +98,19 @@ async def update_alert_config(
 
     org.alert_config = config
     await db.flush()
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="alert_config.updated",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="alert_config",
+        details={
+            "before": _audit_safe_config(before),
+            "after": _audit_safe_config(config),
+        },
+    )
     await db.commit()
     log.info("alert_config.updated", org_id=str(org.id))
     return _config_to_response(config)
@@ -85,12 +118,24 @@ async def update_alert_config(
 
 @router.delete("", status_code=204)
 async def delete_alert_config(
-    org: Org = Depends(get_current_org),
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Remove the alert configuration entirely."""
+    org, actor = org_actor
+    snapshot = _audit_safe_config(org.alert_config)
     org.alert_config = None
     await db.flush()
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="alert_config.deleted",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="alert_config",
+        details={"removed": snapshot},
+    )
     await db.commit()
     log.info("alert_config.deleted", org_id=str(org.id))
 
