@@ -154,45 +154,80 @@ export function AgentDetailPage() {
         </div>
 
         {/* Baseline Info */}
-        {agent.baseline && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Behavioral Baseline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {agent.baseline && (() => {
+          const baseline = agent.baseline;
+          const avgTokens = baseline.avg_token_count as number;
+          const stdTokens = (baseline.std_token_count as number) ?? 0;
+          const avgLatency = baseline.avg_latency_ms as number;
+          const stdLatency = (baseline.std_latency_ms as number) ?? 0;
+          const avgToolCalls = (baseline.avg_tool_calls as number) ?? 0;
+          const computedAt = baseline.computed_at as string | undefined;
+          const eventCount = baseline.event_count as number;
+          const currentEventCount = events.length;
+
+          let staleness: { label: string; stale: boolean } | null = null;
+          if (computedAt) {
+            const ageMs = Date.now() - new Date(computedAt).getTime();
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+            const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+            const label =
+              ageDays > 0 ? `${ageDays}d ago` : ageHours > 0 ? `${ageHours}h ago` : "just now";
+            // Stale if computed >7d ago OR if event count has grown >50% since computation
+            const grewSignificantly =
+              currentEventCount > eventCount && currentEventCount > eventCount * 1.5;
+            staleness = { label, stale: ageDays > 7 || grewSignificantly };
+          }
+
+          return (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div>
-                  <p className="text-xs text-muted-foreground">Avg Tokens</p>
-                  <p className="text-lg font-semibold">
-                    {Math.round(agent.baseline.avg_token_count as number)}
-                  </p>
+                  <CardTitle>Behavioral Baseline</CardTitle>
+                  {computedAt && staleness && (
+                    <p
+                      className={`mt-1 text-xs ${staleness.stale ? "text-amber-400" : "text-muted-foreground"}`}
+                    >
+                      Computed {staleness.label}
+                      {staleness.stale && " — stale, consider recomputing"}
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Avg Latency</p>
-                  <p className="text-lg font-semibold">
-                    {Math.round(agent.baseline.avg_latency_ms as number)}ms
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Known Models</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {((agent.baseline.known_models as string[]) ?? []).map((m) => (
-                      <span key={m} className="rounded bg-secondary px-1.5 py-0.5 text-xs">
-                        {m}
-                      </span>
-                    ))}
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Avg Tokens</p>
+                    <p className="text-lg font-semibold">{Math.round(avgTokens)}</p>
+                    <p className="text-xs text-muted-foreground">±{Math.round(stdTokens)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Avg Latency</p>
+                    <p className="text-lg font-semibold">{Math.round(avgLatency)}ms</p>
+                    <p className="text-xs text-muted-foreground">±{Math.round(stdLatency)}ms</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Avg Tool Calls</p>
+                    <p className="text-lg font-semibold">{avgToolCalls.toFixed(1)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Known Models</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {((baseline.known_models as string[]) ?? []).map((m) => (
+                        <span key={m} className="rounded bg-secondary px-1.5 py-0.5 text-xs">
+                          {m}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Events Analyzed</p>
+                    <p className="text-lg font-semibold">{eventCount}</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Events Analyzed</p>
-                  <p className="text-lg font-semibold">
-                    {agent.baseline.event_count as number}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Event Timeline */}
         <Card>
