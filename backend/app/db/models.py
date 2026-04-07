@@ -49,6 +49,8 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
     # Alert config: {"slack_webhook_url": "...", "min_severity": "high"}
     alert_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Detector config: {"prompt_injection": {"trigger_threshold": 0.6, "enabled": true}, ...}
+    detector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     agents: Mapped[list["Agent"]] = relationship(back_populates="org", lazy="selectin")
