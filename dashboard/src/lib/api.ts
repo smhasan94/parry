@@ -187,6 +187,28 @@ class ApiClient {
     return this.request(`/api/v1/alerts/test?channel=${channel}`, { method: "POST" });
   }
 
+  // Detector config
+  async getDetectorConfig(): Promise<DetectorConfig> {
+    return this.request("/api/v1/detector-config");
+  }
+
+  async getDefaultDetectorConfig(): Promise<DetectorConfig> {
+    return this.request("/api/v1/detector-config/defaults");
+  }
+
+  async updateDetectorConfig(
+    config: Record<string, { trigger_threshold?: number; enabled?: boolean }>
+  ): Promise<DetectorConfig> {
+    return this.request("/api/v1/detector-config", {
+      method: "PUT",
+      body: JSON.stringify(config),
+    });
+  }
+
+  async resetDetectorConfig(): Promise<void> {
+    return this.request("/api/v1/detector-config", { method: "DELETE" });
+  }
+
   // Audit log
   async listAuditLog(filters?: {
     action?: string;
@@ -208,6 +230,16 @@ export interface AlertConfig {
   alert_emails: string[];
   min_severity: string;
   enabled: boolean;
+}
+
+export interface DetectorEntry {
+  trigger_threshold: number;
+  enabled: boolean;
+  is_default: boolean;
+}
+
+export interface DetectorConfig {
+  detectors: Record<string, DetectorEntry>;
 }
 
 export class ApiError extends Error {

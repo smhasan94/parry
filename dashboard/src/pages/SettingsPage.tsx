@@ -11,6 +11,11 @@ import {
   useDeleteAlertConfig,
   useTestAlert,
 } from "@/hooks/useAlerts";
+import {
+  useDetectorConfig,
+  useUpdateDetectorConfig,
+  useResetDetectorConfig,
+} from "@/hooks/useDetectorConfig";
 import { api } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
 import {
@@ -26,6 +31,8 @@ import {
   Trash2,
   Mail,
   X,
+  Sliders,
+  RotateCcw,
 } from "lucide-react";
 
 export function SettingsPage() {
@@ -160,6 +167,9 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Detector tuning */}
+        <DetectorsCard />
+
         {/* Alerts */}
         <AlertsCard />
 
@@ -218,6 +228,232 @@ response = client.chat.completions.create(
 }
 
 const SEVERITY_OPTIONS = ["low", "medium", "high", "critical"] as const;
+
+const DETECTOR_LABELS: Record<string, { label: string; description: string }> = {
+  prompt_injection: {
+    label: "Prompt Injection",
+    description: "Detects attempts to override or hijack the agent's system prompt.",
+  },
+  jailbreak: {
+    label: "Jailbreak",
+    description: "Catches DAN, developer mode, and other jailbreak prompts.",
+  },
+  privilege_escalation: {
+    label: "Privilege Escalation",
+    description: "Flags attempts to grant elevated permissions or bypass auth.",
+  },
+  tool_misuse: {
+    label: "Tool Misuse",
+    description: "Detects calls to tools outside the org's policy allowlist.",
+  },
+  data_exfiltration: {
+    label: "Data Exfiltration",
+    description: "Catches PII, secrets, and credentials in agent responses.",
+  },
+  anomaly: {
+    label: "Behavioral Anomaly",
+    description: "Statistical drift from the agent's baseline (latency, tokens, models).",
+  },
+  llm_fallback: {
+    label: "LLM Fallback",
+    description: "Claude-powered classifier that resolves ambiguous detection scores.",
+  },
+};
+
+interface DraftEntry {
+  trigger_threshold: number;
+  enabled: boolean;
+}
+
+function DetectorsCard() {
+  const { data: config, isLoading } = useDetectorConfig();
+  const updateConfig = useUpdateDetectorConfig();
+  const resetConfig = useResetDetectorConfig();
+
+  // Local draft state — sliders are responsive without round-tripping every drag
+  const [drafts, setDrafts] = useState<Record<string, DraftEntry>>({});
+
+  // Hydrate drafts from server config when it loads or refetches
+  const serverDetectors = config?.detectors;
+  const draftKeys = Object.keys(drafts);
+  if (serverDetectors && draftKeys.length === 0) {
+    const initial: Record<string, DraftEntry> = {};
+    for (const [name, entry] of Object.entries(serverDetectors)) {
+      initial[name] = {
+        trigger_threshold: entry.trigger_threshold,
+        enabled: entry.enabled,
+      };
+    }
+    // setState during render only when going from empty → seeded
+    setDrafts(initial);
+  }
+
+  const handleThresholdChange = (name: string, value: number) => {
+    setDrafts((d) => {
+      const current = d[name];
+      if (!current) return d;
+      return { ...d, [name]: { ...current, trigger_threshold: value } };
+    });
+  };
+
+  const handleToggle = (name: string) => {
+    setDrafts((d) => {
+      const current = d[name];
+      if (!current) return d;
+      return { ...d, [name]: { ...current, enabled: !current.enabled } };
+    });
+  };
+
+  const isDirty = (() => {
+    if (!serverDetectors) return false;
+    for (const name of Object.keys(drafts)) {
+      const server = serverDetectors[name];
+      const draft = drafts[name];
+      if (!server || !draft) continue;
+      if (
+        server.trigger_threshold !== draft.trigger_threshold ||
+        server.enabled !== draft.enabled
+      ) {
+        return true;
+      }
+    }
+    return false;
+  })();
+
+  const handleSave = () => {
+    if (!serverDetectors) return;
+    // Only send detectors whose effective config differs from defaults to keep
+    // payloads small and the audit log readable.
+    const payload: Record<string, { trigger_threshold: number; enabled: boolean }> = {};
+    for (const [name, draft] of Object.entries(drafts)) {
+      payload[name] = {
+        trigger_threshold: draft.trigger_threshold,
+        enabled: draft.enabled,
+      };
+    }
+    updateConfig.mutate(payload, {
+      onSuccess: () => {
+        toast("Detector tuning saved", "success");
+      },
+    });
+  };
+
+  const handleReset = () => {
+    if (!confirm("Reset all detectors to Parry defaults?")) return;
+    resetConfig.mutate(undefined, {
+      onSuccess: () => {
+        setDrafts({});
+        toast("Reset to defaults", "success");
+      },
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Sliders className="h-5 w-5" />
+              Detector Tuning
+            </CardTitle>
+            <CardDescription>
+              Adjust trigger thresholds and toggle individual detectors. Lower thresholds
+              catch more events; higher thresholds reduce false positives.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading || !serverDetectors ? (
+          <p className="text-sm text-muted-foreground">Loading detectors...</p>
+        ) : (
+          <>
+            <div className="space-y-3">
+              {Object.entries(drafts).map(([name, draft]) => {
+                const meta = DETECTOR_LABELS[name] ?? { label: name, description: "" };
+                const server = serverDetectors[name];
+                return (
+                  <div
+                    key={name}
+                    className={`rounded-md border border-border p-3 ${
+                      draft.enabled ? "" : "opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{meta.label}</p>
+                          {server?.is_default && (
+                            <Badge variant="outline" className="text-xs">
+                              Default
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{meta.description}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(name)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          draft.enabled ? "bg-primary" : "bg-secondary"
+                        }`}
+                        aria-label={`Toggle ${meta.label}`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-background transition-transform ${
+                            draft.enabled ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={draft.trigger_threshold}
+                        onChange={(e) =>
+                          handleThresholdChange(name, parseFloat(e.target.value))
+                        }
+                        disabled={!draft.enabled}
+                        className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-secondary accent-primary"
+                      />
+                      <span className="w-12 text-right font-mono text-xs text-muted-foreground">
+                        {draft.trigger_threshold.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={!isDirty || updateConfig.isPending}
+              >
+                {updateConfig.isPending ? "Saving..." : "Save changes"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleReset}
+                disabled={resetConfig.isPending}
+                className="text-muted-foreground"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset to defaults
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function AlertsCard() {
   const { data: config, isLoading } = useAlertConfig();
