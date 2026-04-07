@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SeverityBadge, Badge } from "@/components/ui/badge";
 import { useIncidents, useUpdateIncident } from "@/hooks/useIncidents";
-import type { IncidentStatus, Severity } from "@/lib/types";
-import { AlertTriangle, CheckCircle, Eye, XCircle } from "lucide-react";
+import { useResourceHistory } from "@/hooks/useAuditLog";
+import type { IncidentStatus, Severity, AuditEntry } from "@/lib/types";
+import { AlertTriangle, CheckCircle, Eye, XCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 
 const SEVERITY_OPTIONS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
 const STATUS_OPTIONS: (IncidentStatus | "all")[] = ["all", "open", "acknowledged", "resolved", "dismissed"];
@@ -28,6 +29,16 @@ export function IncidentsPage() {
   } = useIncidents(Object.keys(filters).length > 0 ? filters : undefined);
   const updateIncident = useUpdateIncident();
   const incidents = data?.pages.flatMap((p) => p.incidents) ?? [];
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
+
+  const toggleHistory = (id: string) => {
+    setExpandedHistory((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div>
@@ -103,6 +114,21 @@ export function IncidentsPage() {
                           ))}
                         </div>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => toggleHistory(incident.id)}
+                        className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        {expandedHistory.has(incident.id) ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                        History
+                      </button>
+                      {expandedHistory.has(incident.id) && (
+                        <IncidentHistory incidentId={incident.id} />
+                      )}
                     </div>
                     <div className="flex gap-1">
                       {incident.status === "open" && (
@@ -165,6 +191,52 @@ export function IncidentsPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  "incident.acknowledged": "acknowledged",
+  "incident.resolved": "resolved",
+  "incident.dismissed": "dismissed",
+};
+
+function IncidentHistory({ incidentId }: { incidentId: string }) {
+  const { data, isLoading } = useResourceHistory("incident", incidentId, true);
+
+  if (isLoading) {
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">Loading history...</p>
+    );
+  }
+
+  const entries = data?.entries ?? [];
+  if (entries.length === 0) {
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">
+        No status changes yet — incident is still in its original state.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2 border-l border-border pl-3">
+      {entries.map((entry: AuditEntry) => {
+        const verb = ACTION_LABELS[entry.action] ?? entry.action;
+        const actor = entry.actor_label || entry.actor_id || entry.actor_type;
+        return (
+          <div key={entry.id} className="flex items-start gap-2">
+            <Clock className="mt-0.5 h-3 w-3 flex-shrink-0 text-muted-foreground" />
+            <div className="flex-1 text-xs">
+              <span className="text-foreground">{actor}</span>{" "}
+              <span className="text-muted-foreground">{verb} this incident</span>
+              <span className="ml-2 text-muted-foreground">
+                · {new Date(entry.created_at).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
