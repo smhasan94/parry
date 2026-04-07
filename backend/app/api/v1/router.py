@@ -9,6 +9,7 @@ from app.api.v1 import (
     detector_config,
     events,
     incidents,
+    metrics_query,
     policies,
     webhooks,
 )
@@ -27,3 +28,4 @@ api_router.include_router(audit.router, prefix="/audit-log", tags=["audit"])
 api_router.include_router(
     detector_config.router, prefix="/detector-config", tags=["detector-config"]
 )
+api_router.include_router(metrics_query.router, prefix="/metrics", tags=["metrics"])
