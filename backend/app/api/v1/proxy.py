@@ -25,6 +25,7 @@ from app.core.dependencies import Actor, get_current_actor, get_org_from_sdk_key
 from app.db.models import Org, Policy
 from app.db.session import get_db
 from app.proxy.check import run_blocking_check
+from app.proxy.response_scan import scan_response
 from app.schemas.base import ParrySchema
 from app.services import audit_service
 
@@ -190,6 +191,37 @@ async def update_blocking_settings(
         enabled=body.blocking_enabled,
     )
     return BlockingSettingsResponse(blocking_enabled=org.blocking_enabled)
+
+
+class ScanResponseRequest(ParrySchema):
+    response: str
+    agent_id: str | None = None
+    session_id: str | None = None
+
+
+class ScanResponseBody(ParrySchema):
+    blocked: bool
+    response: str | None  # None when blocked
+    findings: list[dict]
+    mode: str
+
+
+@router.post("/scan-response", response_model=ScanResponseBody)
+async def proxy_scan_response(
+    body: ScanResponseRequest,
+    org: Org = Depends(get_org_from_sdk_key),
+) -> ScanResponseBody:
+    """Post-LLM response scan. Runs data-exfil detection against the
+    response text and either passes it through, redacts sensitive
+    patterns in line, or blocks the whole response depending on the
+    org's configured mode. Always 200 — the decision is in the body."""
+    result = scan_response(body.response, org.response_scan_mode)
+    return ScanResponseBody(
+        blocked=result.blocked,
+        response=result.redacted_response,
+        findings=result.findings,
+        mode=org.response_scan_mode.value,
+    )
 
 
 @router.post("/check", response_model=ProxyCheckResponse)
