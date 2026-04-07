@@ -56,6 +56,7 @@ Parry sends incident alerts to Slack and email, configured per org from the dash
 
 - **Slack**: each org pastes an [incoming webhook URL](https://api.slack.com/messaging/webhooks). No backend setup required.
 - **Email**: requires SMTP credentials in the backend `.env` (see above). Each org then adds recipient addresses in Settings.
+- **Generic webhook**: orgs paste any HTTPS POST URL. Receives a stable JSON payload (`schema_version: "1.0"`) usable by PagerDuty Events API, Opsgenie, Microsoft Teams incoming webhooks, Discord, n8n, Zapier, or custom services.
 
 Alerts only fire for incidents at or above the org's configured severity threshold (default: HIGH). Failed alert deliveries are logged at WARN level but never block detection.
 
