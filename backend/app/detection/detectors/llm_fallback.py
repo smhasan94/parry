@@ -1,14 +1,22 @@
 """LLM fallback detector — calls Claude to resolve ambiguous detection scores."""
 
+import asyncio
 import json
+import time
 from typing import Any
 
 import structlog
 
+from app.core.metrics import record_llm_fallback_call
 from app.db.models import Severity
 from app.detection.base import DetectionResult
 
 log = structlog.get_logger()
+
+# Hard cap on the Anthropic call. The Celery detection task has a 30s
+# soft limit; we stay comfortably under it so a hanging API call burns
+# its own timeout slot rather than killing the worker process.
+ANTHROPIC_TIMEOUT_SECONDS = 20.0
 
 SYSTEM_PROMPT = """You are a security analyst for an AI agent monitoring system called Parry.
 Your job is to analyze an AI agent's LLM call and determine if it represents a security threat.
@@ -46,6 +54,7 @@ async def evaluate_ambiguous(
 
     if not settings.anthropic_api_key:
         log.debug("llm_fallback.skipped", reason="no API key configured")
+        record_llm_fallback_call("no_key")
         return None
 
     # Build the analysis prompt
@@ -68,24 +77,48 @@ async def evaluate_ambiguous(
 
 Respond with JSON only."""
 
+    response_text = ""
+    input_tokens = 0
+    output_tokens = 0
+    started = time.monotonic()
+
     try:
         import anthropic
 
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-        message = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=256,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}],
+        # Wrap in asyncio.wait_for so even if the Anthropic SDK's own
+        # timeout is misconfigured, we cap wall time at ANTHROPIC_TIMEOUT_SECONDS.
+        message = await asyncio.wait_for(
+            client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=256,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}],
+            ),
+            timeout=ANTHROPIC_TIMEOUT_SECONDS,
         )
 
         # Parse response
         response_text = message.content[0].text if message.content else ""
+        if getattr(message, "usage", None):
+            input_tokens = int(getattr(message.usage, "input_tokens", 0) or 0)
+            output_tokens = int(getattr(message.usage, "output_tokens", 0) or 0)
+
         result = json.loads(response_text)
 
         is_threat = result.get("is_threat", False)
+        latency = time.monotonic() - started
+
         if not is_threat:
-            log.info("llm_fallback.cleared", reason=result.get("reason", ""))
+            log.info(
+                "llm_fallback.cleared",
+                reason=result.get("reason", ""),
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
+            record_llm_fallback_call(
+                "cleared", input_tokens, output_tokens, latency
+            )
             return None
 
         severity_map = {
@@ -94,6 +127,8 @@ Respond with JSON only."""
             "medium": Severity.MEDIUM,
             "low": Severity.LOW,
         }
+
+        record_llm_fallback_call("confirmed", input_tokens, output_tokens, latency)
 
         return DetectionResult(
             triggered=True,
@@ -104,12 +139,37 @@ Respond with JSON only."""
             details={
                 "ambiguous_detectors": [r.detector for r in ambiguous_results],
                 "llm_judgment": result,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
             },
         )
 
+    except TimeoutError:
+        log.warning(
+            "llm_fallback.timeout", timeout_seconds=ANTHROPIC_TIMEOUT_SECONDS
+        )
+        record_llm_fallback_call(
+            "timeout",
+            input_tokens,
+            output_tokens,
+            time.monotonic() - started,
+        )
+        return None
     except json.JSONDecodeError:
         log.warning("llm_fallback.parse_error", response=response_text[:200])
+        record_llm_fallback_call(
+            "parse_error",
+            input_tokens,
+            output_tokens,
+            time.monotonic() - started,
+        )
         return None
     except Exception:
         log.warning("llm_fallback.failed", exc_info=True)
+        record_llm_fallback_call(
+            "api_error",
+            input_tokens,
+            output_tokens,
+            time.monotonic() - started,
+        )
         return None

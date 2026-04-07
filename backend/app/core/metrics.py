@@ -60,6 +60,29 @@ anomaly_drift_sigma = Histogram(
     registry=registry,
 )
 
+llm_fallback_calls_total = Counter(
+    "parry_llm_fallback_calls_total",
+    "LLM fallback Anthropic API call attempts, labelled by outcome "
+    "(confirmed|cleared|parse_error|timeout|api_error|no_key)",
+    labelnames=("outcome",),
+    registry=registry,
+)
+
+llm_fallback_tokens_total = Counter(
+    "parry_llm_fallback_tokens_total",
+    "Total tokens consumed by LLM fallback Anthropic calls, labelled by "
+    "direction (input|output)",
+    labelnames=("direction",),
+    registry=registry,
+)
+
+llm_fallback_latency_seconds = Histogram(
+    "parry_llm_fallback_latency_seconds",
+    "Wall-clock latency of the Anthropic API call inside llm_fallback",
+    buckets=(0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0),
+    registry=registry,
+)
+
 
 # ── Alert dispatch metrics ─────────────────────────────────────────────
 
@@ -99,3 +122,22 @@ def record_anomaly_drift(sigma: float, quality: str, triggered: bool) -> None:
     anomaly_drift_sigma.labels(
         quality=quality, triggered="true" if triggered else "false"
     ).observe(sigma)
+
+
+def record_llm_fallback_call(
+    outcome: str,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    latency_seconds: float | None = None,
+) -> None:
+    """Record an LLM fallback Anthropic call.
+
+    outcome: one of confirmed, cleared, parse_error, timeout, api_error, no_key
+    """
+    llm_fallback_calls_total.labels(outcome=outcome).inc()
+    if input_tokens:
+        llm_fallback_tokens_total.labels(direction="input").inc(input_tokens)
+    if output_tokens:
+        llm_fallback_tokens_total.labels(direction="output").inc(output_tokens)
+    if latency_seconds is not None:
+        llm_fallback_latency_seconds.observe(latency_seconds)
