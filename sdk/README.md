@@ -14,7 +14,11 @@ With LLM provider wrappers:
 pip install parry[openai]        # OpenAI support
 pip install parry[anthropic]     # Anthropic support
 pip install parry[langchain]     # LangChain support
-pip install parry[openai,anthropic,langchain]  # All
+pip install parry[crewai]        # CrewAI support
+pip install parry[autogen]       # AutoGen support
+pip install parry[llamaindex]    # LlamaIndex support
+pip install parry[pydantic-ai]   # Pydantic AI support
+pip install parry[all]           # Everything
 ```
 
 ## Quick Start
@@ -64,6 +68,55 @@ handler = ParryCallbackHandler(agent_id="my-agent")
 
 # Works with any LangChain model, chain, or agent
 chain.invoke("What is 2+2?", config={"callbacks": [handler]})
+```
+
+**CrewAI:**
+
+```python
+from crewai import Crew
+from parry.wrappers.crewai import ParryCrewAICallback
+
+crew = Crew(
+    agents=[...],
+    tasks=[...],
+    callbacks=[ParryCrewAICallback(agent_id="my-crew")],
+)
+```
+
+**AutoGen:**
+
+```python
+from parry.wrappers.autogen import ParryConversableAgent
+
+assistant = ParryConversableAgent(
+    name="assistant",
+    agent_id="my-autogen-agent",
+    llm_config={"model": "gpt-4o"},
+)
+# Drop-in replacement for autogen.ConversableAgent
+```
+
+**LlamaIndex:**
+
+```python
+from llama_index.core import Settings
+from parry.wrappers.llamaindex import ParryCallbackHandler
+
+Settings.callback_manager.add_handler(
+    ParryCallbackHandler(agent_id="my-llamaindex-agent")
+)
+# Every LLM call through LlamaIndex now flows through Parry
+```
+
+**Pydantic AI:**
+
+```python
+from pydantic_ai import Agent
+from parry.wrappers.pydantic_ai import parry_instrument
+
+agent = Agent("openai:gpt-4o")
+parry_instrument(agent, agent_id="my-pydantic-agent")
+# Instrumentation patches agent.model.request in place
 ```
 
 ### 3. Streaming
