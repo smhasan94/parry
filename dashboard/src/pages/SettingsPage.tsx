@@ -18,7 +18,10 @@ import {
 } from "@/hooks/useDetectorConfig";
 import {
   useBlockingSettings,
+  useResponseScanSettings,
   useUpdateBlockingSettings,
+  useUpdateResponseScanSettings,
+  type ResponseScanMode,
 } from "@/hooks/useBlockingSettings";
 import { api } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
@@ -175,6 +178,9 @@ export function SettingsPage() {
 
         {/* Active blocking mode */}
         <BlockingModeCard />
+
+        {/* Response scanning */}
+        <ResponseScanCard />
 
         {/* Detector tuning */}
         <DetectorsCard />
@@ -848,6 +854,80 @@ function AlertsCard() {
               </Button>
             )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const SCAN_MODES: { value: ResponseScanMode; label: string; hint: string }[] = [
+  {
+    value: "off",
+    label: "Off",
+    hint: "Default. Responses pass through unchanged.",
+  },
+  {
+    value: "redact",
+    label: "Redact",
+    hint: "Sensitive patterns replaced with [REDACTED:...] placeholders in line.",
+  },
+  {
+    value: "block",
+    label: "Block",
+    hint: "Responses containing sensitive data are rejected entirely (ParryBlockedError).",
+  },
+];
+
+function ResponseScanCard() {
+  const { data, isLoading } = useResponseScanSettings();
+  const update = useUpdateResponseScanSettings();
+  const current = (data?.response_scan_mode ?? "off") as ResponseScanMode;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Eye className="h-5 w-5" />
+          Response Scanning
+        </CardTitle>
+        <CardDescription>
+          Scan every LLM response for sensitive data (credit cards, SSNs, API
+          keys, private keys, AWS credentials) before it reaches your agent.
+          Fail-open on any error — a scanner outage never drops a response.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <div className="space-y-2">
+            {SCAN_MODES.map((m) => {
+              const selected = current === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => !selected && update.mutate(m.value)}
+                  disabled={update.isPending}
+                  className={`flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors ${
+                    selected
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-foreground/30"
+                  } ${update.isPending ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`mt-0.5 inline-block h-4 w-4 shrink-0 rounded-full border-2 ${
+                      selected ? "border-primary bg-primary" : "border-muted-foreground"
+                    }`}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">{m.label}</p>
+                    <p className="text-xs text-muted-foreground">{m.hint}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )}
       </CardContent>
     </Card>

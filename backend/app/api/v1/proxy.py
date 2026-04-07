@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor, get_org_from_sdk_key
-from app.db.models import Org, Policy
+from app.db.models import Org, Policy, ResponseScanMode
 from app.db.session import get_db
 from app.proxy.check import run_blocking_check
 from app.proxy.response_scan import scan_response
@@ -142,6 +142,14 @@ class BlockingSettingsUpdate(ParrySchema):
     blocking_enabled: bool
 
 
+class ResponseScanSettingsResponse(ParrySchema):
+    response_scan_mode: str
+
+
+class ResponseScanSettingsUpdate(ParrySchema):
+    response_scan_mode: ResponseScanMode
+
+
 @router.get("/settings", response_model=BlockingSettingsResponse)
 async def get_blocking_settings(
     org_actor: tuple[Org, Actor] = Depends(get_current_actor),
@@ -191,6 +199,48 @@ async def update_blocking_settings(
         enabled=body.blocking_enabled,
     )
     return BlockingSettingsResponse(blocking_enabled=org.blocking_enabled)
+
+
+@router.get("/scan-settings", response_model=ResponseScanSettingsResponse)
+async def get_scan_settings(
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+) -> ResponseScanSettingsResponse:
+    org, _ = org_actor
+    return ResponseScanSettingsResponse(response_scan_mode=org.response_scan_mode.value)
+
+
+@router.put("/scan-settings", response_model=ResponseScanSettingsResponse)
+async def update_scan_settings(
+    body: ResponseScanSettingsUpdate,
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db),
+) -> ResponseScanSettingsResponse:
+    """Flip the response scan mode. Audit-logged with before/after
+    so security posture changes are traceable."""
+    org, actor = org_actor
+    before = org.response_scan_mode.value
+    org.response_scan_mode = body.response_scan_mode
+    await db.flush()
+
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="response_scan_mode.updated",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="org",
+        resource_id=str(org.id),
+        details={"before": before, "after": body.response_scan_mode.value},
+    )
+    await db.commit()
+
+    log.info(
+        "response_scan_mode.updated",
+        org_id=str(org.id),
+        mode=body.response_scan_mode.value,
+    )
+    return ResponseScanSettingsResponse(response_scan_mode=org.response_scan_mode.value)
 
 
 class ScanResponseRequest(ParrySchema):

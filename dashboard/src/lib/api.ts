@@ -251,6 +251,19 @@ class ApiClient {
     });
   }
 
+  async getResponseScanSettings(): Promise<{ response_scan_mode: string }> {
+    return this.request("/api/v1/proxy/scan-settings");
+  }
+
+  async updateResponseScanSettings(
+    body: { response_scan_mode: "off" | "redact" | "block" }
+  ): Promise<{ response_scan_mode: string }> {
+    return this.request("/api/v1/proxy/scan-settings", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
   // Audit log
   async listAuditLog(filters?: {
     action?: string;
