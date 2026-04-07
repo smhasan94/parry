@@ -35,6 +35,45 @@ SEVERITY_EMOJI = {
 }
 
 
+def build_webhook_payload(incident: Incident, dashboard_url: str | None = None) -> dict:
+    """Build a generic JSON payload for arbitrary webhook receivers.
+
+    Designed to be consumable by PagerDuty, Opsgenie, Teams, Discord, n8n,
+    Zapier, custom services, etc. Stable schema versioned via `schema_version`.
+    """
+    detections_payload: list[dict] = []
+    if incident.detections:
+        for d in sorted(incident.detections, key=lambda x: x.confidence, reverse=True):
+            detections_payload.append(
+                {
+                    "detector": d.detector,
+                    "severity": d.severity.value,
+                    "confidence": d.confidence,
+                    "reason": d.reason,
+                }
+            )
+
+    payload: dict = {
+        "schema_version": "1.0",
+        "event": "incident.created",
+        "incident": {
+            "id": str(incident.id),
+            "title": incident.title,
+            "severity": incident.severity.value,
+            "status": incident.status.value,
+            "agent_id": str(incident.agent_id),
+            "org_id": str(incident.org_id),
+            "created_at": incident.created_at.isoformat(),
+            "detections": detections_payload,
+        },
+    }
+    if dashboard_url:
+        payload["incident"]["dashboard_url"] = (
+            f"{dashboard_url.rstrip('/')}/incidents"
+        )
+    return payload
+
+
 def _meets_min_severity(config: dict, severity: Severity) -> bool:
     min_severity_str = config.get("min_severity", "high")
     try:
@@ -47,10 +86,14 @@ def _meets_min_severity(config: dict, severity: Severity) -> bool:
 def should_alert(org: Org, severity: Severity) -> bool:
     """Return True if the org's alert config wants to be notified at this severity.
 
-    Considers any configured channel (Slack webhook OR alert_emails).
+    Considers any configured channel (Slack, email, or generic webhook).
     """
     config = org.alert_config or {}
-    has_channel = bool(config.get("slack_webhook_url") or config.get("alert_emails"))
+    has_channel = bool(
+        config.get("slack_webhook_url")
+        or config.get("alert_emails")
+        or config.get("webhook_url")
+    )
     if not has_channel:
         return False
     return _meets_min_severity(config, severity)
@@ -227,6 +270,36 @@ async def send_email_alert(
         return False
 
 
+async def send_webhook_alert(
+    webhook_url: str,
+    incident: Incident,
+    dashboard_url: str | None = None,
+    headers: dict[str, str] | None = None,
+) -> bool:
+    """POST a generic JSON payload to an arbitrary webhook URL."""
+    payload = build_webhook_payload(incident, dashboard_url)
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(webhook_url, json=payload, headers=headers or {})
+            resp.raise_for_status()
+        log.info(
+            "alert.webhook_sent",
+            incident_id=str(incident.id),
+            severity=incident.severity.value,
+            status=resp.status_code,
+        )
+        record_alert_sent(channel="webhook", success=True)
+        return True
+    except httpx.HTTPError as e:
+        log.warning(
+            "alert.webhook_failed",
+            incident_id=str(incident.id),
+            error=str(e),
+        )
+        record_alert_sent(channel="webhook", success=False)
+        return False
+
+
 async def dispatch_incident_alert(
     org: Org, incident: Incident, dashboard_url: str | None = None
 ) -> None:
@@ -236,10 +309,15 @@ async def dispatch_incident_alert(
 
     config = org.alert_config or {}
 
-    webhook_url = config.get("slack_webhook_url")
-    if webhook_url:
-        await send_slack_alert(webhook_url, incident, dashboard_url)
+    slack_url = config.get("slack_webhook_url")
+    if slack_url:
+        await send_slack_alert(slack_url, incident, dashboard_url)
 
     alert_emails = config.get("alert_emails") or []
     if alert_emails:
         await send_email_alert(alert_emails, incident, dashboard_url)
+
+    webhook_url = config.get("webhook_url")
+    if webhook_url:
+        webhook_headers = config.get("webhook_headers") or {}
+        await send_webhook_alert(webhook_url, incident, dashboard_url, headers=webhook_headers)

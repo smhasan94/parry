@@ -8,6 +8,7 @@ from app.services.alert_service import (
     build_email_html,
     build_email_subject,
     build_slack_payload,
+    build_webhook_payload,
     should_alert,
 )
 
@@ -73,6 +74,16 @@ class TestShouldAlert:
         )
         assert should_alert(org, Severity.HIGH) is True
         assert should_alert(org, Severity.MEDIUM) is False
+
+    def test_webhook_only_is_a_valid_channel(self) -> None:
+        org = _make_org(
+            alert_config={
+                "webhook_url": "https://api.pagerduty.com/integration/abc",
+                "min_severity": "critical",
+            }
+        )
+        assert should_alert(org, Severity.CRITICAL) is True
+        assert should_alert(org, Severity.HIGH) is False
 
     def test_both_channels_configured(self) -> None:
         org = _make_org(
@@ -219,6 +230,62 @@ class TestBuildEmailHtml:
         incident = _make_incident(severity=Severity.CRITICAL)
         html = build_email_html(incident)
         assert "#dc2626" in html
+
+
+class TestBuildWebhookPayload:
+    def test_payload_shape(self) -> None:
+        incident = _make_incident(severity=Severity.CRITICAL)
+        payload = build_webhook_payload(incident)
+        assert payload["schema_version"] == "1.0"
+        assert payload["event"] == "incident.created"
+        assert "incident" in payload
+
+    def test_incident_fields(self) -> None:
+        incident = _make_incident(severity=Severity.HIGH)
+        payload = build_webhook_payload(incident)
+        inc = payload["incident"]
+        assert inc["id"] == str(incident.id)
+        assert inc["title"] == incident.title
+        assert inc["severity"] == "high"
+        assert inc["status"] == "open"
+        assert inc["agent_id"] == str(incident.agent_id)
+        assert "created_at" in inc
+
+    def test_includes_detections_sorted_by_confidence_desc(self) -> None:
+        detections = [
+            _make_detection("anomaly", confidence=0.5),
+            _make_detection("prompt_injection", confidence=0.95),
+            _make_detection("jailbreak", confidence=0.7),
+        ]
+        incident = _make_incident(detections=detections)
+        payload = build_webhook_payload(incident)
+        names = [d["detector"] for d in payload["incident"]["detections"]]
+        assert names == ["prompt_injection", "jailbreak", "anomaly"]
+
+    def test_no_detections_returns_empty_list(self) -> None:
+        incident = _make_incident(detections=[])
+        payload = build_webhook_payload(incident)
+        assert payload["incident"]["detections"] == []
+
+    def test_dashboard_url_added_when_provided(self) -> None:
+        incident = _make_incident()
+        payload = build_webhook_payload(incident, dashboard_url="https://parry.example.com/")
+        assert payload["incident"]["dashboard_url"] == "https://parry.example.com/incidents"
+
+    def test_no_dashboard_url_omits_field(self) -> None:
+        incident = _make_incident()
+        payload = build_webhook_payload(incident)
+        assert "dashboard_url" not in payload["incident"]
+
+    def test_payload_is_json_serializable(self) -> None:
+        """Generic webhook receivers expect plain JSON — no UUIDs or datetimes."""
+        import json
+
+        incident = _make_incident()
+        payload = build_webhook_payload(incident, dashboard_url="https://x.com")
+        # Must not raise
+        json_str = json.dumps(payload)
+        assert "schema_version" in json_str
 
 
 class TestSeverityRank:
