@@ -1,13 +1,16 @@
 """Tests for app.core.metrics — recorders and the /metrics endpoint."""
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.metrics import (
     alerts_sent_total,
+    anomaly_drift_sigma,
     detections_triggered_total,
     events_ingested_total,
     http_requests_total,
     incidents_created_total,
     record_alert_sent,
+    record_anomaly_drift,
     record_detection_triggered,
     record_event_ingested,
     record_incident_created,
@@ -102,6 +105,49 @@ class TestRecordAlertSent:
         assert email_after == email_before  # email not touched
 
 
+def _histogram_stats(metric, **labels) -> tuple[float, float]:
+    """Return (count, sum) for a labelled histogram via collect() samples."""
+    count = 0.0
+    total = 0.0
+    for family in metric.collect():
+        for sample in family.samples:
+            if sample.labels != labels:
+                continue
+            if sample.name.endswith("_count"):
+                count = sample.value
+            elif sample.name.endswith("_sum"):
+                total = sample.value
+    return count, total
+
+
+class TestRecordAnomalyDrift:
+    def test_observation_updates_sum_and_count(self) -> None:
+        labels = {"quality": "high", "triggered": "true"}
+        count_before, sum_before = _histogram_stats(anomaly_drift_sigma, **labels)
+        record_anomaly_drift(4.2, "high", triggered=True)
+        record_anomaly_drift(3.1, "high", triggered=True)
+        count_after, sum_after = _histogram_stats(anomaly_drift_sigma, **labels)
+        assert count_after == count_before + 2
+        assert sum_after == pytest.approx(sum_before + 4.2 + 3.1)
+
+    def test_quality_and_triggered_labels_isolated(self) -> None:
+        hi_before, _ = _histogram_stats(
+            anomaly_drift_sigma, quality="high", triggered="true"
+        )
+        med_before, _ = _histogram_stats(
+            anomaly_drift_sigma, quality="medium", triggered="false"
+        )
+        record_anomaly_drift(5.0, "high", triggered=True)
+        hi_after, _ = _histogram_stats(
+            anomaly_drift_sigma, quality="high", triggered="true"
+        )
+        med_after, _ = _histogram_stats(
+            anomaly_drift_sigma, quality="medium", triggered="false"
+        )
+        assert hi_after == hi_before + 1
+        assert med_after == med_before  # untouched
+
+
 class TestMetricsEndpoint:
     def test_returns_200_with_prometheus_content_type(self) -> None:
         from app.main import app
@@ -124,6 +170,7 @@ class TestMetricsEndpoint:
         assert "parry_detections_triggered_total" in body
         assert "parry_incidents_created_total" in body
         assert "parry_alerts_sent_total" in body
+        assert "parry_anomaly_drift_sigma" in body
 
     def test_metrics_endpoint_does_not_record_itself(self) -> None:
         """Hitting /metrics should not increment HTTP request counters."""
