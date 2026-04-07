@@ -11,6 +11,7 @@ from app.api.v1 import (
     incidents,
     metrics_query,
     policies,
+    proxy,
     webhooks,
 )
 
@@ -29,3 +30,4 @@ api_router.include_router(
     detector_config.router, prefix="/detector-config", tags=["detector-config"]
 )
 api_router.include_router(metrics_query.router, prefix="/metrics", tags=["metrics"])
+api_router.include_router(proxy.router, prefix="/proxy", tags=["proxy"])
