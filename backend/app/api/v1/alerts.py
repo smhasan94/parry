@@ -14,7 +14,11 @@ from app.db.models import Detection, Incident, IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
 from app.services import audit_service
-from app.services.alert_service import send_email_alert, send_slack_alert
+from app.services.alert_service import (
+    send_email_alert,
+    send_slack_alert,
+    send_webhook_alert,
+)
 
 log = structlog.get_logger()
 
@@ -24,6 +28,8 @@ router = APIRouter()
 class AlertConfigResponse(ParrySchema):
     slack_webhook_url: str | None = None
     alert_emails: list[str] = []
+    webhook_url: str | None = None
+    webhook_headers: dict[str, str] = {}
     min_severity: str = "high"
     enabled: bool = False
 
@@ -31,6 +37,8 @@ class AlertConfigResponse(ParrySchema):
 class AlertConfigUpdate(ParrySchema):
     slack_webhook_url: HttpUrl | None = None
     alert_emails: list[EmailStr] | None = None
+    webhook_url: HttpUrl | None = None
+    webhook_headers: dict[str, str] | None = None
     min_severity: str | None = None
 
 
@@ -39,8 +47,14 @@ def _config_to_response(config: dict | None) -> AlertConfigResponse:
     return AlertConfigResponse(
         slack_webhook_url=config.get("slack_webhook_url"),
         alert_emails=config.get("alert_emails") or [],
+        webhook_url=config.get("webhook_url"),
+        webhook_headers=config.get("webhook_headers") or {},
         min_severity=config.get("min_severity", "high"),
-        enabled=bool(config.get("slack_webhook_url") or config.get("alert_emails")),
+        enabled=bool(
+            config.get("slack_webhook_url")
+            or config.get("alert_emails")
+            or config.get("webhook_url")
+        ),
     )
 
 
@@ -66,6 +80,11 @@ def _audit_safe_config(config: dict | None) -> dict:
     cfg = dict(config or {})
     if "slack_webhook_url" in cfg:
         cfg["slack_webhook_url"] = _redact_webhook(cfg.get("slack_webhook_url"))
+    if "webhook_url" in cfg:
+        cfg["webhook_url"] = _redact_webhook(cfg.get("webhook_url"))
+    if "webhook_headers" in cfg and cfg["webhook_headers"]:
+        # Header values may carry tokens — keep keys, redact values
+        cfg["webhook_headers"] = {k: "[Filtered]" for k in cfg["webhook_headers"]}
     return cfg
 
 
@@ -85,6 +104,12 @@ async def update_alert_config(
 
     if body.alert_emails is not None:
         config["alert_emails"] = [str(e) for e in body.alert_emails]
+
+    if body.webhook_url is not None:
+        config["webhook_url"] = str(body.webhook_url)
+
+    if body.webhook_headers is not None:
+        config["webhook_headers"] = body.webhook_headers
 
     if body.min_severity is not None:
         try:
@@ -205,7 +230,25 @@ async def send_test_alert(
             )
         return {"status": "sent", "channel": "email"}
 
+    if channel == "webhook":
+        webhook_url = config.get("webhook_url")
+        if not webhook_url:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No webhook URL configured",
+            )
+        webhook_headers = config.get("webhook_headers") or {}
+        success = await send_webhook_alert(
+            webhook_url, test_incident, dashboard_url=dashboard, headers=webhook_headers
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to send webhook. Check the URL and that it accepts POST.",
+            )
+        return {"status": "sent", "channel": "webhook"}
+
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="channel must be 'slack' or 'email'",
+        detail="channel must be 'slack', 'email', or 'webhook'",
     )
