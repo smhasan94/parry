@@ -311,9 +311,17 @@ export function SessionReplayPage() {
           </CardHeader>
           <CardContent>
             {data.events.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No events in this session yet.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <Clock className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">
+                  {isLive ? "Session is live — waiting for first event" : "Session has no events"}
+                </p>
+                <p className="max-w-sm text-xs text-muted-foreground">
+                  {isLive
+                    ? "This page polls every 5 seconds. The next event from the SDK will appear here automatically."
+                    : "The session was opened but no LLM calls were recorded before it ended."}
+                </p>
+              </div>
             ) : (
               <ol className="space-y-3">
                 {data.events.map((e, i) => (

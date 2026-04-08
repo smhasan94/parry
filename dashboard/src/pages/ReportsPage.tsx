@@ -231,9 +231,17 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             {recent.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No reports generated yet.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">No reports generated yet</p>
+                <p className="max-w-sm text-xs text-muted-foreground">
+                  Pick a date range above and click Generate PDF. The last
+                  {" "}
+                  {MAX_RECENT} reports you generate from this browser will
+                  show up here so you can re-download without re-selecting
+                  the window.
+                </p>
+              </div>
             ) : (
               <ul className="divide-y divide-border">
                 {recent.map((r) => (

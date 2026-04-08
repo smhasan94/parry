@@ -72,15 +72,26 @@ export function CustomRulesPage() {
           <p className="text-sm text-muted-foreground">Loading rules…</p>
         ) : rules.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileCode className="mb-4 h-12 w-12 text-muted-foreground" />
+            <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+              <FileCode className="h-12 w-12 text-muted-foreground" />
               <p className="text-sm font-medium">No custom rules yet</p>
-              <p className="max-w-md text-center text-xs text-muted-foreground">
-                Custom rules are regex patterns that run against prompts and
-                responses. Use them to block competitor mentions, catch
-                org-specific secrets, or enforce tone guidelines beyond Parry's
-                built-in detectors.
+              <p className="max-w-md text-xs text-muted-foreground">
+                Custom rules are regex patterns that run alongside Parry's
+                built-in detectors. Use them to block competitor mentions,
+                catch org-specific secrets, or enforce tone guidelines.
+                Built-in prompt injection / jailbreak / tool-misuse detection
+                still runs even without any custom rules configured.
               </p>
+              {canMutate && (
+                <Button
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setShowCreate(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create your first rule
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (

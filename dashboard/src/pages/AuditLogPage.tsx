@@ -203,12 +203,38 @@ export function AuditLogPage() {
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Loading audit log...</p>
             ) : entries.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Activity className="mb-4 h-12 w-12 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">No audit events recorded yet.</p>
-                <p className="text-xs text-muted-foreground">
-                  Actions like incident status changes and API key operations appear here.
-                </p>
+              <div className="flex flex-col items-center gap-2 py-12 text-center">
+                <Activity className="h-12 w-12 text-muted-foreground" />
+                {actionFilter ? (
+                  <>
+                    <p className="text-sm font-medium">No audit events match this filter</p>
+                    <p className="max-w-sm text-xs text-muted-foreground">
+                      Try a different action type or clear the filter to see
+                      all recent activity.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-1"
+                      onClick={() => {
+                        setActionFilter("");
+                        setReasonFilter("");
+                      }}
+                    >
+                      Clear filter
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium">No audit events yet</p>
+                    <p className="max-w-sm text-xs text-muted-foreground">
+                      Every mutation — incident status changes, policy
+                      edits, custom rule updates, API key rotations — lands
+                      here as an append-only record. The SOC 2 export picks
+                      up whatever's visible above.
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <div>
