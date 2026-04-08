@@ -137,12 +137,23 @@ async def get_session_with_events(
             if d.triggered:
                 triggered_count += 1
 
+    # started_at is the timestamp of the first event in the session,
+    # NOT session.created_at. The row's created_at is auto-populated
+    # by TimestampMixin to `now()` on INSERT — for any session that
+    # ingests events backdated from a client, created_at is "when
+    # Parry observed it" rather than "when the session began." The
+    # dashboard wants the behavioural timeline, so the first event's
+    # wall-clock wins. Falls back to session.created_at when there
+    # are no events yet (live session with zero calls so far).
+    first_event_ts = events[0].timestamp if events else session.created_at
+    started_at_iso = first_event_ts.isoformat() if first_event_ts else None
+
     return {
         "session": {
             "id": str(session.id),
             "agent_id": str(agent.id),
             "agent_name": agent.name,
-            "started_at": session.created_at.isoformat() if session.created_at else None,
+            "started_at": started_at_iso,
             "ended_at": session.ended_at.isoformat() if session.ended_at else None,
             "event_count": len(events),
             "triggered_detection_count": triggered_count,
@@ -196,21 +207,39 @@ async def list_agent_sessions(
         return []
 
     session_ids = [s.id for s in sessions]
-    count_rows = await db.execute(
-        select(AgentEvent.session_id, func.count())
+    # Count + min(timestamp) per session in a single query — we use
+    # the first-event timestamp as started_at for the same reason
+    # get_session_with_events does: session.created_at is the row's
+    # INSERT time, not the behavioural start.
+    stats_rows = await db.execute(
+        select(
+            AgentEvent.session_id,
+            func.count().label("cnt"),
+            func.min(AgentEvent.timestamp).label("first_ts"),
+        )
         .where(
             AgentEvent.agent_id == agent_id,
             AgentEvent.session_id.in_(session_ids),
         )
         .group_by(AgentEvent.session_id)
     )
-    counts: dict[uuid.UUID, int] = {sid: int(c) for sid, c in count_rows.all() if sid is not None}
+    counts: dict[uuid.UUID, int] = {}
+    first_ts: dict[uuid.UUID, Any] = {}
+    for sid, cnt, first in stats_rows.all():
+        if sid is None:
+            continue
+        counts[sid] = int(cnt)
+        first_ts[sid] = first
+
+    def _started(s: AgentSession) -> str | None:
+        ts = first_ts.get(s.id) or s.created_at
+        return ts.isoformat() if ts else None
 
     return [
         {
             "id": str(s.id),
             "agent_id": str(s.agent_id),
-            "started_at": s.created_at.isoformat() if s.created_at else None,
+            "started_at": _started(s),
             "ended_at": s.ended_at.isoformat() if s.ended_at else None,
             "event_count": counts.get(s.id, 0),
             "is_live": s.ended_at is None,
