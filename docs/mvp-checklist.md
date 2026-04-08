@@ -143,7 +143,7 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 ### Launch prep
 - [x] Production `docker-compose.prod.yml`
 - [x] Render deployment configured (web + worker + static)
-- [ ] `CLAUDE.local.md` created (gitignored, personal notes)
+- [x] `CLAUDE.local.md` created (gitignored, personal notes) — template at `CLAUDE.local.md.example`
 - [x] README.md with quickstart
 - [ ] Landing page (can be simple, outside this repo)
 - [x] `docs/runbook.md` — deploy, rollback, debug steps

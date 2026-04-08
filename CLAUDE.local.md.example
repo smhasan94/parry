@@ -1,0 +1,99 @@
+# CLAUDE.local.md — personal notes
+
+> Copy this file to `CLAUDE.local.md` at the repo root. The real file
+> is gitignored, so anything you put in it stays on your machine.
+>
+>     cp CLAUDE.local.md.example CLAUDE.local.md
+>
+> Claude Code picks up both `CLAUDE.md` (committed, shared project
+> instructions) and `CLAUDE.local.md` (personal, gitignored) at the
+> start of every session.
+
+This is *your* scratchpad. Anything here is context Claude will have
+on hand without you having to re-explain it. Treat it like a pinned
+note, not a spec — short, personal, always up to date.
+
+Suggested sections below. Delete any you don't want.
+
+---
+
+## Who I am / how I work
+
+- Role on this project:
+- Timezone + working hours:
+- What I'm optimising for right now (shipping speed, polish, learning, …):
+- How I want Claude to collaborate with me (terse diffs, long
+  explanations, ask before acting, …):
+
+---
+
+## Current focus
+
+<!--
+Keep this to 3–5 lines. What are you actually working on this week?
+Which plan / milestone / bug is top of mind? When this drifts out of
+date you'll notice because answers start feeling off.
+-->
+
+- Active plan / milestone:
+- Open loose ends:
+- Blocked on:
+
+---
+
+## Personal environment
+
+- Local services running (if different from defaults):
+- Shell quirks or aliases Claude should know about:
+- Hardware notes (M-series vs x86, RAM-bound, …):
+- Editor:
+
+```bash
+# Commands I run most often
+```
+
+---
+
+## Conventions I enforce that aren't in CLAUDE.md
+
+<!--
+Things you care about that the rest of the team hasn't formalised yet.
+E.g. "always TDD", "prefer sqlalchemy core over orm in hot paths",
+"no comments in frontend unless the logic is non-obvious".
+-->
+
+-
+
+---
+
+## Things Claude keeps getting wrong
+
+<!--
+A running list of corrections so you don't have to re-issue them every
+session. When something is generally true for this project, promote it
+to CLAUDE.md instead.
+-->
+
+-
+
+---
+
+## Sandbox / scratch
+
+<!--
+TODOs for yourself, idea parking lot, half-written snippets. Claude
+will read this too — sometimes that's exactly what you want, other
+times it's noise. Clear it out when it gets stale.
+-->
+
+-
+
+---
+
+## Secrets
+
+**Do not put real secrets in this file, even though it's gitignored.**
+Use `.env.local` for secrets. Only put references here (e.g. "dev
+Clerk key lives in 1Password → Parry Dev").
+
+-
