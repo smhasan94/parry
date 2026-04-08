@@ -129,12 +129,23 @@ export function PoliciesPage() {
           <p className="text-sm text-muted-foreground">Loading policies...</p>
         ) : policies.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileCheck className="mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No policies defined yet.</p>
-              <p className="text-xs text-muted-foreground">
-                Create a policy to control what tools and domains your agents can access.
+            <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+              <FileCheck className="h-12 w-12 text-muted-foreground" />
+              <p className="text-sm font-medium">No policies defined yet</p>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                Policies tell Parry what tools your agents can call, which
+                domains they can touch, and which patterns to block. Without
+                a policy the detection engine still catches prompt injection
+                and jailbreaks, but tool guardrails are off.
               </p>
+              <Button
+                size="sm"
+                className="mt-2"
+                onClick={() => setShowCreate(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Create your first policy
+              </Button>
             </CardContent>
           </Card>
         ) : (
