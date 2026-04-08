@@ -5,7 +5,7 @@ import sqlalchemy as sa
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ParryError, PolicyViolationError
@@ -90,6 +90,38 @@ async def parry_error_handler(request: Request, exc: ParryError) -> JSONResponse
 
 
 # ── Health check ─────────────────────────────────────────────────
+
+
+@app.get("/docs/scalar", include_in_schema=False)
+async def scalar_docs() -> HTMLResponse:
+    """Serve the Scalar API reference UI against our /openapi.json.
+
+    Zero-dependency — Scalar's standalone bundle loads from their CDN
+    and renders the full reference client-side. Kept off the OpenAPI
+    schema itself via ``include_in_schema=False`` so it doesn't clutter
+    the generated spec.
+    """
+    html = """<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Parry API Reference</title>
+    <style>
+      body { margin: 0; background: #0b1220; }
+    </style>
+  </head>
+  <body>
+    <script id="api-reference" data-url="/openapi.json"></script>
+    <script>
+      // Dark theme to match the dashboard / landing page.
+      var cfg = { theme: "deepSpace", layout: "modern", hideDownloadButton: false };
+      document.getElementById("api-reference").dataset.configuration = JSON.stringify(cfg);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>"""
+    return HTMLResponse(content=html)
 
 
 @app.get("/health")

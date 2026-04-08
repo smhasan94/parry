@@ -6,6 +6,10 @@ The full machine-readable contract lives at `/openapi.json` on a
 running backend — this doc covers the endpoints you'll hit most
 often with a short example per route.
 
+**Interactive reference:** `/docs/scalar` renders the full spec in a
+Scalar API reference UI (search, try-it-out, schema drill-down).
+`/docs` and `/redoc` are also available in non-production builds.
+
 | Auth | Header |
 | --- | --- |
 | Dashboard user | `Authorization: Bearer <Clerk JWT>` |

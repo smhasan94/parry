@@ -314,7 +314,8 @@ curl http://localhost:8000/health
 | Service | URL | Hot Reload |
 |---------|-----|------------|
 | Backend API | http://localhost:8000 | Yes (uvicorn --reload) |
-| API Docs | http://localhost:8000/docs | - |
+| Swagger UI | http://localhost:8000/docs | - |
+| Scalar Reference | http://localhost:8000/docs/scalar | - |
 | Dashboard | http://localhost:5173 | Yes (Vite HMR) |
 | Celery Worker | - | Yes (watchmedo) |
 | PostgreSQL | localhost:5434 | Persistent volume |
