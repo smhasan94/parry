@@ -93,12 +93,34 @@ export function AgentsPage() {
           <p className="text-sm text-muted-foreground">Loading agents...</p>
         ) : agents.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Bot className="mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No agents registered yet.</p>
-              <p className="text-xs text-muted-foreground">
-                Install the Parry SDK and call parry.init() to register your first agent.
+            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+              <Bot className="h-12 w-12 text-muted-foreground" />
+              <p className="text-sm font-medium">No agents registered yet</p>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                Agents are created automatically on their first SDK call.
+                Create an API key, wrap your LLM client with the Parry SDK,
+                and your agent will appear here.
               </p>
+              <div className="mt-2 w-full max-w-md overflow-hidden rounded-md border border-border bg-background/60 text-left">
+                <pre className="overflow-x-auto px-3 py-2 text-[11px] leading-relaxed text-foreground/90">
+                  <code>{`from parry.wrappers.openai import SentinelOpenAI
+
+client = SentinelOpenAI(
+    agent_id="support-bot",
+    api_key="sk-parry-...",
+)`}</code>
+                </pre>
+              </div>
+              <div className="flex gap-2">
+                <Link to="/settings">
+                  <Button size="sm" variant="outline">
+                    Create an API key
+                  </Button>
+                </Link>
+                <Link to="/setup">
+                  <Button size="sm">Guided setup</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         ) : (
