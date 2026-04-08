@@ -167,7 +167,7 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 ## Phase 6 — Enterprise (Month 7–8)
 
 - [ ] SSO (SAML via WorkOS)
-- [ ] On-prem agent mode (Docker image, no data leaves network)
+- [x] On-prem agent mode (Docker image, no data leaves network) — see [on-prem.md](./on-prem.md)
 - [x] Custom detection rules (org-defined regex/patterns via UI) *(plan-05)*
 - [ ] SLA dashboard
 - [ ] SOC 2 audit trail export
