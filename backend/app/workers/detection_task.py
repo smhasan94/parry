@@ -41,18 +41,34 @@ def run_detection_pipeline(self, event_id: str) -> dict:  # type: ignore[no-unty
 
 
 async def _run_pipeline(event_id: str) -> dict:
+    from sqlalchemy import select
+
     from app.db.models import AgentEvent
-    from app.db.session import async_session_factory
+    from app.db.session import make_task_session_factory
     from app.services.detection_service import run_and_persist_detections
 
-    async with async_session_factory() as db:
-        event = await db.get(AgentEvent, uuid.UUID(event_id))
-        if event is None:
-            log.warning("detection.event_not_found", event_id=event_id)
-            return {"event_id": event_id, "error": "event_not_found"}
+    # Build a disposable engine + session factory for this task.
+    # Celery prefork + asyncio.run() means each task runs on a fresh
+    # loop, and the module-level engine would be bound to whichever
+    # loop first touched it — reusing it across tasks raises
+    # "Task attached to a different loop".
+    factory = make_task_session_factory()
+    task_engine = factory.kw["bind"]
+    try:
+        async with factory() as db:
+            # AgentEvent is a TimescaleDB hypertable with a composite
+            # PK (id, timestamp) — session.get() rejects single-column
+            # identifiers. Query by id column instead.
+            result = await db.execute(
+                select(AgentEvent).where(AgentEvent.id == uuid.UUID(event_id))
+            )
+            event = result.scalar_one_or_none()
+            if event is None:
+                log.warning("detection.event_not_found", event_id=event_id)
+                return {"event_id": event_id, "error": "event_not_found"}
 
-        detections = await run_and_persist_detections(db, event)
-        await db.commit()
+            detections = await run_and_persist_detections(db, event)
+            await db.commit()
 
         triggered = [d for d in detections if d.triggered]
 
@@ -68,3 +84,5 @@ async def _run_pipeline(event_id: str) -> dict:
             "total": len(detections),
             "triggered": len(triggered),
         }
+    finally:
+        await task_engine.dispose()

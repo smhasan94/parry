@@ -7,6 +7,19 @@ celery_app = Celery(
     "parry",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
+    # Explicit includes — autodiscover_tasks looks for `tasks.py` per
+    # package, but our worker modules are named *_task.py so nothing
+    # would be registered. Missing any entry here means the task
+    # silently never runs. This was a real bug in production:
+    # run_detection_pipeline was being enqueued on every event
+    # ingest and the worker was rejecting it as "unregistered task."
+    include=[
+        "app.workers.detection_task",
+        "app.workers.baseline_refresh_task",
+        "app.workers.health_score_task",
+        "app.workers.metered_usage_task",
+        "app.workers.audit_export_task",
+    ],
 )
 
 celery_app.conf.update(
@@ -44,4 +57,7 @@ celery_app.conf.update(
     },
 )
 
-celery_app.autodiscover_tasks(["app.workers"])
+# NOTE: we previously also called celery_app.autodiscover_tasks(
+# ["app.workers"]) here but it's ineffective for this module layout
+# (no tasks.py files) and only served to mask the real bug. Task
+# registration now happens exclusively via the include= list above.

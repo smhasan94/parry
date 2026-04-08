@@ -17,12 +17,31 @@ class TestMergedConfig:
         result = merged_config(None)
         assert set(result.keys()) == set(DETECTOR_NAMES)
         for name, defaults in DEFAULT_DETECTOR_CONFIG.items():
-            assert result[name] == defaults
+            if name == "custom_rules":
+                # custom_rules is a list, not a per-detector dict —
+                # see the merged_config docstring.
+                assert result[name] == []
+            else:
+                assert result[name] == defaults
 
     def test_empty_returns_defaults(self) -> None:
         result = merged_config({})
         for name, defaults in DEFAULT_DETECTOR_CONFIG.items():
-            assert result[name] == defaults
+            if name == "custom_rules":
+                assert result[name] == []
+            else:
+                assert result[name] == defaults
+
+    def test_custom_rules_list_passes_through(self) -> None:
+        """Regression: the custom_rules list used to get clobbered
+        by the default per-detector dict, breaking the detector at
+        runtime with AttributeError."""
+        rules = [
+            {"id": "r1", "name": "test", "pattern": "foo", "enabled": True},
+            {"id": "r2", "name": "test2", "pattern": "bar", "enabled": False},
+        ]
+        result = merged_config({"custom_rules": rules})
+        assert result["custom_rules"] == rules
 
     def test_partial_override_only_replaces_specified_fields(self) -> None:
         result = merged_config({"prompt_injection": {"trigger_threshold": 0.4}})

@@ -123,7 +123,12 @@ async def list_events(
 
     if cursor:
         cursor_id = uuid.UUID(cursor)
-        cursor_event = await db.get(AgentEvent, cursor_id)
+        # Can't use db.get() — AgentEvent is a hypertable with a
+        # composite PK (id, timestamp). Query by id column instead.
+        cursor_result = await db.execute(
+            select(AgentEvent).where(AgentEvent.id == cursor_id)
+        )
+        cursor_event = cursor_result.scalar_one_or_none()
         if cursor_event:
             query = query.where(AgentEvent.timestamp < cursor_event.timestamp)
 

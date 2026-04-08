@@ -27,10 +27,30 @@ MAX_THRESHOLD = 1.0
 
 
 def merged_config(org_config: dict | None) -> dict[str, dict[str, Any]]:
-    """Return defaults merged with org overrides. Always returns all detectors."""
-    result: dict[str, dict[str, Any]] = {}
+    """Return defaults merged with org overrides. Always returns all detectors.
+
+    Also preserves non-detector-config keys from the org config — in
+    particular ``custom_rules`` is stored by the custom-rules API as
+    a **list** of rule dicts at ``org.detector_config['custom_rules']``
+    and the CustomRulesDetector reads it as a list. Without the
+    passthrough below the list got clobbered with the default
+    per-detector dict ``{"trigger_threshold": 0.5, "enabled": True}``
+    and the detector raised AttributeError at runtime — two
+    different concepts shared the same JSONB key.
+    """
+    result: dict[str, Any] = {}
     overrides = org_config or {}
+
     for name, defaults in DEFAULT_DETECTOR_CONFIG.items():
+        if name == "custom_rules":
+            # Special case — the storage key collides. Use the
+            # user's list (or an empty one) rather than the
+            # per-detector dict. The detector has no tunable
+            # threshold, so there's no config to merge anyway.
+            value = overrides.get("custom_rules")
+            result["custom_rules"] = value if isinstance(value, list) else []
+            continue
+
         merged = dict(defaults)
         if name in overrides and isinstance(overrides[name], dict):
             user = overrides[name]
