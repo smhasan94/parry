@@ -297,15 +297,22 @@ async def seed(reset: bool = False) -> None:
                 db.add(event)
 
             # ── Injected prompts that trigger detections ──
+            # Each injected prompt creates its own session + event +
+            # detection. We keep the session refs around so the
+            # incident rows below can point trigger_session_id at a
+            # real session and the detections at real detections.
+            injection_bundles: list[tuple[AgentSession, AgentEvent, Detection]] = []
             for _ in range(profile["injections"]):
                 ts = _rand_ts(profile["days_back"])
-                session = AgentSession(id=uuid.uuid4(), agent_id=agent.id, ended_at=ts)
-                db.add(session)
+                inj_session = AgentSession(
+                    id=uuid.uuid4(), agent_id=agent.id, ended_at=ts
+                )
+                db.add(inj_session)
                 await db.flush()
                 event = AgentEvent(
                     id=uuid.uuid4(),
                     agent_id=agent.id,
-                    session_id=session.id,
+                    session_id=inj_session.id,
                     timestamp=ts,
                     prompt=random.choice(INJECTION_PROMPTS),
                     response="I can't help with that.",
@@ -327,9 +334,15 @@ async def seed(reset: bool = False) -> None:
                 )
                 db.add(detection)
                 await db.flush()
+                injection_bundles.append((inj_session, event, detection))
 
             # ── Incidents ──
+            # Link each incident to a real injection bundle when we
+            # have one, so the "View Replay" button deep-links to a
+            # session that actually exists and the incident's
+            # detections column is populated via Detection.incident_id.
             for _ in range(profile["incidents_open"]):
+                bundle = injection_bundles.pop() if injection_bundles else None
                 incident = Incident(
                     id=uuid.uuid4(),
                     org_id=org.id,
@@ -337,11 +350,22 @@ async def seed(reset: bool = False) -> None:
                     title="[HIGH] prompt_injection: instruction override attempt",
                     severity=Severity.HIGH,
                     status=IncidentStatus.OPEN,
-                    metadata_={"trigger_session_id": str(uuid.uuid4())},
+                    metadata_=(
+                        {
+                            "trigger_session_id": str(bundle[0].id),
+                            "trigger_event_id": str(bundle[1].id),
+                        }
+                        if bundle
+                        else None
+                    ),
                 )
                 db.add(incident)
+                await db.flush()
+                if bundle:
+                    bundle[2].incident_id = incident.id
 
             for _ in range(profile["incidents_critical"]):
+                bundle = injection_bundles.pop() if injection_bundles else None
                 incident = Incident(
                     id=uuid.uuid4(),
                     org_id=org.id,
@@ -349,9 +373,19 @@ async def seed(reset: bool = False) -> None:
                     title="[CRITICAL] data_exfiltration: secret in response",
                     severity=Severity.CRITICAL,
                     status=IncidentStatus.OPEN,
-                    metadata_={"trigger_session_id": str(uuid.uuid4())},
+                    metadata_=(
+                        {
+                            "trigger_session_id": str(bundle[0].id),
+                            "trigger_event_id": str(bundle[1].id),
+                        }
+                        if bundle
+                        else None
+                    ),
                 )
                 db.add(incident)
+                await db.flush()
+                if bundle:
+                    bundle[2].incident_id = incident.id
 
         # ── Audit log ────────────────────────────────────────────
         # Seed with a handful of operator actions so the audit page +
