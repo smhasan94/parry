@@ -33,7 +33,7 @@ async def _report_metered_usage() -> dict[str, int]:
     from app.core import on_prem
     from app.core.config import settings
     from app.db.models import Org, Plan
-    from app.db.session import async_session_factory
+    from app.db.session import make_task_session_factory
     from app.services import plan_service
 
     if on_prem.is_on_prem():
@@ -47,65 +47,72 @@ async def _report_metered_usage() -> dict[str, int]:
     skipped = 0
     errored = 0
 
-    async with async_session_factory() as db:
-        orgs = (
-            (
-                await db.execute(
-                    select(Org).where(
-                        Org.stripe_customer_id.is_not(None),
-                        Org.plan != Plan.FREE,
+    # Disposable per-task engine — see make_task_session_factory
+    # docstring for the "Task attached to a different loop" story.
+    factory = make_task_session_factory()
+    task_engine = factory.kw["bind"]
+    try:
+        async with factory() as db:
+            orgs = (
+                (
+                    await db.execute(
+                        select(Org).where(
+                            Org.stripe_customer_id.is_not(None),
+                            Org.plan != Plan.FREE,
+                        )
                     )
                 )
+                .scalars()
+                .all()
             )
-            .scalars()
-            .all()
-        )
 
-        for org in orgs:
-            try:
-                count = await plan_service.count_events_since(db, org.id, since)
-                if count == 0:
-                    skipped += 1
-                    continue
+            for org in orgs:
+                try:
+                    count = await plan_service.count_events_since(db, org.id, since)
+                    if count == 0:
+                        skipped += 1
+                        continue
 
-                subscription_item_id = _find_subscription_item(org.stripe_customer_id)
-                if subscription_item_id is None:
-                    log.warning(
-                        "metered.no_subscription_item",
-                        org_id=str(org.id),
-                        customer_id=org.stripe_customer_id,
+                    subscription_item_id = _find_subscription_item(org.stripe_customer_id)
+                    if subscription_item_id is None:
+                        log.warning(
+                            "metered.no_subscription_item",
+                            org_id=str(org.id),
+                            customer_id=org.stripe_customer_id,
+                        )
+                        skipped += 1
+                        continue
+
+                    stripe.SubscriptionItem.create_usage_record(
+                        subscription_item_id,
+                        quantity=count,
+                        timestamp=int(datetime.now(UTC).timestamp()),
+                        action="increment",
                     )
-                    skipped += 1
-                    continue
+                    reported += 1
+                    log.info(
+                        "metered.usage_reported",
+                        org_id=str(org.id),
+                        count=count,
+                        subscription_item=subscription_item_id,
+                    )
+                except Exception:
+                    errored += 1
+                    log.error(
+                        "metered.report_failed",
+                        org_id=str(org.id),
+                        exc_info=True,
+                    )
 
-                stripe.SubscriptionItem.create_usage_record(
-                    subscription_item_id,
-                    quantity=count,
-                    timestamp=int(datetime.now(UTC).timestamp()),
-                    action="increment",
-                )
-                reported += 1
-                log.info(
-                    "metered.usage_reported",
-                    org_id=str(org.id),
-                    count=count,
-                    subscription_item=subscription_item_id,
-                )
-            except Exception:
-                errored += 1
-                log.error(
-                    "metered.report_failed",
-                    org_id=str(org.id),
-                    exc_info=True,
-                )
-
-    log.info(
-        "metered.run_complete",
-        reported=reported,
-        skipped=skipped,
-        errored=errored,
-    )
-    return {"reported": reported, "skipped": skipped, "errored": errored}
+        log.info(
+            "metered.run_complete",
+            reported=reported,
+            skipped=skipped,
+            errored=errored,
+        )
+        return {"reported": reported, "skipped": skipped, "errored": errored}
+    finally:
+        await task_engine.dispose()
 
 
 def _find_subscription_item(customer_id: str) -> str | None:

@@ -57,7 +57,7 @@ async def _export_audit_log_monthly() -> dict[str, int]:
     from app.core import on_prem
     from app.core.config import settings
     from app.db.models import Org
-    from app.db.session import async_session_factory
+    from app.db.session import make_task_session_factory
     from app.services import audit_export_service, audit_service
 
     if on_prem.is_on_prem():
@@ -91,74 +91,85 @@ async def _export_audit_log_monthly() -> dict[str, int]:
     skipped = 0
     errored = 0
 
-    async with async_session_factory() as db:
-        orgs = (await db.execute(select(Org).where(Org.is_active.is_(True)))).scalars().all()
+    # Disposable per-task engine — see make_task_session_factory
+    # docstring for the "Task attached to a different loop" story.
+    factory = make_task_session_factory()
+    task_engine = factory.kw["bind"]
+    try:
+        async with factory() as db:
+            orgs = (
+                (await db.execute(select(Org).where(Org.is_active.is_(True))))
+                .scalars()
+                .all()
+            )
 
-        for org in orgs:
-            try:
-                body, count, final_hash = await audit_export_service.export_audit_log(
-                    db,
-                    org.id,
-                    start=start,
-                    end=end,
-                    fmt="json",
-                    generated_at=now,
-                )
-                if count == 0:
-                    skipped += 1
-                    continue
+            for org in orgs:
+                try:
+                    body, count, final_hash = await audit_export_service.export_audit_log(
+                        db,
+                        org.id,
+                        start=start,
+                        end=end,
+                        fmt="json",
+                        generated_at=now,
+                    )
+                    if count == 0:
+                        skipped += 1
+                        continue
 
-                key = (
-                    f"{settings.audit_export_s3_prefix.strip('/')}/"
-                    f"org={org.id}/{year_str}/{month_str}/audit-{label}.json"
-                )
-                s3.put_object(
-                    Bucket=settings.audit_export_s3_bucket,
-                    Key=key,
-                    Body=body,
-                    ContentType="application/json",
-                    ServerSideEncryption="AES256",
-                    Metadata={
-                        "parry-chain-tip": final_hash,
-                        "parry-entry-count": str(count),
-                        "parry-period": label,
-                    },
-                )
+                    key = (
+                        f"{settings.audit_export_s3_prefix.strip('/')}/"
+                        f"org={org.id}/{year_str}/{month_str}/audit-{label}.json"
+                    )
+                    s3.put_object(
+                        Bucket=settings.audit_export_s3_bucket,
+                        Key=key,
+                        Body=body,
+                        ContentType="application/json",
+                        ServerSideEncryption="AES256",
+                        Metadata={
+                            "parry-chain-tip": final_hash,
+                            "parry-entry-count": str(count),
+                            "parry-period": label,
+                        },
+                    )
 
-                await audit_service.log_action(
-                    db,
-                    org_id=org.id,
-                    action="audit_log.exported",
-                    actor_type="system",
-                    actor_label="audit-export-task",
-                    resource_type="audit_log_export",
-                    details={
-                        "period": label,
-                        "format": "json",
-                        "entry_count": count,
-                        "final_row_hash": final_hash,
-                        "s3_bucket": settings.audit_export_s3_bucket,
-                        "s3_key": key,
-                    },
-                )
-                await db.commit()
-                exported += 1
-                log.info(
-                    "audit.exported_to_s3",
-                    org_id=str(org.id),
-                    period=label,
-                    entry_count=count,
-                    s3_key=key,
-                )
-            except Exception:
-                errored += 1
-                await db.rollback()
-                log.error(
-                    "audit.export_failed",
-                    org_id=str(org.id),
-                    period=label,
-                    exc_info=True,
-                )
+                    await audit_service.log_action(
+                        db,
+                        org_id=org.id,
+                        action="audit_log.exported",
+                        actor_type="system",
+                        actor_label="audit-export-task",
+                        resource_type="audit_log_export",
+                        details={
+                            "period": label,
+                            "format": "json",
+                            "entry_count": count,
+                            "final_row_hash": final_hash,
+                            "s3_bucket": settings.audit_export_s3_bucket,
+                            "s3_key": key,
+                        },
+                    )
+                    await db.commit()
+                    exported += 1
+                    log.info(
+                        "audit.exported_to_s3",
+                        org_id=str(org.id),
+                        period=label,
+                        entry_count=count,
+                        s3_key=key,
+                    )
+                except Exception:
+                    errored += 1
+                    await db.rollback()
+                    log.error(
+                        "audit.export_failed",
+                        org_id=str(org.id),
+                        period=label,
+                        exc_info=True,
+                    )
+    finally:
+        await task_engine.dispose()
 
     log.info(
         "audit.export_run_complete",

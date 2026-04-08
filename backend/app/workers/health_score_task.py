@@ -31,7 +31,7 @@ def refresh_health_scores() -> dict[str, int]:
 
 async def _refresh_health_scores() -> dict[str, int]:
     from app.db.models import Agent
-    from app.db.session import async_session_factory
+    from app.db.session import make_task_session_factory
     from app.services.health_score_service import (
         compute_health_score,
         set_cached_health,
@@ -40,25 +40,34 @@ async def _refresh_health_scores() -> dict[str, int]:
     refreshed = 0
     errored = 0
 
-    async with async_session_factory() as db:
-        agents = (await db.execute(select(Agent))).scalars().all()
+    # Disposable per-task engine to avoid the "Task attached to a
+    # different loop" error under Celery's prefork pool. See
+    # app.db.session.make_task_session_factory for the full
+    # explanation.
+    factory = make_task_session_factory()
+    task_engine = factory.kw["bind"]
+    try:
+        async with factory() as db:
+            agents = (await db.execute(select(Agent))).scalars().all()
 
-        for agent in agents:
-            try:
-                payload = await compute_health_score(db, agent.id)
-                set_cached_health(agent.id, payload)
-                refreshed += 1
-            except Exception:
-                errored += 1
-                log.error(
-                    "health_score.refresh_failed",
-                    agent_id=str(agent.id),
-                    exc_info=True,
-                )
+            for agent in agents:
+                try:
+                    payload = await compute_health_score(db, agent.id)
+                    set_cached_health(agent.id, payload)
+                    refreshed += 1
+                except Exception:
+                    errored += 1
+                    log.error(
+                        "health_score.refresh_failed",
+                        agent_id=str(agent.id),
+                        exc_info=True,
+                    )
 
-    log.info(
-        "health_score.refresh_run_complete",
-        refreshed=refreshed,
-        errored=errored,
-    )
-    return {"refreshed": refreshed, "errored": errored}
+        log.info(
+            "health_score.refresh_run_complete",
+            refreshed=refreshed,
+            errored=errored,
+        )
+        return {"refreshed": refreshed, "errored": errored}
+    finally:
+        await task_engine.dispose()
