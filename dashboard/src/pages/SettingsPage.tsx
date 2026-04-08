@@ -131,9 +131,14 @@ export function SettingsPage() {
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Loading API keys...</p>
             ) : apiKeys.length === 0 && !createdKey ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <Key className="mb-3 h-8 w-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">No API keys yet. Create one to get started.</p>
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <Key className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">No API keys yet</p>
+                <p className="max-w-sm text-xs text-muted-foreground">
+                  API keys authenticate the SDK against this org. The raw
+                  key is shown once at creation and then hashed — keep it
+                  somewhere safe (a secret manager, not a .env in git).
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
