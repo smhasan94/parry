@@ -528,9 +528,13 @@ function AlertsCard() {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [genericWebhookUrl, setGenericWebhookUrl] = useState("");
+  const [pagerdutyKey, setPagerdutyKey] = useState("");
+  const [opsgenieKey, setOpsgenieKey] = useState("");
 
   const slackEnabled = !!config?.slack_webhook_url;
   const genericWebhookEnabled = !!config?.webhook_url;
+  const pagerdutyEnabled = !!config?.pagerduty_routing_key;
+  const opsgenieEnabled = !!config?.opsgenie_api_key;
   const emails = config?.alert_emails ?? [];
   const minSeverity = config?.min_severity ?? "high";
 
@@ -589,17 +593,47 @@ function AlertsCard() {
     );
   };
 
-  const handleTest = (channel: "slack" | "email" | "webhook") => {
+  const handleTest = (
+    channel: "slack" | "email" | "webhook" | "pagerduty" | "opsgenie",
+  ) => {
     testAlert.mutate(channel, {
       onSuccess: () => {
         const labels: Record<string, string> = {
           slack: "Test sent to Slack",
           email: "Test email sent",
           webhook: "Test sent to webhook",
+          pagerduty: "Test sent to PagerDuty",
+          opsgenie: "Test sent to Opsgenie",
         };
         toast(labels[channel] ?? "Test sent", "success");
       },
     });
+  };
+
+  const handleSavePagerduty = () => {
+    if (!pagerdutyKey.trim()) return;
+    updateConfig.mutate(
+      { pagerduty_routing_key: pagerdutyKey.trim() },
+      {
+        onSuccess: () => {
+          setPagerdutyKey("");
+          toast("PagerDuty routing key saved", "success");
+        },
+      },
+    );
+  };
+
+  const handleSaveOpsgenie = () => {
+    if (!opsgenieKey.trim()) return;
+    updateConfig.mutate(
+      { opsgenie_api_key: opsgenieKey.trim() },
+      {
+        onSuccess: () => {
+          setOpsgenieKey("");
+          toast("Opsgenie API key saved", "success");
+        },
+      },
+    );
   };
 
   const handleDisableAll = () => {
@@ -834,6 +868,140 @@ function AlertsCard() {
                       size="sm"
                       onClick={handleSaveGenericWebhook}
                       disabled={updateConfig.isPending || !genericWebhookUrl.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* PagerDuty channel */}
+            <div className="space-y-2 rounded-md border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Webhook className="h-4 w-4" />
+                <p className="text-sm font-medium">PagerDuty</p>
+                <a
+                  href="https://support.pagerduty.com/docs/services-and-integrations"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-muted-foreground underline hover:text-foreground"
+                >
+                  setup docs
+                </a>
+                {pagerdutyEnabled && (
+                  <Badge variant="secondary" className="ml-auto text-xs text-green-400">
+                    Configured
+                  </Badge>
+                )}
+              </div>
+              {pagerdutyEnabled ? (
+                <div className="space-y-2">
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {config?.pagerduty_routing_key}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTest("pagerduty")}
+                      disabled={testAlert.isPending}
+                    >
+                      <Send className="h-4 w-4" />
+                      Send Test
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => updateConfig.mutate({ pagerduty_routing_key: "" })}
+                    >
+                      Replace
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    value={pagerdutyKey}
+                    onChange={(e) => setPagerdutyKey(e.target.value)}
+                    placeholder="PagerDuty Events API v2 integration key"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Triggered for incidents at or above your severity threshold.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleSavePagerduty}
+                      disabled={updateConfig.isPending || !pagerdutyKey.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Opsgenie channel */}
+            <div className="space-y-2 rounded-md border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Webhook className="h-4 w-4" />
+                <p className="text-sm font-medium">Opsgenie</p>
+                <a
+                  href="https://support.atlassian.com/opsgenie/docs/api-key-management/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-muted-foreground underline hover:text-foreground"
+                >
+                  setup docs
+                </a>
+                {opsgenieEnabled && (
+                  <Badge variant="secondary" className="ml-auto text-xs text-green-400">
+                    Configured
+                  </Badge>
+                )}
+              </div>
+              {opsgenieEnabled ? (
+                <div className="space-y-2">
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {config?.opsgenie_api_key}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTest("opsgenie")}
+                      disabled={testAlert.isPending}
+                    >
+                      <Send className="h-4 w-4" />
+                      Send Test
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => updateConfig.mutate({ opsgenie_api_key: "" })}
+                    >
+                      Replace
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    value={opsgenieKey}
+                    onChange={(e) => setOpsgenieKey(e.target.value)}
+                    placeholder="Opsgenie API integration key"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Alerts are tagged with severity and use P1–P5 priority.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveOpsgenie}
+                      disabled={updateConfig.isPending || !opsgenieKey.trim()}
                     >
                       Save
                     </Button>

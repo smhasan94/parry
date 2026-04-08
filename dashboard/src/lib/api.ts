@@ -189,6 +189,8 @@ class ApiClient {
     alert_emails?: string[];
     webhook_url?: string;
     webhook_headers?: Record<string, string>;
+    pagerduty_routing_key?: string;
+    opsgenie_api_key?: string;
     min_severity?: string;
   }): Promise<AlertConfig> {
     return this.request("/api/v1/alerts", {
@@ -202,7 +204,7 @@ class ApiClient {
   }
 
   async sendTestAlert(
-    channel: "slack" | "email" | "webhook" = "slack"
+    channel: "slack" | "email" | "webhook" | "pagerduty" | "opsgenie" = "slack"
   ): Promise<{ status: string }> {
     return this.request(`/api/v1/alerts/test?channel=${channel}`, { method: "POST" });
   }
@@ -345,6 +347,9 @@ export interface AlertConfig {
   alert_emails: string[];
   webhook_url: string | null;
   webhook_headers: Record<string, string>;
+  // Backend returns a masked preview ("****abcd") when configured, null otherwise.
+  pagerduty_routing_key: string | null;
+  opsgenie_api_key: string | null;
   min_severity: string;
   enabled: boolean;
 }
