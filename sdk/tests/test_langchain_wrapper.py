@@ -1,4 +1,5 @@
 """Tests for ParryCallbackHandler — LangChain integration."""
+
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -9,7 +10,6 @@ from parry.wrappers.langchain import ParryCallbackHandler
 def _make_llm_result(text: str = "Hello!", token_usage: dict | None = None, message=None):
     """Build an LLMResult with real Generation objects (Pydantic-validated)."""
     from langchain_core.outputs import ChatGeneration, Generation, LLMResult
-    from langchain_core.messages import AIMessage
 
     llm_output = None
     if token_usage:
@@ -90,7 +90,9 @@ def test_tool_calls_from_message(mock_intercept):
 
     ai_message = AIMessage(
         content="I'll search for that.",
-        tool_calls=[{"name": "search", "args": {"query": "weather today"}, "id": "tc1", "type": "tool_call"}],
+        tool_calls=[
+            {"name": "search", "args": {"query": "weather today"}, "id": "tc1", "type": "tool_call"}
+        ],
     )
 
     handler.on_llm_end(
@@ -115,7 +117,9 @@ def test_tool_start_tracks_calls(mock_intercept):
     tool_run_id = uuid.uuid4()
 
     serialized = {"kwargs": {"model_name": "gpt-4o"}, "id": ["ChatOpenAI"]}
-    handler.on_chat_model_start(serialized, [[_make_base_message("Do something")]], run_id=llm_run_id)
+    handler.on_chat_model_start(
+        serialized, [[_make_base_message("Do something")]], run_id=llm_run_id
+    )
 
     handler.on_tool_start(
         {"name": "calculator"},

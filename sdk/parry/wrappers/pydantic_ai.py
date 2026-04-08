@@ -84,9 +84,7 @@ def _extract_response(result: Any) -> tuple[str | None, int | None]:
     usage = getattr(result, "usage", None)
     if usage is not None:
         tokens = (
-            getattr(usage, "total_tokens", None)
-            or getattr(usage, "response_tokens", None)
-            or None
+            getattr(usage, "total_tokens", None) or getattr(usage, "response_tokens", None) or None
         )
     return text, tokens
 
@@ -139,6 +137,7 @@ def parry_instrument(
             logger.warning("parry.pydantic_ai.intercept_failed", exc_info=True)
 
     if is_coroutine:
+
         async def _async_wrapper(*args: Any, **kwargs: Any):
             start = time.monotonic()
             prompt = _extract_prompt_from_args(args, kwargs)
@@ -153,6 +152,7 @@ def parry_instrument(
 
         owner.request = _async_wrapper  # type: ignore[attr-defined]
     else:
+
         def _sync_wrapper(*args: Any, **kwargs: Any):
             start = time.monotonic()
             prompt = _extract_prompt_from_args(args, kwargs)

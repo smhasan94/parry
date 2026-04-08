@@ -10,6 +10,7 @@ Payloads are intentionally small (no raw prompts — 200-char preview
 only) so the pubsub buffer stays cheap and no sensitive content leaks
 across the wire beyond what's already shown in the dashboard.
 """
+
 from __future__ import annotations
 
 import contextlib

@@ -1,5 +1,5 @@
 """Tests for ParryClient.send_event — fire-and-forget, fail-open behavior."""
-import threading
+
 import time
 from unittest.mock import MagicMock, patch
 

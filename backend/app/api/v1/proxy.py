@@ -13,6 +13,7 @@ Contract:
   Postgres on every call. Cache miss is quiet — we just fall through
   to the DB. Redis down is quiet — we just skip the cache.
 """
+
 import json
 
 import structlog

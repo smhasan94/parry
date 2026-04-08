@@ -4,6 +4,7 @@ These tests target `run_blocking_check` directly — no FastAPI, no DB,
 no Redis — so they run in <10ms and cover exactly the logic that has
 to stay fast in production.
 """
+
 from unittest.mock import MagicMock
 
 from app.db.models import Severity
@@ -100,9 +101,7 @@ def test_medium_severity_does_not_block(monkeypatch):
                 detector=self.name,
             )
 
-    monkeypatch.setattr(
-        check_module, "BLOCKING_DETECTORS", [MediumOnlyDetector(), CleanDetector()]
-    )
+    monkeypatch.setattr(check_module, "BLOCKING_DETECTORS", [MediumOnlyDetector(), CleanDetector()])
     result = run_blocking_check(_event(prompt="whatever"), org_blocking_enabled=True)
     assert result.allowed is True
     # Both detectors should have been consulted since neither blocked
@@ -141,9 +140,7 @@ def test_short_circuits_on_first_block(monkeypatch):
                 detector=self.name,
             )
 
-    monkeypatch.setattr(
-        check_module, "BLOCKING_DETECTORS", [BlockingDetector(), LaterDetector()]
-    )
+    monkeypatch.setattr(check_module, "BLOCKING_DETECTORS", [BlockingDetector(), LaterDetector()])
     result = run_blocking_check(_event(prompt="x"), org_blocking_enabled=True)
     assert result.allowed is False
     assert result.detector == "first_blocker"

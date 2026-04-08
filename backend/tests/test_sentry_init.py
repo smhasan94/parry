@@ -1,4 +1,5 @@
 """Tests for app.core.sentry.init_sentry and _strip_sensitive_fields."""
+
 from app.core.config import settings
 from app.core.sentry import _strip_sensitive_fields, init_sentry
 
@@ -56,9 +57,7 @@ class TestStripSensitiveFields:
 
     def test_filtering_is_case_insensitive(self) -> None:
         event = {
-            "request": {
-                "headers": {"authorization": "Bearer xxx", "x-parry-secret": "sk-yyy"}
-            }
+            "request": {"headers": {"authorization": "Bearer xxx", "x-parry-secret": "sk-yyy"}}
         }
         result = _strip_sensitive_fields(event, {})
         assert result["request"]["headers"]["authorization"] == "[Filtered]"

@@ -1,4 +1,5 @@
 """E2E test fixtures — real async DB, FastAPI test client, seeded org + API key."""
+
 import hashlib
 import os
 import socket
@@ -32,7 +33,9 @@ def pytest_collection_modifyitems(config, items):
     """Skip all E2E tests when the test database is not reachable."""
     if _db_port_open():
         return
-    skip_marker = pytest.mark.skip(reason="PostgreSQL test database not available on localhost:5434")
+    skip_marker = pytest.mark.skip(
+        reason="PostgreSQL test database not available on localhost:5434"
+    )
     for item in items:
         if "/e2e/" in str(item.fspath):
             item.add_marker(skip_marker)

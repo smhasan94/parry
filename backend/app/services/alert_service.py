@@ -1,4 +1,5 @@
 """Alert service — sends incident notifications to configured channels."""
+
 import asyncio
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -68,9 +69,7 @@ def build_webhook_payload(incident: Incident, dashboard_url: str | None = None) 
         },
     }
     if dashboard_url:
-        payload["incident"]["dashboard_url"] = (
-            f"{dashboard_url.rstrip('/')}/incidents"
-        )
+        payload["incident"]["dashboard_url"] = f"{dashboard_url.rstrip('/')}/incidents"
     return payload
 
 
@@ -332,9 +331,7 @@ async def send_pagerduty_alert(
     payload = build_pagerduty_payload(incident, routing_key, dashboard_url)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                "https://events.pagerduty.com/v2/enqueue", json=payload
-            )
+            resp = await client.post("https://events.pagerduty.com/v2/enqueue", json=payload)
             resp.raise_for_status()
         log.info(
             "alert.pagerduty_sent",
@@ -353,9 +350,7 @@ async def send_pagerduty_alert(
         return False
 
 
-def build_opsgenie_payload(
-    incident: Incident, dashboard_url: str | None = None
-) -> dict:
+def build_opsgenie_payload(incident: Incident, dashboard_url: str | None = None) -> dict:
     details: dict = {
         "incident_id": str(incident.id),
         "agent_id": str(incident.agent_id),

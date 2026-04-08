@@ -10,6 +10,7 @@ Results are cached in Redis under ``stats:{agent_id}:{window}`` with a
 5 minute TTL. Stats are read-heavy and expensive; 5 minutes of
 staleness is fine for a dashboard view.
 """
+
 from __future__ import annotations
 
 import json
@@ -96,10 +97,7 @@ async def _event_volume(
         .group_by(day)
         .order_by(day.asc())
     )
-    return [
-        {"date": row.day.date().isoformat(), "count": int(row.count)}
-        for row in result.all()
-    ]
+    return [{"date": row.day.date().isoformat(), "count": int(row.count)} for row in result.all()]
 
 
 async def _tool_call_counts(
@@ -141,10 +139,7 @@ async def _model_usage(
         .group_by(AgentEvent.model)
         .order_by(func.count().desc())
     )
-    return [
-        {"model": model, "count": int(count)}
-        for model, count in result.all()
-    ]
+    return [{"model": model, "count": int(count)} for model, count in result.all()]
 
 
 async def _anomaly_trend(
@@ -190,9 +185,7 @@ async def _detection_counts(
     return {str(det): int(count) for det, count in result.all()}
 
 
-async def build_agent_stats(
-    db: AsyncSession, agent_id: uuid.UUID, window: str
-) -> dict[str, Any]:
+async def build_agent_stats(db: AsyncSession, agent_id: uuid.UUID, window: str) -> dict[str, Any]:
     win = _parse_window(window)
     since = datetime.now(UTC) - timedelta(days=_WINDOW_DAYS[win])
 

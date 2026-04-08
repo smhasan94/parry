@@ -33,6 +33,7 @@ class Actor:
     label: str | None = None
     clerk_role: str | None = None
 
+
 # Cache JWKS keys in memory (refreshed on cache miss)
 _jwks_cache: dict | None = None
 
@@ -129,9 +130,7 @@ async def _resolve_from_clerk_jwt(
     # Re-decode payload to extract user info (cached JWKS makes this cheap)
     try:
         jwks = _jwks_cache or await _get_clerk_jwks()
-        payload = jwt.decode(
-            token, jwks, algorithms=["RS256"], options={"verify_aud": False}
-        )
+        payload = jwt.decode(token, jwks, algorithms=["RS256"], options={"verify_aud": False})
     except (JWTError, httpx.HTTPError):
         payload = {}
 
@@ -147,9 +146,7 @@ async def _resolve_from_clerk_jwt(
     # active org in the DB (single-org self-hosted deployment), treat
     # the user as owner so they aren't locked out of their own instance.
     if not clerk_role:
-        count_result = await db.execute(
-            select(Org.id).where(Org.is_active.is_(True))
-        )
+        count_result = await db.execute(select(Org.id).where(Org.is_active.is_(True)))
         if len(list(count_result.scalars().all())) == 1:
             clerk_role = "org:owner"
 

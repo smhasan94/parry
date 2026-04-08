@@ -6,6 +6,7 @@ Admin+ gated. Generates a PDF synchronously for ranges up to 90 days
 and streams the bytes back as ``application/pdf``. Longer ranges are
 rejected; the async/Celery path is TODO for a future plan.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, time

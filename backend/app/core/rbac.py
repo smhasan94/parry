@@ -13,6 +13,7 @@ Role comes from the Clerk JWT's `org_role` claim via
 dependencies._resolve_from_clerk_jwt. Missing/unknown claim defaults
 to VIEWER — we never fail open on permissions.
 """
+
 from __future__ import annotations
 
 import enum

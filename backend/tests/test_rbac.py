@@ -1,4 +1,5 @@
 """Unit tests for the RBAC module — role resolution + require_role gate."""
+
 import pytest
 from fastapi import HTTPException
 
@@ -32,6 +33,7 @@ ORG = Org(id="00000000-0000-0000-0000-000000000000", name="test")
 
 # ── actor_role() resolution ──────────────────────────────────────────
 
+
 def test_owner_resolves_to_owner():
     assert actor_role(_owner()) == Role.OWNER
 
@@ -61,13 +63,12 @@ def test_missing_clerk_role_defaults_to_viewer():
 def test_unknown_clerk_role_defaults_to_viewer():
     """Unknown role string (Clerk adds a new tier we don't know about)
     must downgrade to VIEWER rather than being treated as permissive."""
-    weird = Actor(
-        actor_type="user", actor_id="u", label="u", clerk_role="org:superadmin"
-    )
+    weird = Actor(actor_type="user", actor_id="u", label="u", clerk_role="org:superadmin")
     assert actor_role(weird) == Role.VIEWER
 
 
 # ── require_role() gate ──────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_require_admin_passes_for_owner():

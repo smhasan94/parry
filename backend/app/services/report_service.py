@@ -10,6 +10,7 @@ TimescaleDB note: agent_events queries must always filter by
 agent_id + timestamp range. We iterate per-agent inside the org instead
 of scanning the hypertable directly.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -102,8 +103,7 @@ async def build_report_data(
     # Incident.org_id when present).
     org_incidents_subq = select(Incident.id).where(Incident.org_id == org_id)
     detections_scoped = detections_base.where(
-        (Detection.incident_id.in_(org_incidents_subq))
-        | (Detection.incident_id.is_(None))
+        (Detection.incident_id.in_(org_incidents_subq)) | (Detection.incident_id.is_(None))
     )
 
     total_detections_res = await db.execute(
@@ -124,8 +124,7 @@ async def build_report_data(
             Detection.created_at >= start,
             Detection.created_at < end,
             Detection.triggered.is_(True),
-            (Detection.incident_id.in_(org_incidents_subq))
-            | (Detection.incident_id.is_(None)),
+            (Detection.incident_id.in_(org_incidents_subq)) | (Detection.incident_id.is_(None)),
         )
         .group_by(Detection.severity)
     )
@@ -139,8 +138,7 @@ async def build_report_data(
             Detection.created_at >= start,
             Detection.created_at < end,
             Detection.triggered.is_(True),
-            (Detection.incident_id.in_(org_incidents_subq))
-            | (Detection.incident_id.is_(None)),
+            (Detection.incident_id.in_(org_incidents_subq)) | (Detection.incident_id.is_(None)),
         )
         .group_by(Detection.detector)
     )

@@ -81,9 +81,7 @@ def check_before_call(
         return
 
     if resp.status_code != 200:
-        logger.warning(
-            "parry: proxy check returned %s, failing open", resp.status_code
-        )
+        logger.warning("parry: proxy check returned %s, failing open", resp.status_code)
         return
 
     try:

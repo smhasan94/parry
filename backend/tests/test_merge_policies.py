@@ -1,4 +1,5 @@
 """Tests for detection_service._merge_policies()."""
+
 import uuid
 
 from app.db.models import Policy

@@ -1,4 +1,5 @@
 """Tests for app.core.metrics — recorders and the /metrics endpoint."""
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -131,19 +132,11 @@ class TestRecordAnomalyDrift:
         assert sum_after == pytest.approx(sum_before + 4.2 + 3.1)
 
     def test_quality_and_triggered_labels_isolated(self) -> None:
-        hi_before, _ = _histogram_stats(
-            anomaly_drift_sigma, quality="high", triggered="true"
-        )
-        med_before, _ = _histogram_stats(
-            anomaly_drift_sigma, quality="medium", triggered="false"
-        )
+        hi_before, _ = _histogram_stats(anomaly_drift_sigma, quality="high", triggered="true")
+        med_before, _ = _histogram_stats(anomaly_drift_sigma, quality="medium", triggered="false")
         record_anomaly_drift(5.0, "high", triggered=True)
-        hi_after, _ = _histogram_stats(
-            anomaly_drift_sigma, quality="high", triggered="true"
-        )
-        med_after, _ = _histogram_stats(
-            anomaly_drift_sigma, quality="medium", triggered="false"
-        )
+        hi_after, _ = _histogram_stats(anomaly_drift_sigma, quality="high", triggered="true")
+        med_after, _ = _histogram_stats(anomaly_drift_sigma, quality="medium", triggered="false")
         assert hi_after == hi_before + 1
         assert med_after == med_before  # untouched
 
@@ -177,12 +170,8 @@ class TestMetricsEndpoint:
         from app.main import app
 
         client = TestClient(app)
-        before = _counter_value(
-            http_requests_total, method="GET", route="/metrics", status="200"
-        )
+        before = _counter_value(http_requests_total, method="GET", route="/metrics", status="200")
         client.get("/metrics")
         client.get("/metrics")
-        after = _counter_value(
-            http_requests_total, method="GET", route="/metrics", status="200"
-        )
+        after = _counter_value(http_requests_total, method="GET", route="/metrics", status="200")
         assert after == before  # middleware skips /metrics

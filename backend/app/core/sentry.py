@@ -1,4 +1,5 @@
 """Sentry error tracking initialization (no-op when SENTRY_DSN unset)."""
+
 import structlog
 
 from app.core.config import settings

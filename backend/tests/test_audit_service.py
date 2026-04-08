@@ -1,4 +1,5 @@
 """Tests for audit_service and Actor dataclass — pure logic only."""
+
 import uuid
 
 from app.api.v1.alerts import _audit_safe_config, _redact_webhook

@@ -1,0 +1,70 @@
+# Pre-commit hooks for the Parry monorepo.
+#
+# Install once:    pre-commit install
+# Run manually:    pre-commit run --all-files
+#
+# Ruff handles backend + sdk (both are ruff-governed — see their
+# respective pyproject.toml line-length and rule selections).
+# Dashboard linting runs through the project's own `npm run lint` so
+# we don't duplicate its ESLint config here. Landing is static and
+# small enough that the hygiene hooks are sufficient.
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # ── Standard hygiene ─────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        exclude: '^dashboard/tsconfig.*\.json$'  # tsconfigs allow trailing commas
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: detect-private-key
+        # test_data_exfil.py contains a synthetic PEM fragment used as
+        # a fixture for the data-exfiltration detector. It's a 32-char
+        # truncation, not a real key — exclude so the hook doesn't
+        # flag its own regression test.
+        exclude: '^backend/tests/detection/test_data_exfil\.py$'
+
+  # ── Ruff: backend + sdk ──────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        name: ruff (backend)
+        args: ["--fix", "--exit-non-zero-on-fix"]
+        files: '^backend/(app|tests)/.*\.py$'
+      - id: ruff-format
+        name: ruff-format (backend)
+        files: '^backend/(app|tests)/.*\.py$'
+      - id: ruff
+        name: ruff (sdk)
+        args: ["--fix", "--exit-non-zero-on-fix"]
+        files: '^sdk/.*\.py$'
+      - id: ruff-format
+        name: ruff-format (sdk)
+        files: '^sdk/.*\.py$'
+
+  # ── Dashboard: defer to the project's own ESLint ─────────────────
+  # Using a `local` repo entry so we run through the dashboard's
+  # installed eslint config (flat config, project-specific rules)
+  # without re-declaring any of it here. Only runs when at least one
+  # staged file lives under dashboard/src.
+  - repo: local
+    hooks:
+      - id: dashboard-eslint
+        name: dashboard eslint
+        entry: bash -c 'cd dashboard && npm run lint --silent'
+        language: system
+        files: '^dashboard/src/.*\.(ts|tsx|js|jsx)$'
+        pass_filenames: false

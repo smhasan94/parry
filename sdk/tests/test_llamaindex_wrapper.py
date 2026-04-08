@@ -3,6 +3,7 @@
 Monkey-patches the lazy base-class and event-type lookups so the
 tests run without llama-index-core installed.
 """
+
 from unittest.mock import MagicMock, patch
 
 import parry

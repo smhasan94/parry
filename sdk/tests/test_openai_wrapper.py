@@ -1,4 +1,5 @@
 """Tests for ParryOpenAI wrapper — sync and streaming completions."""
+
 from unittest.mock import MagicMock, patch
 
 import parry

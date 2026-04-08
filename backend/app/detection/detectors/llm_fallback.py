@@ -27,10 +27,10 @@ PRICE_PER_M_OUTPUT_USD = 15.0
 
 def _estimate_cost_usd(input_tokens: int, output_tokens: int) -> float:
     return round(
-        (input_tokens * PRICE_PER_M_INPUT_USD
-         + output_tokens * PRICE_PER_M_OUTPUT_USD) / 1_000_000,
+        (input_tokens * PRICE_PER_M_INPUT_USD + output_tokens * PRICE_PER_M_OUTPUT_USD) / 1_000_000,
         6,
     )
+
 
 SYSTEM_PROMPT = """You are a security analyst for an AI agent monitoring system called Parry.
 Your job is to analyze an AI agent's LLM call and determine if it represents a security threat.
@@ -72,8 +72,7 @@ def _fence(text: str, max_len: int = 1000) -> str:
     """
     truncated = (text or "")[:max_len]
     return (
-        truncated
-        .replace("</agent_prompt>", "</agent_prompt\\>")
+        truncated.replace("</agent_prompt>", "</agent_prompt\\>")
         .replace("</agent_response>", "</agent_response\\>")
         .replace("</agent_tool_calls>", "</agent_tool_calls\\>")
     )
@@ -102,9 +101,7 @@ async def evaluate_ambiguous(
 
     fenced_prompt = _fence(event_data.get("prompt") or "")
     fenced_response = _fence(event_data.get("response") or "")
-    fenced_tools = _fence(
-        json.dumps(event_data.get("tool_calls") or [], default=str), max_len=500
-    )
+    fenced_tools = _fence(json.dumps(event_data.get("tool_calls") or [], default=str), max_len=500)
     # Model name is low-risk (short, typically a known enum) but still sanitize
     model = (event_data.get("model") or "unknown").replace("\n", " ")[:100]
 
@@ -173,9 +170,7 @@ Respond with JSON only."""
                 output_tokens=output_tokens,
                 cost_usd=cost_usd,
             )
-            record_llm_fallback_call(
-                "cleared", input_tokens, output_tokens, latency, cost_usd
-            )
+            record_llm_fallback_call("cleared", input_tokens, output_tokens, latency, cost_usd)
             return None
 
         severity_map = {
@@ -185,9 +180,7 @@ Respond with JSON only."""
             "low": Severity.LOW,
         }
 
-        record_llm_fallback_call(
-            "confirmed", input_tokens, output_tokens, latency, cost_usd
-        )
+        record_llm_fallback_call("confirmed", input_tokens, output_tokens, latency, cost_usd)
 
         return DetectionResult(
             triggered=True,
@@ -205,9 +198,7 @@ Respond with JSON only."""
         )
 
     except TimeoutError:
-        log.warning(
-            "llm_fallback.timeout", timeout_seconds=ANTHROPIC_TIMEOUT_SECONDS
-        )
+        log.warning("llm_fallback.timeout", timeout_seconds=ANTHROPIC_TIMEOUT_SECONDS)
         record_llm_fallback_call(
             "timeout",
             input_tokens,

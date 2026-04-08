@@ -4,6 +4,7 @@ Each detector has a `trigger_threshold` (the confidence floor that flips
 `triggered` to True) and an `enabled` flag. Defaults are tuned to minimize
 false positives in typical usage; orgs can adjust both via the dashboard.
 """
+
 from typing import Any
 
 # Default thresholds — must match the values that detector code falls back to.

@@ -135,9 +135,7 @@ class AnomalyDetector:
                 stats = per_tool_baseline.get(tool_name)
                 if not isinstance(stats, dict):
                     # Previously unseen tool — flag if baseline has any tools at all
-                    anomalies.append(
-                        f"Unknown tool '{tool_name}' not in baseline tool set"
-                    )
+                    anomalies.append(f"Unknown tool '{tool_name}' not in baseline tool set")
                     has_categorical_anomaly = True
                     continue
                 avg = float(stats.get("avg_calls", 0) or 0)
@@ -177,9 +175,7 @@ class AnomalyDetector:
         if triggered:
             reason = f"Behavioral anomaly: {anomalies[0]}"
         elif not quality_ok:
-            reason = (
-                f"Drift observed but baseline quality '{baseline_quality}' too low to alert"
-            )
+            reason = f"Drift observed but baseline quality '{baseline_quality}' too low to alert"
         else:
             reason = (
                 f"Drift observed ({max_sigma:.1f}σ) but below effective threshold "

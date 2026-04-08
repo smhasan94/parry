@@ -135,10 +135,7 @@ async def live_stream(
     if current >= MAX_LIVE_STREAMS_PER_ORG:
         raise HTTPException(
             status_code=429,
-            detail=(
-                f"Live stream connection limit reached "
-                f"({MAX_LIVE_STREAMS_PER_ORG}/org)."
-            ),
+            detail=(f"Live stream connection limit reached " f"({MAX_LIVE_STREAMS_PER_ORG}/org)."),
         )
     _live_stream_counts[org_key] = current + 1
 
@@ -160,9 +157,7 @@ async def live_stream(
                     return
                 yield {"data": json.dumps(msg)}
         finally:
-            _live_stream_counts[org_key] = max(
-                0, _live_stream_counts.get(org_key, 1) - 1
-            )
+            _live_stream_counts[org_key] = max(0, _live_stream_counts.get(org_key, 1) - 1)
 
     return EventSourceResponse(event_generator())
 

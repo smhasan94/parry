@@ -1,4 +1,5 @@
 """E2E: Manual baseline recompute endpoints + audit log diff structure."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -55,11 +56,7 @@ async def test_recompute_baseline_endpoint_writes_audit_diff(
 
     # Audit log must contain a baseline.recomputed entry with before/after
     audit_rows = (
-        (
-            await db.execute(
-                select(AuditLog).where(AuditLog.action == "baseline.recomputed")
-            )
-        )
+        (await db.execute(select(AuditLog).where(AuditLog.action == "baseline.recomputed")))
         .scalars()
         .all()
     )
@@ -76,9 +73,7 @@ async def test_recompute_baseline_endpoint_writes_audit_diff(
 
 
 @pytest.mark.asyncio
-async def test_recompute_baseline_404_with_too_few_events(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_recompute_baseline_404_with_too_few_events(client: AsyncClient, seeded_db: dict):
     """When the agent has fewer than MIN_EVENTS, recompute returns 400."""
     agent_id = str(seeded_db["agent"].id)
     api_key = seeded_db["api_key_raw"]
@@ -113,11 +108,7 @@ async def test_recompute_all_baselines_bulk_endpoint(
 
     # Bulk path uses reason=manual_bulk in the audit details
     audit_rows = (
-        (
-            await db.execute(
-                select(AuditLog).where(AuditLog.action == "baseline.recomputed")
-            )
-        )
+        (await db.execute(select(AuditLog).where(AuditLog.action == "baseline.recomputed")))
         .scalars()
         .all()
     )

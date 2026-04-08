@@ -1,4 +1,5 @@
 """Unit tests for CustomRulesDetector."""
+
 from app.db.models import Severity
 from app.detection.detectors.custom_rules import CustomRulesDetector
 
@@ -62,9 +63,7 @@ def test_response_target_matches():
             "enabled": True,
         }
     ]
-    result = detector.detect(
-        _event(prompt="what's the password?", response="hunter2", rules=rules)
-    )
+    result = detector.detect(_event(prompt="what's the password?", response="hunter2", rules=rules))
     assert result.triggered
     assert result.severity == Severity.CRITICAL
 

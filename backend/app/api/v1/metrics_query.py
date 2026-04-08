@@ -6,6 +6,7 @@ needs. If we outgrow in-process reads (multi-worker, horizontal scaling),
 these can be replaced with real PromQL queries without breaking the
 dashboard contract.
 """
+
 from fastapi import APIRouter, Depends
 
 from app.core.dependencies import get_current_org
@@ -27,6 +28,7 @@ class DriftBucket(ParrySchema):
     +Inf is serialized as null rather than the Python `float("inf")` value
     because `Infinity` is not valid JSON and trips strict parsers.
     """
+
     le: float | None
     count: float
 
@@ -79,9 +81,7 @@ async def get_anomaly_drift_histogram(
 
             if sample.name.endswith("_bucket"):
                 le_raw = sample.labels.get("le", "+Inf")
-                le: float | None = (
-                    None if le_raw in ("+Inf", "inf") else float(le_raw)
-                )
+                le: float | None = None if le_raw in ("+Inf", "inf") else float(le_raw)
                 series.buckets.append(DriftBucket(le=le, count=sample.value))
             elif sample.name.endswith("_count"):
                 series.total = sample.value
@@ -91,8 +91,6 @@ async def get_anomaly_drift_histogram(
     # Sort buckets ascending by upper bound so consumers can walk cumulative
     # counts in order. `None` (+Inf) sorts last.
     for series in grouped.values():
-        series.buckets.sort(
-            key=lambda b: (b.le is None, b.le if b.le is not None else 0.0)
-        )
+        series.buckets.sort(key=lambda b: (b.le is None, b.le if b.le is not None else 0.0))
 
     return DriftHistogramResponse(series=list(grouped.values()))

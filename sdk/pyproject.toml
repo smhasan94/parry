@@ -39,6 +39,12 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+# N803: unittest.mock.patch convention uses CamelCase for the injected
+# mock class argument (MockOpenAI, MockAnthropic). Fighting the
+# convention just makes the tests noisier.
+"tests/**" = ["N803"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

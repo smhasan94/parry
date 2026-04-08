@@ -4,12 +4,12 @@ Live DB-backed queries are exercised in e2e tests; here we lock down
 the pure scoring function — penalty clamping, grade boundaries, the
 new-agent-scores-100 contract, and anomaly clamping.
 """
+
 from __future__ import annotations
 
 import pytest
 
 from app.services.health_score_service import _grade, compute_score
-
 
 # ── Grade boundaries ─────────────────────────────────────────────────
 

@@ -6,6 +6,7 @@ anything — the host app's LLM call MUST return normally and on time.
 These tests exist to prevent a future refactor from quietly
 reintroducing an exception leak or a sync blocking call.
 """
+
 import time
 import uuid
 from unittest.mock import MagicMock, patch
@@ -16,8 +17,8 @@ from parry.wrappers.anthropic import ParryAnthropic
 from parry.wrappers.langchain import ParryCallbackHandler
 from parry.wrappers.openai import ParryOpenAI
 
-
 # ── interceptor.intercept_completion itself ───────────────────────────
+
 
 def test_intercept_swallows_strip_pii_error(caplog):
     """If strip_pii blows up (e.g. catastrophic regex backtracking),
@@ -42,6 +43,7 @@ def test_intercept_swallows_client_error():
 
 # ── OpenAI wrapper ────────────────────────────────────────────────────
 
+
 def _mock_openai_response(content: str = "ok"):
     message = MagicMock()
     message.content = content
@@ -58,12 +60,8 @@ def _mock_openai_response(content: str = "ok"):
 
 @patch("parry.wrappers.openai.intercept_completion", side_effect=RuntimeError("boom"))
 @patch("openai.OpenAI")
-def test_openai_wrapper_returns_response_even_if_intercept_raises(
-    MockOpenAI, _mock_intercept
-):
-    MockOpenAI.return_value.chat.completions.create.return_value = _mock_openai_response(
-        "Paris."
-    )
+def test_openai_wrapper_returns_response_even_if_intercept_raises(MockOpenAI, _mock_intercept):
+    MockOpenAI.return_value.chat.completions.create.return_value = _mock_openai_response("Paris.")
     parry.init(api_key="sk-parry-test", base_url="http://localhost:8000")
     wrapper = ParryOpenAI(agent_id="a", api_key="fake")
 
@@ -74,6 +72,7 @@ def test_openai_wrapper_returns_response_even_if_intercept_raises(
 
 
 # ── Anthropic wrapper ─────────────────────────────────────────────────
+
 
 def _mock_anthropic_response(text: str = "ok"):
     block = MagicMock()
@@ -93,9 +92,7 @@ def _mock_anthropic_response(text: str = "ok"):
 def test_anthropic_wrapper_returns_response_even_if_intercept_raises(
     MockAnthropic, _mock_intercept
 ):
-    MockAnthropic.return_value.messages.create.return_value = _mock_anthropic_response(
-        "hola"
-    )
+    MockAnthropic.return_value.messages.create.return_value = _mock_anthropic_response("hola")
     parry.init(api_key="sk-parry-test", base_url="http://localhost:8000")
     wrapper = ParryAnthropic(agent_id="a", api_key="fake")
 
@@ -109,6 +106,7 @@ def test_anthropic_wrapper_returns_response_even_if_intercept_raises(
 
 # ── Slow backend must not block the wrapper ──────────────────────────
 
+
 @patch("openai.OpenAI")
 def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
     """Fire-and-forget contract: if the Parry backend sleeps on the event
@@ -117,9 +115,7 @@ def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
     blocking mode, so we short-circuit it here with a fast allow response
     and only slow-respond to the ingest path. Regression guard against
     someone switching ParryClient's ingest send to a sync/awaited path."""
-    MockOpenAI.return_value.chat.completions.create.return_value = _mock_openai_response(
-        "fast"
-    )
+    MockOpenAI.return_value.chat.completions.create.return_value = _mock_openai_response("fast")
 
     def routed_post(url, *args, **kwargs):
         # Proxy check and response scan must answer instantly — both sit
@@ -146,9 +142,7 @@ def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
     parry.init(api_key="sk-parry-test", base_url="http://localhost:8000")
     wrapper = ParryOpenAI(agent_id="a", api_key="fake")
 
-    with patch.object(
-        parry.get_client()._http, "post", side_effect=routed_post
-    ):
+    with patch.object(parry.get_client()._http, "post", side_effect=routed_post):
         started = time.monotonic()
         result = wrapper.chat.completions.create(
             model="gpt-4o", messages=[{"role": "user", "content": "?"}]
@@ -162,6 +156,7 @@ def test_slow_backend_does_not_block_openai_wrapper(MockOpenAI):
 
 
 # ── Host raises mid-stream ────────────────────────────────────────────
+
 
 def _make_openai_stream_chunks(texts: list[str]):
     chunks = []
@@ -211,6 +206,7 @@ def test_host_exception_mid_stream_propagates_cleanly(MockOpenAI, mock_intercept
 
 # ── Malformed backend response ────────────────────────────────────────
 
+
 def test_client_survives_malformed_backend_response():
     """Backend returns a 500 with HTML garbage — _send_event_sync must
     log and swallow, never raise. Uses the real client send path so we
@@ -240,6 +236,7 @@ def test_client_survives_post_raising_unexpected_exception():
 
 
 # ── LangChain callback ────────────────────────────────────────────────
+
 
 @patch("parry.wrappers.langchain.intercept_completion", side_effect=RuntimeError("boom"))
 def test_langchain_callback_swallows_intercept_error(_mock_intercept):

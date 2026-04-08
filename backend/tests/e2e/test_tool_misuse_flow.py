@@ -1,4 +1,5 @@
 """E2E: Event with blocked tool call -> tool_misuse detector triggers -> incident."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -20,9 +21,7 @@ async def test_blocked_tool_creates_incident(
             "prompt": "Run this Python script for me",
             "response": "Sure, executing the code now.",
             "model": "gpt-4o",
-            "tool_calls": [
-                {"name": "exec_code", "arguments": {"code": "print('hello')"}}
-            ],
+            "tool_calls": [{"name": "exec_code", "arguments": {"code": "print('hello')"}}],
             "latency_ms": 300,
             "token_count": 60,
         },

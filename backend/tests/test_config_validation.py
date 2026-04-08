@@ -1,4 +1,5 @@
 """Tests for Settings.validate_for_production() and log_startup_warnings()."""
+
 import pytest
 
 from app.core.config import Settings

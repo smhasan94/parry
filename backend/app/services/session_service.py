@@ -9,6 +9,7 @@ Role-aware content gating: viewers see previews only, admins see full
 prompt + response. The plan explicitly calls this out so analysts can
 do forensics while default roles can't exfil raw prompts.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -59,9 +60,7 @@ async def _load_detections_for_events(
     """
     if not event_ids:
         return {}
-    result = await db.execute(
-        select(Detection).where(Detection.event_id.in_(event_ids))
-    )
+    result = await db.execute(select(Detection).where(Detection.event_id.in_(event_ids)))
     grouped: dict[uuid.UUID, list[Detection]] = {}
     for detection in result.scalars().all():
         grouped.setdefault(detection.event_id, []).append(detection)
@@ -174,9 +173,7 @@ async def list_agent_sessions(
     its session — cheap enough via a grouped count and avoids N+1.
     """
     agent = (
-        await db.execute(
-            select(Agent).where(Agent.id == agent_id, Agent.org_id == org_id)
-        )
+        await db.execute(select(Agent).where(Agent.id == agent_id, Agent.org_id == org_id))
     ).scalar_one_or_none()
     if agent is None:
         return None
@@ -207,9 +204,7 @@ async def list_agent_sessions(
         )
         .group_by(AgentEvent.session_id)
     )
-    counts: dict[uuid.UUID, int] = {
-        sid: int(c) for sid, c in count_rows.all() if sid is not None
-    }
+    counts: dict[uuid.UUID, int] = {sid: int(c) for sid, c in count_rows.all() if sid is not None}
 
     return [
         {

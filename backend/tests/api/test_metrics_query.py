@@ -4,6 +4,7 @@ These call the endpoint handler directly to avoid the full middleware
 stack (rate limiter, Redis, auth) — the handler is a pure function over
 the in-process registry, so a unit-level call covers the logic we care
 about without needing Redis/DB."""
+
 import pytest
 
 from app.api.v1.metrics_query import get_anomaly_drift_histogram

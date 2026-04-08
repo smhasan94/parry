@@ -5,6 +5,7 @@ real Postgres in e2e tests. Here we lock down the pure bits: preview
 truncation and the role-aware event serializer (viewer previews only,
 admin gets full content).
 """
+
 from __future__ import annotations
 
 import uuid

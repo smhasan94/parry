@@ -3,6 +3,7 @@
 Covers the 4 cases from plan-02. Skipped locally without docker-postgres,
 runs in CI alongside the rest of the e2e suite.
 """
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,9 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import ResponseScanMode
 
 
-async def _set_mode(
-    db: AsyncSession, seeded_db: dict, mode: ResponseScanMode
-) -> None:
+async def _set_mode(db: AsyncSession, seeded_db: dict, mode: ResponseScanMode) -> None:
     seeded_db["org"].response_scan_mode = mode
     await db.flush()
     await db.commit()
@@ -41,9 +40,7 @@ async def test_off_mode_returns_response_unchanged(
 
 
 @pytest.mark.asyncio
-async def test_redact_mode_strips_ssn(
-    client: AsyncClient, seeded_db: dict, db: AsyncSession
-):
+async def test_redact_mode_strips_ssn(client: AsyncClient, seeded_db: dict, db: AsyncSession):
     await _set_mode(db, seeded_db, ResponseScanMode.REDACT)
 
     resp = await client.post(
@@ -64,9 +61,7 @@ async def test_redact_mode_strips_ssn(
 
 
 @pytest.mark.asyncio
-async def test_block_mode_rejects_api_key(
-    client: AsyncClient, seeded_db: dict, db: AsyncSession
-):
+async def test_block_mode_rejects_api_key(client: AsyncClient, seeded_db: dict, db: AsyncSession):
     await _set_mode(db, seeded_db, ResponseScanMode.BLOCK)
 
     resp = await client.post(

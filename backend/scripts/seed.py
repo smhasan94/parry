@@ -11,15 +11,13 @@ Usage:
 import asyncio
 import hashlib
 import secrets
-import sys
 
 from sqlalchemy import select
 
 
 async def seed() -> None:
-    from app.db.base import Base
     from app.db.models import Agent, ApiKey, Org, Policy
-    from app.db.session import async_session_factory, engine
+    from app.db.session import async_session_factory
 
     async with async_session_factory() as db:
         # Check if already seeded

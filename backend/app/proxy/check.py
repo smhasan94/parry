@@ -4,6 +4,7 @@ This runs inline on the caller's thread before their LLM call fires,
 so it MUST be fast (<10ms p99) and MUST NOT touch async-only detectors
 (AnomalyDetector, LLMFallback). Those stay in the Celery pipeline.
 """
+
 from typing import Any
 
 from app.db.models import Severity
@@ -46,9 +47,7 @@ class ProxyCheckResult:
         self.confidence = confidence
 
 
-def run_blocking_check(
-    event_data: dict[str, Any], org_blocking_enabled: bool
-) -> ProxyCheckResult:
+def run_blocking_check(event_data: dict[str, Any], org_blocking_enabled: bool) -> ProxyCheckResult:
     """Run synchronous blocking check.
 
     Short-circuits on the first HIGH/CRITICAL trigger so we don't pay

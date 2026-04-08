@@ -6,6 +6,7 @@ HTTP GET handlers serve from a warm cache almost all the time. Falls
 back to per-request computation on cache miss (see
 ``health_score_service.get_or_compute_health``).
 """
+
 from __future__ import annotations
 
 import asyncio

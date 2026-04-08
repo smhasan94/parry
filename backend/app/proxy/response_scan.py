@@ -10,6 +10,7 @@ back to the agent. Three modes:
 Like run_blocking_check, this is in the hot path of every LLM call and
 must be fast. Only regex-based DataExfiltrationDetector runs here.
 """
+
 from __future__ import annotations
 
 from app.db.models import ResponseScanMode

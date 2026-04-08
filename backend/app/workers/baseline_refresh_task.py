@@ -46,9 +46,7 @@ async def _refresh_stale_baselines() -> dict[str, int]:
 
     async with async_session_factory() as db:
         agents = (
-            (await db.execute(select(Agent).where(Agent.baseline.is_not(None))))
-            .scalars()
-            .all()
+            (await db.execute(select(Agent).where(Agent.baseline.is_not(None)))).scalars().all()
         )
 
         for agent in agents:

@@ -1,4 +1,5 @@
 """Tests for ParryAnthropic wrapper — sync and streaming completions."""
+
 from unittest.mock import MagicMock, patch
 
 import parry
@@ -56,7 +57,12 @@ def test_extract_prompt_string_content():
 
 
 def test_extract_prompt_block_content():
-    msgs = [{"role": "user", "content": [{"type": "text", "text": "Part 1"}, {"type": "text", "text": "Part 2"}]}]
+    msgs = [
+        {
+            "role": "user",
+            "content": [{"type": "text", "text": "Part 1"}, {"type": "text", "text": "Part 2"}],
+        }
+    ]
     assert _extract_prompt(msgs) == "Part 1 Part 2"
 
 

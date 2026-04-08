@@ -1,4 +1,5 @@
 """Tests for Clerk webhook handler logic."""
+
 import os
 import socket
 
@@ -126,11 +127,14 @@ async def test_org_deleted_not_found(db: AsyncSession):
 @pytest.mark.asyncio
 async def test_user_created(db: AsyncSession):
     """user.created creates a personal workspace Org."""
-    await _handle_user_created(db, {
-        "id": "user_clerk_abc",
-        "first_name": "Jane",
-        "last_name": "Doe",
-    })
+    await _handle_user_created(
+        db,
+        {
+            "id": "user_clerk_abc",
+            "first_name": "Jane",
+            "last_name": "Doe",
+        },
+    )
     await db.commit()
 
     result = await db.execute(select(Org).where(Org.clerk_org_id == "user_clerk_abc"))

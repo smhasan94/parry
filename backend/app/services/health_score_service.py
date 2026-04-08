@@ -17,6 +17,7 @@ Scoring (matches docs/plans/plan-04-08-integrations-through-graphs.md):
 The score is informational only — nothing in the runtime hot path
 should ever gate on it.
 """
+
 from __future__ import annotations
 
 import json
@@ -168,9 +169,7 @@ async def _count_critical_incidents_30d(
     return int(result.scalar_one() or 0)
 
 
-async def _latest_anomaly_confidence(
-    db: AsyncSession, agent_id: uuid.UUID
-) -> float:
+async def _latest_anomaly_confidence(db: AsyncSession, agent_id: uuid.UUID) -> float:
     """Most recent anomaly-detector confidence for this agent.
 
     Best-effort: we only see anomaly Detections that got attached to an
@@ -194,9 +193,7 @@ async def _latest_anomaly_confidence(
     return float(value) if value is not None else 0.0
 
 
-async def compute_health_score(
-    db: AsyncSession, agent_id: uuid.UUID
-) -> dict[str, Any]:
+async def compute_health_score(db: AsyncSession, agent_id: uuid.UUID) -> dict[str, Any]:
     """Compute the live health score + component breakdown for an agent."""
     now = datetime.now(UTC)
     seven_days_ago = now - timedelta(days=7)
@@ -227,9 +224,7 @@ async def compute_health_score(
     }
 
 
-async def get_or_compute_health(
-    db: AsyncSession, agent_id: uuid.UUID
-) -> dict[str, Any]:
+async def get_or_compute_health(db: AsyncSession, agent_id: uuid.UUID) -> dict[str, Any]:
     """Read-through cache: Redis first, live computation on miss.
 
     On miss we compute live and populate the cache so the next caller

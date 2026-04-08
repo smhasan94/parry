@@ -51,9 +51,7 @@ async def recompute_all_baselines(
     those without enough events (< MIN_EVENTS).
     """
     org, actor = org_actor
-    agents = (
-        (await db.execute(select(Agent).where(Agent.org_id == org.id))).scalars().all()
-    )
+    agents = (await db.execute(select(Agent).where(Agent.org_id == org.id))).scalars().all()
 
     recomputed = 0
     skipped = 0
@@ -147,9 +145,7 @@ async def list_agent_sessions_route(
     its event count so the UI can summarize without fetching full
     session payloads.
     """
-    sessions = await session_service.list_agent_sessions(
-        db, agent_id, org.id, limit=limit
-    )
+    sessions = await session_service.list_agent_sessions(db, agent_id, org.id, limit=limit)
     if sessions is None:
         raise HTTPException(status_code=404, detail="Agent not found")
     return sessions

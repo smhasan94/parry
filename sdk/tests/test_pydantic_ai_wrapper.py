@@ -4,6 +4,7 @@ Uses plain Python stand-ins for pydantic_ai.Agent — no framework
 import required. Covers the sync patch path, async patch path, and
 the graceful no-op when the attribute path can't be resolved.
 """
+
 import asyncio
 from unittest.mock import MagicMock, patch
 
@@ -75,9 +76,7 @@ async def test_async_instrumentation_calls_intercept():
 
     with patch("parry.wrappers.pydantic_ai.intercept_completion") as mock_intercept:
         parry_instrument(agent, agent_id="my-pa-async")
-        result = await agent.model.request(
-            messages=[{"role": "user", "content": "hi"}]
-        )
+        result = await agent.model.request(messages=[{"role": "user", "content": "hi"}])
 
     assert result.content == "hi"
     mock_intercept.assert_called_once()

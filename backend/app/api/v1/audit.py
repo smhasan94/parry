@@ -1,4 +1,5 @@
 """Audit log API — read-only access to the org's audit trail."""
+
 import uuid
 from datetime import datetime
 from typing import Any

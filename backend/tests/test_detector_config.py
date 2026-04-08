@@ -1,4 +1,5 @@
 """Tests for detector_config_service: merge, lookup, validation."""
+
 import pytest
 
 from app.services.detector_config_service import (

@@ -5,6 +5,7 @@ count_events_since) is exercised in e2e tests; here we lock down
 the limit table, require_feature behaviour, and resolve_plan_from_
 subscription which is a pure dict walk.
 """
+
 from __future__ import annotations
 
 import uuid

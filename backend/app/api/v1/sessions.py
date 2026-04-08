@@ -5,6 +5,7 @@ timeline with detections, for the dashboard's replay view. Viewers
 get metadata + previews only; admins get full prompt/response text
 for forensics.
 """
+
 from __future__ import annotations
 
 import uuid

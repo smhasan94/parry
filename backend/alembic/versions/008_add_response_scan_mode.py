@@ -10,21 +10,21 @@ Revises: 007
 Create Date: 2026-04-07
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "008"
-down_revision: Union[str, None] = "007"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "007"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 # Explicitly named enum so downgrade can drop the Postgres type cleanly
-RESPONSE_SCAN_MODE_ENUM = sa.Enum(
-    "off", "redact", "block", name="response_scan_mode"
-)
+RESPONSE_SCAN_MODE_ENUM = sa.Enum("off", "redact", "block", name="response_scan_mode")
 
 
 def upgrade() -> None:

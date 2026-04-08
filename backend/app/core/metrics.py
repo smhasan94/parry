@@ -4,6 +4,7 @@ Exposes counters and histograms for HTTP requests, detection events, incident
 creation, and alert dispatch attempts. The /metrics endpoint is unauthenticated
 (scrape-only) and should be firewalled at the network layer in production.
 """
+
 from prometheus_client import CollectorRegistry, Counter, Histogram
 
 # Use a custom registry so tests can isolate metrics and so multiprocess workers
@@ -126,9 +127,9 @@ def record_alert_sent(channel: str, success: bool) -> None:
 
 def record_anomaly_drift(sigma: float, quality: str, triggered: bool) -> None:
     """Observe a drift measurement from the anomaly detector."""
-    anomaly_drift_sigma.labels(
-        quality=quality, triggered="true" if triggered else "false"
-    ).observe(sigma)
+    anomaly_drift_sigma.labels(quality=quality, triggered="true" if triggered else "false").observe(
+        sigma
+    )
 
 
 def record_llm_fallback_call(

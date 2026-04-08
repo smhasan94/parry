@@ -1,4 +1,5 @@
 """Audit log service — append-only record of who did what."""
+
 import uuid
 from typing import Any
 

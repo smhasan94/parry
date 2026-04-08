@@ -1,4 +1,5 @@
 """E2E: Ingest a prompt injection event -> detection triggers -> incident created."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -46,9 +47,7 @@ async def test_injection_creates_incident(client: AsyncClient, seeded_db: dict, 
     assert incident.severity in (Severity.HIGH, Severity.CRITICAL)
 
     # Detections should link to the incident
-    result = await db.execute(
-        select(Detection).where(Detection.incident_id == incident.id)
-    )
+    result = await db.execute(select(Detection).where(Detection.incident_id == incident.id))
     linked = list(result.scalars().all())
     assert len(linked) >= 1
 

@@ -5,6 +5,7 @@ time, so these tests run without the extra installed. We invoke the
 callback lifecycle directly with mock payloads and verify
 intercept_completion sees the right fields.
 """
+
 from unittest.mock import MagicMock, patch
 
 import parry

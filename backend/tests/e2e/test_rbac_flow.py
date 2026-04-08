@@ -9,6 +9,7 @@ Note: the SDK ingest path uses X-Parry-Secret which always resolves
 to actor_type='api_key' → ADMIN, so the API-key-is-admin case is
 tested via the seeded API key fixture.
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -36,9 +37,7 @@ def _clear_actor_override(app):
 
 
 @pytest.mark.asyncio
-async def test_viewer_cannot_create_agent(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_viewer_cannot_create_agent(client: AsyncClient, seeded_db: dict):
     from app.main import app
 
     _install_actor_override(app, seeded_db, "org:viewer")
@@ -86,9 +85,7 @@ async def test_admin_can_create_agent(client: AsyncClient, seeded_db: dict):
 
 
 @pytest.mark.asyncio
-async def test_admin_cannot_access_billing_checkout(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_admin_cannot_access_billing_checkout(client: AsyncClient, seeded_db: dict):
     from app.main import app
 
     _install_actor_override(app, seeded_db, "org:admin")
@@ -108,9 +105,7 @@ async def test_admin_cannot_access_billing_checkout(
 
 
 @pytest.mark.asyncio
-async def test_owner_can_reach_billing_checkout(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_owner_can_reach_billing_checkout(client: AsyncClient, seeded_db: dict):
     """Owners pass the RBAC gate; actual checkout still 503s without
     Stripe keys, which proves the gate opened."""
     from app.main import app
@@ -134,9 +129,7 @@ async def test_owner_can_reach_billing_checkout(
 
 
 @pytest.mark.asyncio
-async def test_api_key_treated_as_admin_for_ingest(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_api_key_treated_as_admin_for_ingest(client: AsyncClient, seeded_db: dict):
     """SDK path via X-Parry-Secret never touches the RBAC gate (it uses
     its own dependency chain that bypasses get_current_actor), but we
     verify the happy path here to lock in that the plan's 'api keys

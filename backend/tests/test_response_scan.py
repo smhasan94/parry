@@ -3,6 +3,7 @@
 Targets scan_response directly — no API, no DB — so these run in
 <10ms and cover the exact logic that sits in the LLM return path.
 """
+
 import pytest
 
 from app.db.models import ResponseScanMode

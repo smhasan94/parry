@@ -1,4 +1,5 @@
 """Tests for alert_service: should_alert, build_slack_payload, email helpers."""
+
 import uuid
 from datetime import UTC, datetime
 
@@ -341,24 +342,18 @@ class TestBuildOpsgeniePayload:
 
     def test_details_include_dashboard_url(self) -> None:
         incident = _make_incident()
-        payload = build_opsgenie_payload(
-            incident, dashboard_url="https://parry.example.com/"
-        )
+        payload = build_opsgenie_payload(incident, dashboard_url="https://parry.example.com/")
         assert payload["details"]["dashboard_url"].endswith("/incidents")
 
 
 class TestShouldAlertPagerDutyOpsgenie:
     def test_pagerduty_key_counts_as_channel(self) -> None:
-        org = _make_org(
-            alert_config={"pagerduty_routing_key": "rk_x", "min_severity": "high"}
-        )
+        org = _make_org(alert_config={"pagerduty_routing_key": "rk_x", "min_severity": "high"})
         assert should_alert(org, Severity.HIGH)
         assert not should_alert(org, Severity.MEDIUM)
 
     def test_opsgenie_key_counts_as_channel(self) -> None:
-        org = _make_org(
-            alert_config={"opsgenie_api_key": "k", "min_severity": "critical"}
-        )
+        org = _make_org(alert_config={"opsgenie_api_key": "k", "min_severity": "critical"})
         assert should_alert(org, Severity.CRITICAL)
         assert not should_alert(org, Severity.HIGH)
 

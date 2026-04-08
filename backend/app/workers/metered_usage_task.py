@@ -5,6 +5,7 @@ counts events ingested in the last 24 hours and calls Stripe's
 subscription-item usage-record API. Failures per-org are logged but
 never raise — one broken customer can't be allowed to block the run.
 """
+
 from __future__ import annotations
 
 import asyncio

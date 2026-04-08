@@ -1,4 +1,5 @@
 """Detector tuning API — read and update per-org detector thresholds."""
+
 from typing import Any
 
 import structlog

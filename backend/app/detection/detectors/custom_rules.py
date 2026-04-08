@@ -15,6 +15,7 @@ Invalid regexes are skipped at runtime — the API already validates
 regex on write, so this is a defense-in-depth guard against a
 corrupted JSONB row rather than the primary validation path.
 """
+
 from __future__ import annotations
 
 import re

@@ -1,4 +1,5 @@
 """Tests for baseline_service.compute_baseline()."""
+
 import os
 import socket
 import uuid
@@ -49,7 +50,9 @@ async def db():
 
 
 async def _seed_agent(db: AsyncSession) -> Agent:
-    org = Org(name="Baseline Test Org", clerk_org_id=f"clerk_{uuid.uuid4().hex[:8]}", is_active=True)
+    org = Org(
+        name="Baseline Test Org", clerk_org_id=f"clerk_{uuid.uuid4().hex[:8]}", is_active=True
+    )
     db.add(org)
     await db.flush()
     agent = Agent(org_id=org.id, name="baseline-agent", is_active=True)

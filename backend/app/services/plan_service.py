@@ -7,6 +7,7 @@ compliance-report paths (feature gates). All raise HTTP 402 with
 ``X-Upgrade-Required`` so the dashboard can detect the quota error
 and show an upgrade modal.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -70,9 +71,7 @@ def _upgrade_required(detail: str) -> HTTPException:
 
 
 async def _count_agents(db: AsyncSession, org_id: uuid.UUID) -> int:
-    result = await db.execute(
-        select(func.count()).select_from(Agent).where(Agent.org_id == org_id)
-    )
+    result = await db.execute(select(func.count()).select_from(Agent).where(Agent.org_id == org_id))
     return int(result.scalar_one() or 0)
 
 
@@ -83,11 +82,7 @@ async def _count_events_this_month(db: AsyncSession, org_id: uuid.UUID) -> int:
     agent_id + timestamp range so queries stay chunk-aware.
     """
     since = datetime.now(UTC) - timedelta(days=30)
-    agent_ids = (
-        (await db.execute(select(Agent.id).where(Agent.org_id == org_id)))
-        .scalars()
-        .all()
-    )
+    agent_ids = (await db.execute(select(Agent.id).where(Agent.org_id == org_id))).scalars().all()
     if not agent_ids:
         return 0
 
@@ -160,19 +155,13 @@ def require_feature(org: Org, feature: str) -> None:
         )
 
 
-async def count_events_since(
-    db: AsyncSession, org_id: uuid.UUID, since: datetime
-) -> int:
+async def count_events_since(db: AsyncSession, org_id: uuid.UUID, since: datetime) -> int:
     """Events ingested for an org since a cutoff, agent-by-agent.
 
     Used by the daily metered usage reporter to produce a 24h count
     per org without scanning the whole hypertable.
     """
-    agent_ids = (
-        (await db.execute(select(Agent.id).where(Agent.org_id == org_id)))
-        .scalars()
-        .all()
-    )
+    agent_ids = (await db.execute(select(Agent.id).where(Agent.org_id == org_id))).scalars().all()
     total = 0
     for agent_id in agent_ids:
         row = await db.execute(

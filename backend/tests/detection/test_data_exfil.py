@@ -25,9 +25,7 @@ class TestDataExfiltrationDetector:
         assert result.severity.value == "high"
 
     def test_private_key_triggers(self) -> None:
-        result = self.detector.detect(
-            {"response": "-----BEGIN RSA PRIVATE KEY-----\nMIIEow..."}
-        )
+        result = self.detector.detect({"response": "-----BEGIN RSA PRIVATE KEY-----\nMIIEow..."})
         assert result.triggered
         assert result.severity.value == "critical"
 

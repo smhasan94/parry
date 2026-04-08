@@ -91,9 +91,8 @@ def _extract_response(payload: dict | None) -> tuple[str | None, int | None, str
                 raw.get("usage") if isinstance(raw, dict) else None
             )
             if usage is not None:
-                tokens = (
-                    getattr(usage, "total_tokens", None)
-                    or (usage.get("total_tokens") if isinstance(usage, dict) else None)
+                tokens = getattr(usage, "total_tokens", None) or (
+                    usage.get("total_tokens") if isinstance(usage, dict) else None
                 )
         model = getattr(response_obj, "model", None)
 
@@ -105,9 +104,11 @@ def _extract_response(payload: dict | None) -> tuple[str | None, int | None, str
 
     # Model may also be in the payload root
     if model is None:
-        model = payload.get("model") or payload.get("serialized", {}).get("model") if isinstance(
-            payload.get("serialized"), dict
-        ) else None
+        model = (
+            payload.get("model") or payload.get("serialized", {}).get("model")
+            if isinstance(payload.get("serialized"), dict)
+            else None
+        )
 
     return text, tokens, model
 

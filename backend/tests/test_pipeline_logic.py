@@ -1,4 +1,5 @@
 """Tests for DetectionPipeline pure methods (should_block, max_severity)."""
+
 from app.db.models import Severity
 from app.detection.base import DetectionResult
 from app.detection.pipeline import DetectionPipeline

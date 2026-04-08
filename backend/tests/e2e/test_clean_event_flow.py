@@ -1,4 +1,5 @@
 """E2E: Ingest a clean event -> detection runs -> no incident created."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select

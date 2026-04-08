@@ -5,6 +5,7 @@ monkey-patch `_conversable_agent_base` to return a stub base class
 that behaves like ConversableAgent's generate_reply surface, then
 exercise the mixin via the factory.
 """
+
 from unittest.mock import patch
 
 import parry

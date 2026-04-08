@@ -7,6 +7,7 @@ exercised in e2e tests; here we lock down:
 * the HTML template renders every section deterministically
 * no raw prompt/response content ever leaks through the renderer
 """
+
 from __future__ import annotations
 
 import uuid
@@ -16,7 +17,6 @@ import pytest
 
 from app.services.report_service import build_report_data
 from app.services.report_template import render_report_html
-
 
 # ── build_report_data input guards ───────────────────────────────────
 

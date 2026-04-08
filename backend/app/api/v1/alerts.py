@@ -294,9 +294,7 @@ async def send_test_alert(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No PagerDuty routing key configured",
             )
-        success = await send_pagerduty_alert(
-            routing_key, test_incident, dashboard_url=dashboard
-        )
+        success = await send_pagerduty_alert(routing_key, test_incident, dashboard_url=dashboard)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -311,9 +309,7 @@ async def send_test_alert(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No Opsgenie API key configured",
             )
-        success = await send_opsgenie_alert(
-            api_key, test_incident, dashboard_url=dashboard
-        )
+        success = await send_opsgenie_alert(api_key, test_incident, dashboard_url=dashboard)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

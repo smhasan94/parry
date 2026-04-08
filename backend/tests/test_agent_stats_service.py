@@ -4,6 +4,7 @@ DB-backed assembly is exercised in e2e tests; here we lock down the
 tiny bits of logic that live outside SQLAlchemy so they can't silently
 regress (the Python-side tool-call aggregator and the window parser).
 """
+
 from __future__ import annotations
 
 from collections import Counter

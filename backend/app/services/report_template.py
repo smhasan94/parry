@@ -4,6 +4,7 @@ Single-file inline CSS so WeasyPrint renders fully offline. No external
 resources, no web fonts — uses system fonts (Liberation Sans in the
 backend Docker image).
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -154,19 +155,13 @@ def _render_policies(policies: list[dict[str, Any]]) -> str:
         if p.get("blocked_tools"):
             items.append(f"<li>Blocked tools: {escape(', '.join(p['blocked_tools']))}</li>")
         if p.get("allowed_domains"):
-            items.append(
-                f"<li>Allowed domains: {escape(', '.join(p['allowed_domains']))}</li>"
-            )
+            items.append(f"<li>Allowed domains: {escape(', '.join(p['allowed_domains']))}</li>")
         if p.get("blocked_domains"):
-            items.append(
-                f"<li>Blocked domains: {escape(', '.join(p['blocked_domains']))}</li>"
-            )
+            items.append(f"<li>Blocked domains: {escape(', '.join(p['blocked_domains']))}</li>")
         if p.get("max_token_budget"):
             items.append(f"<li>Max token budget: {p['max_token_budget']}</li>")
         if p.get("forbidden_patterns"):
-            items.append(
-                f"<li>Forbidden patterns: {len(p['forbidden_patterns'])} configured</li>"
-            )
+            items.append(f"<li>Forbidden patterns: {len(p['forbidden_patterns'])} configured</li>")
         if not items:
             items.append('<li class="muted">No rules configured.</li>')
         parts.append("<ul>" + "".join(items) + "</ul>")

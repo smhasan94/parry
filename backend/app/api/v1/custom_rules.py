@@ -9,6 +9,7 @@ defense in depth.
 All mutation routes require admin+. The /test endpoint is viewer+
 so read-only users can still preview what a rule would match.
 """
+
 from __future__ import annotations
 
 import re
@@ -35,6 +36,7 @@ MAX_RULES_PER_ORG = 50
 
 
 # ── Schemas ──────────────────────────────────────────────────────────
+
 
 class CustomRuleBase(ParrySchema):
     name: str
@@ -74,6 +76,7 @@ class TestRuleResponse(ParrySchema):
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
+
 def _validate_pattern(pattern: str) -> None:
     try:
         re.compile(pattern)
@@ -97,6 +100,7 @@ def _save_rules(org: Org, rules: list[dict]) -> None:
 
 
 # ── Routes ───────────────────────────────────────────────────────────
+
 
 @router.get("", response_model=list[CustomRuleResponse])
 async def list_custom_rules(

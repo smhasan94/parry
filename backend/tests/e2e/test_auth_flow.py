@@ -1,4 +1,5 @@
 """E2E: Auth boundary tests -- missing key, bad key, inactive key."""
+
 import pytest
 from httpx import AsyncClient
 

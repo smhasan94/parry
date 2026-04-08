@@ -12,6 +12,7 @@ real seeded org, API key, and policy. Covers the 5 cases from plan-01:
 Marked with the same Postgres-availability skip as the rest of the
 e2e suite — runs in CI/docker but skips locally without the test DB.
 """
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,9 +25,7 @@ async def _enable_blocking(db: AsyncSession, seeded_db: dict) -> None:
 
 
 @pytest.mark.asyncio
-async def test_blocking_disabled_allows_injection(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_blocking_disabled_allows_injection(client: AsyncClient, seeded_db: dict):
     """Default state: org.blocking_enabled is False, so even a clear
     injection attempt comes back allowed with reason=blocking_disabled."""
     resp = await client.post(

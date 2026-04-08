@@ -1,4 +1,5 @@
 """E2E: Response contains PII -> data_exfiltration detector triggers."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select

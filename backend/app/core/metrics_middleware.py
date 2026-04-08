@@ -3,6 +3,7 @@
 Captures the matched route template (e.g. /api/v1/agents/{agent_id}) rather than
 the raw path so cardinality stays bounded.
 """
+
 import time
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -13,9 +14,7 @@ from app.core.metrics import record_request
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip /metrics itself to avoid feedback loops on scrapes
         if request.url.path == "/metrics":
             return await call_next(request)
