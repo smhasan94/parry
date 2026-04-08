@@ -10,11 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.dependencies import get_current_org, get_org_from_sdk_key
+from app.core.event_bus import subscribe as subscribe_event_bus
 from app.core.metrics import record_event_ingested
 from app.db.models import AgentEvent, Org
 from app.db.session import async_session_factory, get_db
 from app.schemas.event import EventIngest, EventListResponse, EventResponse
 from app.services import event_service
+
+# Per-org cap on concurrent live-stream connections — prevents a
+# runaway dashboard from exhausting event-loop slots.
+MAX_LIVE_STREAMS_PER_ORG = 5
+_live_stream_counts: dict[str, int] = {}
 
 log = structlog.get_logger()
 
@@ -107,6 +113,55 @@ async def stream_events(
                     yield {"data": data}
 
             await asyncio.sleep(2)
+
+    return EventSourceResponse(event_generator())
+
+
+@router.get("/live-stream")
+async def live_stream(
+    org: Org = Depends(get_current_org),
+) -> EventSourceResponse:
+    """Org-wide SSE stream fed from the Redis pubsub event bus.
+
+    Each message is a JSON object with a ``type`` field (``blocked``,
+    ``event``, ``keepalive``). The stream emits a keepalive every 15s
+    to keep reverse-proxy idle timers happy on long-lived connections.
+    """
+    from fastapi import HTTPException
+
+    org_key = str(org.id)
+    current = _live_stream_counts.get(org_key, 0)
+    if current >= MAX_LIVE_STREAMS_PER_ORG:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Live stream connection limit reached "
+                f"({MAX_LIVE_STREAMS_PER_ORG}/org)."
+            ),
+        )
+    _live_stream_counts[org_key] = current + 1
+
+    async def event_generator() -> AsyncGenerator[dict[str, str], None]:
+        try:
+            subscription = subscribe_event_bus(org_key)
+            sub_iter = subscription.__aiter__()
+            while True:
+                try:
+                    next_msg = asyncio.wait_for(sub_iter.__anext__(), timeout=15.0)
+                    msg = await next_msg
+                except asyncio.TimeoutError:
+                    yield {"data": json.dumps({"type": "keepalive"})}
+                    continue
+                except StopAsyncIteration:
+                    # Redis went away — send a final keepalive and exit
+                    # so the client can reconnect.
+                    yield {"data": json.dumps({"type": "keepalive"})}
+                    return
+                yield {"data": json.dumps(msg)}
+        finally:
+            _live_stream_counts[org_key] = max(
+                0, _live_stream_counts.get(org_key, 1) - 1
+            )
 
     return EventSourceResponse(event_generator())
 
