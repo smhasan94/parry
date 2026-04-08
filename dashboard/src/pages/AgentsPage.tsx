@@ -8,9 +8,10 @@ import { useAgents, useCreateAgent, useRecomputeAllBaselines } from "@/hooks/use
 import { useRole } from "@/hooks/useRole";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { Bot, Plus, RefreshCw } from "lucide-react";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 
 export function AgentsPage() {
-  const { data: agents = [], isLoading } = useAgents();
+  const { data: agents = [], isLoading, isError, error, refetch } = useAgents();
   const createAgent = useCreateAgent();
   const recomputeAll = useRecomputeAllBaselines();
   const { can } = useRole();
@@ -90,7 +91,21 @@ export function AgentsPage() {
         )}
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading agents...</p>
+          <Card>
+            <CardContent>
+              <LoadingState label="Loading agents" />
+            </CardContent>
+          </Card>
+        ) : isError ? (
+          <Card>
+            <CardContent>
+              <ErrorState
+                error={error}
+                title="Couldn't load agents"
+                onRetry={() => refetch()}
+              />
+            </CardContent>
+          </Card>
         ) : agents.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">

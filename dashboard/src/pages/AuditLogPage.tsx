@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
 import type { AuditEntry } from "@/lib/types";
 import { Activity, Download, Key, Server, User } from "lucide-react";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 
 const ACTION_OPTIONS = [
   { value: "", label: "All actions" },
@@ -119,7 +120,16 @@ export function AuditLogPage() {
       setExporting(false);
     }
   }
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useAuditLog(
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useAuditLog(
     actionFilter ? { action: actionFilter } : undefined
   );
 
@@ -201,7 +211,13 @@ export function AuditLogPage() {
         <Card>
           <CardContent className="p-4">
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading audit log...</p>
+              <LoadingState label="Loading audit log" />
+            ) : isError ? (
+              <ErrorState
+                error={error}
+                title="Couldn't load audit log"
+                onRetry={() => refetch()}
+              />
             ) : entries.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <Activity className="h-12 w-12 text-muted-foreground" />

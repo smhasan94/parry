@@ -10,11 +10,21 @@ import { Bot, AlertTriangle, Shield, Activity, Sparkles, CheckCircle2 } from "lu
 import { Link } from "@tanstack/react-router";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { BlockedEventFeed } from "@/components/BlockedEventFeed";
+import { ErrorState } from "@/components/ui/states";
 import type { Agent } from "@/lib/types";
 
 export function DashboardPage() {
-  const { data: agents = [], isLoading: agentsLoading } = useAgents();
-  const { data: incidentData, isLoading: incidentsLoading } = useIncidents();
+  const {
+    data: agents = [],
+    isLoading: agentsLoading,
+    isError: agentsError,
+    refetch: refetchAgents,
+  } = useAgents();
+  const {
+    data: incidentData,
+    isLoading: incidentsLoading,
+    isError: incidentsError,
+  } = useIncidents();
 
   const incidents = incidentData?.pages.flatMap((p) => p.incidents) ?? [];
   const activeAgents = agents.filter((a) => a.is_active).length;
@@ -26,7 +36,19 @@ export function DashboardPage() {
       <Header title="Dashboard" description="AI Agent Runtime Security overview" />
 
       <div className="space-y-6 p-6">
-        {!agentsLoading && !incidentsLoading && agents.length === 0 && (
+        {(agentsError || incidentsError) && (
+          <Card>
+            <CardContent>
+              <ErrorState
+                title="Couldn't load dashboard data"
+                onRetry={() => refetchAgents()}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {!agentsError && !incidentsError &&
+          !agentsLoading && !incidentsLoading && agents.length === 0 && (
           <FirstRunCard />
         )}
 

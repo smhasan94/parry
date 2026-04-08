@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { usePolicies, useCreatePolicy, useDeletePolicy } from "@/hooks/usePolicies";
 import { FileCheck, Plus, Trash2 } from "lucide-react";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 
 export function PoliciesPage() {
-  const { data: policies = [], isLoading } = usePolicies();
+  const { data: policies = [], isLoading, isError, error, refetch } = usePolicies();
   const createPolicy = useCreatePolicy();
   const deletePolicy = useDeletePolicy();
   const [showCreate, setShowCreate] = useState(false);
@@ -126,7 +127,21 @@ export function PoliciesPage() {
         )}
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading policies...</p>
+          <Card>
+            <CardContent>
+              <LoadingState label="Loading policies" />
+            </CardContent>
+          </Card>
+        ) : isError ? (
+          <Card>
+            <CardContent>
+              <ErrorState
+                error={error}
+                title="Couldn't load policies"
+                onRetry={() => refetch()}
+              />
+            </CardContent>
+          </Card>
         ) : policies.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
