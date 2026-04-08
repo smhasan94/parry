@@ -76,7 +76,17 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # response). Runs via the SDK's /proxy/scan-response call after the
     # LLM returns, before the SDK hands the response back to the caller.
     response_scan_mode: Mapped[ResponseScanMode] = mapped_column(
-        Enum(ResponseScanMode, name="response_scan_mode"),
+        Enum(
+            ResponseScanMode,
+            name="response_scan_mode",
+            # StrEnum members are ("OFF", "off") etc. SQLAlchemy's
+            # default is to store the member NAME ("OFF"), but the
+            # Postgres enum type was hand-declared with VALUES
+            # ("off") in the migration. Without values_callable
+            # every insert fails with "invalid input value for
+            # enum response_scan_mode: OFF".
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+        ),
         default=ResponseScanMode.OFF,
         nullable=False,
         server_default=ResponseScanMode.OFF.value,
@@ -85,7 +95,11 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # create. New orgs default to FREE; Stripe webhooks flip this to
     # GROWTH/PRO on subscription events.
     plan: Mapped[Plan] = mapped_column(
-        Enum(Plan, name="plan"),
+        Enum(
+            Plan,
+            name="plan",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+        ),
         default=Plan.FREE,
         nullable=False,
         server_default=Plan.FREE.value,
@@ -204,7 +218,14 @@ class Detection(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True
     )
     detector: Mapped[str] = mapped_column(String(100), nullable=False)
-    severity: Mapped[Severity] = mapped_column(Enum(Severity), nullable=False)
+    severity: Mapped[Severity] = mapped_column(
+        Enum(
+            Severity,
+            name="severity",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+        ),
+        nullable=False,
+    )
     confidence: Mapped[float] = mapped_column(nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     triggered: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -226,9 +247,22 @@ class Incident(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
     )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
-    severity: Mapped[Severity] = mapped_column(Enum(Severity), nullable=False)
+    severity: Mapped[Severity] = mapped_column(
+        Enum(
+            Severity,
+            name="severity",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+        ),
+        nullable=False,
+    )
     status: Mapped[IncidentStatus] = mapped_column(
-        Enum(IncidentStatus), default=IncidentStatus.OPEN, nullable=False
+        Enum(
+            IncidentStatus,
+            name="incidentstatus",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+        ),
+        default=IncidentStatus.OPEN,
+        nullable=False,
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
