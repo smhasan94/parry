@@ -78,26 +78,24 @@ async def _count_agents(db: AsyncSession, org_id: uuid.UUID) -> int:
 async def _count_events_this_month(db: AsyncSession, org_id: uuid.UUID) -> int:
     """Rolling 30-day event count for the org.
 
-    Hypertable-safe: we iterate agent ids and filter each subquery by
-    agent_id + timestamp range so queries stay chunk-aware.
+    Called on every ``POST /events/ingest`` so this MUST be a single
+    round trip. The naive "iterate agent ids, one count per agent"
+    pattern turns a single ingest into 1 + N queries and was the
+    worst hot-path offender in the backend. We push the agent filter
+    into a subquery so the planner can still pick a chunk-aware plan
+    on the TimescaleDB hypertable while we pay for one roundtrip.
     """
     since = datetime.now(UTC) - timedelta(days=30)
-    agent_ids = (await db.execute(select(Agent.id).where(Agent.org_id == org_id))).scalars().all()
-    if not agent_ids:
-        return 0
-
-    total = 0
-    for agent_id in agent_ids:
-        row = await db.execute(
-            select(func.count())
-            .select_from(AgentEvent)
-            .where(
-                AgentEvent.agent_id == agent_id,
-                AgentEvent.timestamp >= since,
-            )
+    agent_ids_subq = select(Agent.id).where(Agent.org_id == org_id).scalar_subquery()
+    result = await db.execute(
+        select(func.count())
+        .select_from(AgentEvent)
+        .where(
+            AgentEvent.agent_id.in_(agent_ids_subq),
+            AgentEvent.timestamp >= since,
         )
-        total += int(row.scalar_one() or 0)
-    return total
+    )
+    return int(result.scalar_one() or 0)
 
 
 def _effective_limits(org: Org) -> dict[str, Any]:
@@ -188,21 +186,18 @@ def require_feature(org: Org, feature: str) -> None:
 
 
 async def count_events_since(db: AsyncSession, org_id: uuid.UUID, since: datetime) -> int:
-    """Events ingested for an org since a cutoff, agent-by-agent.
+    """Events ingested for an org since a cutoff.
 
-    Used by the daily metered usage reporter to produce a 24h count
-    per org without scanning the whole hypertable.
+    Used by the daily metered usage reporter. Single-query so a
+    50-agent org doesn't turn into 50 round trips per run.
     """
-    agent_ids = (await db.execute(select(Agent.id).where(Agent.org_id == org_id))).scalars().all()
-    total = 0
-    for agent_id in agent_ids:
-        row = await db.execute(
-            select(func.count())
-            .select_from(AgentEvent)
-            .where(
-                AgentEvent.agent_id == agent_id,
-                AgentEvent.timestamp >= since,
-            )
+    agent_ids_subq = select(Agent.id).where(Agent.org_id == org_id).scalar_subquery()
+    result = await db.execute(
+        select(func.count())
+        .select_from(AgentEvent)
+        .where(
+            AgentEvent.agent_id.in_(agent_ids_subq),
+            AgentEvent.timestamp >= since,
         )
-        total += int(row.scalar_one() or 0)
-    return total
+    )
+    return int(result.scalar_one() or 0)

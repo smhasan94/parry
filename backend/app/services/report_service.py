@@ -63,21 +63,25 @@ async def build_report_data(
     agent_ids = [a.id for a in agents]
 
     # ── Event counts per agent (hypertable-safe) ─────────────────────
-    event_counts: dict[uuid.UUID, int] = {}
+    # Single grouped query — the WHERE clause still lists the
+    # agent_ids so TimescaleDB can pick a chunk-aware plan, but we
+    # no longer pay one roundtrip per agent.
+    event_counts: dict[uuid.UUID, int] = dict.fromkeys(agent_ids, 0)
     total_events = 0
-    for agent in agents:
-        count_result = await db.execute(
-            select(func.count())
-            .select_from(AgentEvent)
+    if agent_ids:
+        rows = await db.execute(
+            select(AgentEvent.agent_id, func.count())
             .where(
-                AgentEvent.agent_id == agent.id,
+                AgentEvent.agent_id.in_(agent_ids),
                 AgentEvent.timestamp >= start,
                 AgentEvent.timestamp < end,
             )
+            .group_by(AgentEvent.agent_id)
         )
-        c = int(count_result.scalar_one() or 0)
-        event_counts[agent.id] = c
-        total_events += c
+        for agent_id, count in rows.all():
+            c = int(count)
+            event_counts[agent_id] = c
+            total_events += c
 
     # ── Detection aggregates ─────────────────────────────────────────
     # Detections don't FK into the hypertable, so we filter by
