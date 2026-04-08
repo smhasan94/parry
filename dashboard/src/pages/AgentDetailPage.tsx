@@ -595,7 +595,35 @@ export function AgentDetailPage() {
             {eventsLoading ? (
               <p className="text-sm text-muted-foreground">Loading events...</p>
             ) : displayEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No events recorded yet.</p>
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <Activity className="h-10 w-10 text-muted-foreground" />
+                {anomaliesOnly ? (
+                  <>
+                    <p className="text-sm font-medium">No anomalies in recent events</p>
+                    <p className="max-w-sm text-xs text-muted-foreground">
+                      Clear the filter to see normal traffic — nothing unusual
+                      here means the agent is matching its baseline.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-1"
+                      onClick={() => setAnomaliesOnly(false)}
+                    >
+                      Show all events
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium">No events recorded yet</p>
+                    <p className="max-w-sm text-xs text-muted-foreground">
+                      Events show up here as soon as the SDK makes its first
+                      LLM call for this agent. Any call wrapped with
+                      SentinelOpenAI / SentinelAnthropic / etc. is enough.
+                    </p>
+                  </>
+                )}
+              </div>
             ) : (
               <div className="space-y-3">
                 {displayEvents.map((event) => {
