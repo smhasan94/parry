@@ -83,9 +83,37 @@ export function IncidentsPage() {
           <p className="text-sm text-muted-foreground">Loading incidents...</p>
         ) : incidents.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <CheckCircle className="mb-4 h-12 w-12 text-green-500" />
-              <p className="text-sm text-muted-foreground">No incidents match your filters.</p>
+            <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <CheckCircle className="h-12 w-12 text-green-500" />
+              {severityFilter !== "all" || statusFilter !== "all" ? (
+                <>
+                  <p className="text-sm font-medium">No incidents match these filters</p>
+                  <p className="max-w-sm text-xs text-muted-foreground">
+                    Try clearing the severity or status filter to see all
+                    incidents.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() => {
+                      setSeverityFilter("all");
+                      setStatusFilter("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">No incidents — all clear</p>
+                  <p className="max-w-sm text-xs text-muted-foreground">
+                    Incidents show up here when the detection engine groups
+                    triggered detections into something that needs a human
+                    look. A quiet list is a good sign.
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         ) : (
