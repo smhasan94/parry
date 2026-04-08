@@ -8,6 +8,7 @@ import { useIncidents, useUpdateIncident } from "@/hooks/useIncidents";
 import { useResourceHistory } from "@/hooks/useAuditLog";
 import type { IncidentStatus, Severity, AuditEntry } from "@/lib/types";
 import { AlertTriangle, CheckCircle, Eye, Film, XCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 
 const SEVERITY_OPTIONS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
 const STATUS_OPTIONS: (IncidentStatus | "all")[] = ["all", "open", "acknowledged", "resolved", "dismissed"];
@@ -24,6 +25,9 @@ export function IncidentsPage() {
   const {
     data,
     isLoading,
+    isError,
+    error,
+    refetch,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -80,7 +84,21 @@ export function IncidentsPage() {
 
         {/* Incident List */}
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading incidents...</p>
+          <Card>
+            <CardContent>
+              <LoadingState label="Loading incidents" />
+            </CardContent>
+          </Card>
+        ) : isError ? (
+          <Card>
+            <CardContent>
+              <ErrorState
+                error={error}
+                title="Couldn't load incidents"
+                onRetry={() => refetch()}
+              />
+            </CardContent>
+          </Card>
         ) : incidents.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
