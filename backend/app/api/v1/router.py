@@ -15,6 +15,7 @@ from app.api.v1 import (
     proxy,
     reports,
     sessions,
+    slo,
     webhooks,
 )
 
@@ -37,3 +38,4 @@ api_router.include_router(metrics_query.router, prefix="/metrics", tags=["metric
 api_router.include_router(proxy.router, prefix="/proxy", tags=["proxy"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
+api_router.include_router(slo.router, prefix="/slo", tags=["slo"])

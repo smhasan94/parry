@@ -192,6 +192,10 @@ class ApiClient {
     return this.request("/api/v1/billing/plan");
   }
 
+  async getSLOStatus(): Promise<SLOStatusResponse> {
+    return this.request("/api/v1/slo");
+  }
+
   async createCheckoutSession(
     priceId: string,
     successUrl: string,
@@ -513,6 +517,23 @@ export interface SessionReplay {
     metadata: Record<string, unknown>;
   };
   events: SessionReplayEvent[];
+}
+
+export interface SLOStatus {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  kind: "ratio_pct" | "latency_seconds";
+  higher_is_better: boolean;
+  value: number | null;
+  meets_target: boolean | null;
+  budget_remaining_pct: number | null;
+}
+
+export interface SLOStatusResponse {
+  statuses: SLOStatus[];
+  note: string;
 }
 
 export interface PlanResponse {

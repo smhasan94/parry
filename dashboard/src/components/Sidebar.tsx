@@ -7,6 +7,7 @@ import {
   FileCheck,
   FileCode,
   FileDown,
+  Gauge,
   Settings,
   Activity,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/custom-rules", label: "Custom Rules", icon: FileCode },
   { to: "/reports", label: "Reports", icon: FileDown },
   { to: "/audit-log", label: "Audit Log", icon: Activity },
+  { to: "/slo", label: "SLOs", icon: Gauge },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

@@ -12,6 +12,7 @@ import { AuditLogPage } from "@/pages/AuditLogPage";
 import { CustomRulesPage } from "@/pages/CustomRulesPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SessionReplayPage } from "@/pages/SessionReplayPage";
+import { SLOPage } from "@/pages/SLOPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -92,6 +93,12 @@ const sessionReplayRoute = createRoute({
   component: SessionReplayPage,
 });
 
+const sloRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/slo",
+  component: SLOPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -102,6 +109,7 @@ const routeTree = rootRoute.addChildren([
   customRulesRoute,
   reportsRoute,
   sessionReplayRoute,
+  sloRoute,
   settingsRoute,
   setupRoute,
   auditRoute,
