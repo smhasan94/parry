@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-ink-950 text-ink-50 antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  body {
+    @apply min-h-screen;
+  }
+  ::selection {
+    @apply bg-accent/40 text-ink-50;
+  }
+}
+
+@layer components {
+  .container-narrow {
+    @apply mx-auto w-full max-w-5xl px-6;
+  }
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-ink-600/60 bg-ink-900/60 px-3 py-1 text-xs font-medium text-ink-200;
+  }
+  .grad-text {
+    @apply bg-gradient-to-br from-ink-50 via-ink-50 to-ink-400 bg-clip-text text-transparent;
+  }
+}

@@ -1,0 +1,350 @@
+---
+import Base from "../layouts/Base.astro";
+
+const features = [
+  {
+    title: "Catches prompt injection in real time",
+    body: "Pattern, classifier, and LLM-fallback detectors run on every call. HIGH and CRITICAL triggers can block before the LLM is hit.",
+  },
+  {
+    title: "Watches every tool call",
+    body: "Org-defined allowlists, blocked domains, and budget limits — enforced inline. Detect tool misuse before it touches production data.",
+  },
+  {
+    title: "Learns each agent's baseline",
+    body: "Per-agent token, latency, and tool-call baselines. Anomaly detection flags drift from real production behaviour, not synthetic benchmarks.",
+  },
+  {
+    title: "Forensics-grade session replay",
+    body: "Reconstruct any session call-by-call with detection results inline. Full prompt and response for admins, previews for everyone else.",
+  },
+  {
+    title: "Routes the right alerts to the right place",
+    body: "Slack, email, webhooks, PagerDuty, Opsgenie — gated by severity, auditable, and never noisy.",
+  },
+  {
+    title: "Compliance reports in one click",
+    body: "Generate SOC 2 / EU AI Act-ready PDFs over any window. Counts and policy posture, never raw prompts — GDPR-safe by design.",
+  },
+];
+
+const steps = [
+  {
+    n: "01",
+    title: "Install",
+    body: "pip install parry. Two-line setup. Works with OpenAI, Anthropic, LangChain, CrewAI, AutoGen, LlamaIndex, and Pydantic AI.",
+  },
+  {
+    n: "02",
+    title: "Wrap your client",
+    body: "Replace your LLM client with the Parry wrapper. Every call is intercepted, classified, and shipped to the detection engine.",
+  },
+  {
+    n: "03",
+    title: "Watch the dashboard",
+    body: "Live block feed, fleet health, behavioural graphs, session replay. Configure policies and alerts as your agents grow.",
+  },
+];
+
+const plans = [
+  {
+    name: "Free",
+    price: "$0",
+    tagline: "Try Parry against a single agent.",
+    bullets: [
+      "1 agent",
+      "10,000 events / month",
+      "30-day retention",
+      "All real-time detectors",
+    ],
+  },
+  {
+    name: "Growth",
+    price: "$49",
+    tagline: "For teams shipping AI features.",
+    highlight: true,
+    bullets: [
+      "10 agents",
+      "100,000 events / month",
+      "365-day retention",
+      "Custom rules + compliance export",
+      "PagerDuty / Opsgenie",
+    ],
+  },
+  {
+    name: "Pro",
+    price: "$249",
+    tagline: "For production fleets.",
+    bullets: [
+      "50 agents",
+      "1,000,000 events / month",
+      "365-day retention",
+      "All Growth features",
+      "Priority support",
+    ],
+  },
+];
+---
+
+<Base>
+  <div class="relative overflow-hidden">
+    <!-- ambient gradient -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-[-20%] h-[60vh] bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.18),transparent_60%)]"
+    >
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10">
+      <div
+        class="container-narrow flex items-center justify-between py-6"
+      >
+        <a href="/" class="flex items-center gap-2 font-semibold">
+          <span
+            class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-accent text-ink-50"
+            >P</span
+          >
+          <span class="text-ink-50">Parry</span>
+        </a>
+        <nav class="hidden gap-8 text-sm text-ink-200 sm:flex">
+          <a href="#how" class="hover:text-ink-50">How it works</a>
+          <a href="#features" class="hover:text-ink-50">Features</a>
+          <a href="#pricing" class="hover:text-ink-50">Pricing</a>
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="hover:text-ink-50">GitHub</a
+          >
+        </nav>
+        <a
+          href="https://app.parry.dev"
+          class="rounded-md border border-ink-600 bg-ink-900/60 px-3 py-1.5 text-sm font-medium text-ink-50 hover:bg-ink-800"
+        >
+          Sign in
+        </a>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="relative z-10">
+      <div class="container-narrow pt-16 pb-24 sm:pt-24 sm:pb-32">
+        <span class="pill">
+          <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+          Runtime security for AI agents
+        </span>
+        <h1
+          class="mt-6 grad-text text-4xl font-semibold tracking-tight sm:text-6xl"
+        >
+          Catch the call before it<br /> burns the company.
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg text-ink-200">
+          Parry sits between your AI agents and the LLMs they call. It detects
+          prompt injection, tool misuse, and behavioural drift in real time —
+          and blocks the dangerous ones before they fire.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a
+            href="https://app.parry.dev/sign-up"
+            class="rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-ink-50 transition-colors hover:bg-accent-hover"
+          >
+            Start free
+          </a>
+          <a
+            href="#how"
+            class="rounded-md border border-ink-600 bg-ink-900/60 px-4 py-2.5 text-sm font-medium text-ink-50 hover:bg-ink-800"
+          >
+            See how it works →
+          </a>
+        </div>
+
+        <!-- Code block -->
+        <div
+          class="mt-12 overflow-hidden rounded-lg border border-ink-600/60 bg-ink-900/80 shadow-2xl shadow-accent/5"
+        >
+          <div
+            class="flex items-center gap-1.5 border-b border-ink-600/60 px-4 py-2.5 text-xs text-ink-400"
+          >
+            <span class="h-2.5 w-2.5 rounded-full bg-red-500/70"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-yellow-500/70"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-green-500/70"></span>
+            <span class="ml-3 font-mono">support_agent.py</span>
+          </div>
+          <pre
+            class="overflow-x-auto px-5 py-4 text-sm leading-relaxed text-ink-200"><code><span class="text-ink-400"># before</span>
+<span class="text-pink-300">from</span> openai <span class="text-pink-300">import</span> OpenAI
+client = OpenAI()
+
+<span class="text-ink-400"># after — that's it</span>
+<span class="text-pink-300">from</span> parry.wrappers.openai <span class="text-pink-300">import</span> SentinelOpenAI
+client = SentinelOpenAI(agent_id=<span class="text-emerald-300">"support-bot"</span>)</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="relative z-10 border-t border-ink-600/40">
+      <div class="container-narrow py-20">
+        <div class="max-w-2xl">
+          <p class="pill">How it works</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Three steps. No new infrastructure.
+          </h2>
+        </div>
+        <div class="mt-12 grid gap-6 sm:grid-cols-3">
+          {
+            steps.map((step) => (
+              <div class="rounded-lg border border-ink-600/60 bg-ink-900/40 p-6">
+                <span class="font-mono text-xs text-accent">{step.n}</span>
+                <h3 class="mt-2 text-lg font-semibold text-ink-50">
+                  {step.title}
+                </h3>
+                <p class="mt-2 text-sm text-ink-200">{step.body}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="relative z-10 border-t border-ink-600/40">
+      <div class="container-narrow py-20">
+        <div class="max-w-2xl">
+          <p class="pill">What you get</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Everything an AI security team needs, on day one.
+          </h2>
+          <p class="mt-4 text-ink-200">
+            Built around the way real agents fail: silent drift, opaque tool
+            calls, and prompt injection that only shows up in production.
+          </p>
+        </div>
+        <div class="mt-12 grid gap-6 sm:grid-cols-2">
+          {
+            features.map((f) => (
+              <div class="rounded-lg border border-ink-600/60 bg-ink-900/40 p-6 transition-colors hover:border-accent/40">
+                <h3 class="text-base font-semibold text-ink-50">{f.title}</h3>
+                <p class="mt-2 text-sm text-ink-200">{f.body}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="relative z-10 border-t border-ink-600/40">
+      <div class="container-narrow py-20">
+        <div class="max-w-2xl">
+          <p class="pill">Pricing</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Start free. Scale when you ship.
+          </h2>
+        </div>
+        <div class="mt-12 grid gap-6 lg:grid-cols-3">
+          {
+            plans.map((plan) => (
+              <div
+                class={`rounded-lg border p-6 ${
+                  plan.highlight
+                    ? "border-accent/60 bg-accent/5"
+                    : "border-ink-600/60 bg-ink-900/40"
+                }`}
+              >
+                <div class="flex items-baseline justify-between">
+                  <h3 class="text-lg font-semibold text-ink-50">{plan.name}</h3>
+                  <div>
+                    <span class="text-2xl font-semibold text-ink-50">
+                      {plan.price}
+                    </span>
+                    <span class="text-sm text-ink-400">/mo</span>
+                  </div>
+                </div>
+                <p class="mt-1 text-sm text-ink-200">{plan.tagline}</p>
+                <ul class="mt-5 space-y-2 text-sm text-ink-200">
+                  {plan.bullets.map((b) => (
+                    <li class="flex items-start gap-2">
+                      <span class="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-accent" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href="https://app.parry.dev/sign-up"
+                  class={`mt-6 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold ${
+                    plan.highlight
+                      ? "bg-accent text-ink-50 hover:bg-accent-hover"
+                      : "border border-ink-600 bg-ink-900/60 text-ink-50 hover:bg-ink-800"
+                  }`}
+                >
+                  Get started
+                </a>
+              </div>
+            ))
+          }
+        </div>
+        <p class="mt-6 text-center text-xs text-ink-400">
+          Need Enterprise? Unlimited agents, on-prem deployment, SOC 2 controls
+          — <a
+            href="mailto:sales@parry.dev"
+            class="underline hover:text-ink-200">talk to us</a
+          >.
+        </p>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="relative z-10 border-t border-ink-600/40">
+      <div class="container-narrow py-24 text-center">
+        <h2
+          class="grad-text mx-auto max-w-2xl text-3xl font-semibold tracking-tight sm:text-5xl"
+        >
+          Two lines of code. Real-time runtime defence.
+        </h2>
+        <p class="mx-auto mt-4 max-w-xl text-ink-200">
+          Free tier covers the first agent and the first 10,000 events. No
+          credit card.
+        </p>
+        <div class="mt-8 flex justify-center gap-3">
+          <a
+            href="https://app.parry.dev/sign-up"
+            class="rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-ink-50 hover:bg-accent-hover"
+          >
+            Start free
+          </a>
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="rounded-md border border-ink-600 bg-ink-900/60 px-5 py-2.5 text-sm font-medium text-ink-50 hover:bg-ink-800"
+          >
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-ink-600/40">
+      <div
+        class="container-narrow flex flex-col items-start justify-between gap-4 py-8 text-sm text-ink-400 sm:flex-row sm:items-center"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-flex h-5 w-5 items-center justify-center rounded bg-accent text-[10px] text-ink-50"
+            >P</span
+          >
+          <span>© 2026 Parry. Runtime security for AI agents.</span>
+        </div>
+        <div class="flex gap-6">
+          <a href="https://app.parry.dev" class="hover:text-ink-200">App</a>
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="hover:text-ink-200">GitHub</a
+          >
+          <a href="mailto:hello@parry.dev" class="hover:text-ink-200"
+            >Contact</a
+          >
+        </div>
+      </div>
+    </footer>
+  </div>
+</Base>
