@@ -146,7 +146,7 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 - [ ] `CLAUDE.local.md` created (gitignored, personal notes)
 - [x] README.md with quickstart
 - [ ] Landing page (can be simple, outside this repo)
-- [ ] `docs/runbook.md` — deploy, rollback, debug steps
+- [x] `docs/runbook.md` — deploy, rollback, debug steps
 
 ---
 
