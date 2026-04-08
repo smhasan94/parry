@@ -149,7 +149,7 @@ Org (tenant)
 Two auth modes coexist (see [docs/CLERK_SETUP.md](docs/CLERK_SETUP.md) for full setup):
 
 - **SDK requests** use `X-Parry-Secret: sk-parry-...` header. The key is SHA256-hashed and looked up in the `api_keys` table.
-- **Dashboard requests** use `Authorization: Bearer <token>`. Supports both Parry API keys (`sk-parry-...`) and Clerk JWTs (RS256, verified via JWKS).
+- **Dashboard requests** use `Authorization: Bearer <token>`. Clerk JWTs (RS256, verified via JWKS) authenticate with the role Clerk assigns. Parry API keys (`sk-parry-...`) are accepted on this path too but resolve to **viewer** (read-only) — they're runtime credentials, not management credentials, and a leaked SDK key must not grant mutating access to the dashboard.
 
 ### API Endpoints
 

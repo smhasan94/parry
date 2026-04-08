@@ -46,8 +46,15 @@ def test_viewer_resolves_to_viewer():
     assert actor_role(_viewer()) == Role.VIEWER
 
 
-def test_api_key_is_always_admin():
-    assert actor_role(_api_key()) == Role.ADMIN
+def test_api_key_resolves_to_viewer():
+    """API keys authenticating via Authorization: Bearer on dashboard
+    routes are VIEWER-only. The SDK's runtime paths use X-Parry-Secret
+    which bypasses this resolver entirely — this role only matters
+    when an API key is used as a curl-friendly auth for dashboard
+    routes. Containing the blast radius of a leaked key is worth
+    the breaking change: a leak can no longer delete agents, rotate
+    keys, or export the audit log."""
+    assert actor_role(_api_key()) == Role.VIEWER
 
 
 def test_system_actor_is_owner():
@@ -111,14 +118,16 @@ async def test_require_viewer_passes_for_anyone():
 
 
 @pytest.mark.asyncio
-async def test_api_key_passes_admin_gate():
-    """API keys are always ADMIN — verify an API key actor passes an
-    ADMIN gate but fails an OWNER gate."""
+async def test_api_key_fails_admin_gate():
+    """API keys are VIEWER-only on the dashboard — verify an API key
+    actor is REJECTED at the ADMIN gate. A leaked runtime credential
+    must not grant mutating access to the dashboard surface."""
     admin_gate = require_role(Role.ADMIN)
     owner_gate = require_role(Role.OWNER)
 
-    result = await admin_gate(actor_tuple=(ORG, _api_key()))
-    assert result[1].actor_type == "api_key"
+    with pytest.raises(HTTPException) as admin_exc:
+        await admin_gate(actor_tuple=(ORG, _api_key()))
+    assert admin_exc.value.status_code == 403
 
     with pytest.raises(HTTPException) as exc:
         await owner_gate(actor_tuple=(ORG, _api_key()))

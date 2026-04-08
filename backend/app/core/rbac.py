@@ -47,12 +47,29 @@ def actor_role(actor: Actor) -> Role:
     """Resolve the effective Role for an Actor.
 
     Order of precedence:
-    1. API keys (actor_type == 'api_key') → always ADMIN
-    2. System actors (background jobs) → always OWNER
-    3. User actors → lookup from clerk_role, default VIEWER
+
+    1. API keys (actor_type == 'api_key') → VIEWER.
+
+       An SDK API key is a runtime credential — it authenticates
+       /proxy/check, /events/ingest, and /proxy/scan-response via
+       the X-Parry-Secret header, none of which pass through this
+       role resolver at all. Anyone using the same key via
+       Authorization: Bearer on a dashboard route gets read-only
+       access, not admin. This contains the blast radius of a
+       leaked SDK key: the attacker can read dashboard state but
+       can't export the audit log, rotate keys, mutate policies,
+       generate SSO admin portal links, or delete agents.
+
+       Customers who need curl-friendly management access should
+       use a Clerk JWT (the documented path) — a separate
+       management-key scope can be added later if real demand
+       shows up.
+
+    2. System actors (background jobs) → OWNER.
+    3. User actors → lookup from clerk_role, default VIEWER.
     """
     if actor.actor_type == "api_key":
-        return Role.ADMIN
+        return Role.VIEWER
     if actor.actor_type == "system":
         return Role.OWNER
 
