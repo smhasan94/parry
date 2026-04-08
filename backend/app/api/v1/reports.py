@@ -76,6 +76,19 @@ async def export_compliance_report(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="PDF generation is not available on this server.",
         ) from e
+    except OSError as e:
+        # WeasyPrint raises OSError when its native deps (Pango,
+        # Cairo, libgobject) can't be loaded. Same user-visible
+        # story as a missing Python package — the server is
+        # misconfigured, not the request.
+        log.error("report.pdf.weasyprint_native_deps_missing", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "PDF generation is unavailable: native dependencies "
+                "(Pango/Cairo) missing on this backend. See docs/runbook.md."
+            ),
+        ) from e
 
     await audit_service.log_action(
         db,
