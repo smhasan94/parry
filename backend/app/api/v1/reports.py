@@ -19,7 +19,7 @@ from app.core.dependencies import Actor
 from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
-from app.services import audit_service
+from app.services import audit_service, plan_service
 from app.services.report_service import build_report_data
 from app.services.report_template import render_report_pdf
 
@@ -39,6 +39,7 @@ async def export_compliance_report(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     org, actor = org_actor
+    plan_service.require_feature(org, "compliance_export")
 
     if end <= start:
         raise HTTPException(

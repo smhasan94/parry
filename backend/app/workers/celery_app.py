@@ -30,6 +30,11 @@ celery_app.conf.update(
             # baseline refresh run.
             "schedule": crontab(minute=15),
         },
+        "report-metered-usage": {
+            "task": "report_metered_usage",
+            # Daily at 01:00 UTC — well outside any dashboard/user peak.
+            "schedule": crontab(hour=1, minute=0),
+        },
     },
 )
 

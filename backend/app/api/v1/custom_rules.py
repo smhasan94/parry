@@ -25,7 +25,7 @@ from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
-from app.services import audit_service
+from app.services import audit_service, plan_service
 
 log = structlog.get_logger()
 
@@ -113,6 +113,7 @@ async def create_custom_rule(
     db: AsyncSession = Depends(get_db),
 ) -> CustomRuleResponse:
     org, actor = org_actor
+    plan_service.require_feature(org, "custom_rules")
     _validate_pattern(body.pattern)
 
     rules = _load_rules(org)

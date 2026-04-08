@@ -15,7 +15,7 @@ from app.core.metrics import record_event_ingested
 from app.db.models import AgentEvent, Org
 from app.db.session import async_session_factory, get_db
 from app.schemas.event import EventIngest, EventListResponse, EventResponse
-from app.services import event_service
+from app.services import event_service, plan_service
 
 # Per-org cap on concurrent live-stream connections — prevents a
 # runaway dashboard from exhausting event-loop slots.
@@ -34,6 +34,7 @@ async def ingest_event(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
     """Receive an event from the SDK. Authenticated via X-Parry-Secret API key."""
+    await plan_service.check_event_quota(db, org)
     event = await event_service.ingest_event(
         db,
         org_id=org.id,

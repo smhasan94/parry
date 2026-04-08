@@ -42,6 +42,15 @@ class ResponseScanMode(enum.StrEnum):
     BLOCK = "block"
 
 
+class Plan(enum.StrEnum):
+    """Subscription tier. Drives quota enforcement in plan_service."""
+
+    FREE = "free"
+    GROWTH = "growth"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
+
+
 # ── Org ──────────────────────────────────────────────────────────
 
 
@@ -71,6 +80,15 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         default=ResponseScanMode.OFF,
         nullable=False,
         server_default=ResponseScanMode.OFF.value,
+    )
+    # Subscription plan — enforced by plan_service at ingest / agent
+    # create. New orgs default to FREE; Stripe webhooks flip this to
+    # GROWTH/PRO on subscription events.
+    plan: Mapped[Plan] = mapped_column(
+        Enum(Plan, name="plan"),
+        default=Plan.FREE,
+        nullable=False,
+        server_default=Plan.FREE.value,
     )
 
     # Relationships
