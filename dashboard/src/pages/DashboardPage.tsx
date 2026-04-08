@@ -9,6 +9,7 @@ import { useIncidents } from "@/hooks/useIncidents";
 import { Bot, AlertTriangle, Shield, Activity } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
+import { BlockedEventFeed } from "@/components/BlockedEventFeed";
 import type { Agent } from "@/lib/types";
 
 export function DashboardPage() {
@@ -90,6 +91,8 @@ export function DashboardPage() {
         </div>
 
         <FleetHealthCard agents={agents} />
+
+        <BlockedEventFeed />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Agent Grid */}
