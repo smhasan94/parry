@@ -21,6 +21,14 @@ export interface Agent {
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+  health_score: number | null;
+  health_grade: "A" | "B" | "C" | "D" | "F" | null;
+  health_components: {
+    triggered_detections_7d: number;
+    open_incidents: number;
+    critical_incidents_30d: number;
+    anomaly_score: number;
+  } | null;
 }
 
 export interface AgentEvent {

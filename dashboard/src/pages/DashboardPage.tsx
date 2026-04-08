@@ -8,6 +8,8 @@ import { useAgents } from "@/hooks/useAgents";
 import { useIncidents } from "@/hooks/useIncidents";
 import { Bot, AlertTriangle, Shield, Activity } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { HealthScoreBadge } from "@/components/HealthScoreBadge";
+import type { Agent } from "@/lib/types";
 
 export function DashboardPage() {
   const { data: agents = [], isLoading: agentsLoading } = useAgents();
@@ -87,6 +89,8 @@ export function DashboardPage() {
           </Card>
         </div>
 
+        <FleetHealthCard agents={agents} />
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Agent Grid */}
           <Card>
@@ -161,6 +165,76 @@ export function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function FleetHealthCard({ agents }: { agents: Agent[] }) {
+  const scored = agents.filter(
+    (a): a is Agent & { health_score: number } => a.health_score !== null,
+  );
+  const avg =
+    scored.length > 0
+      ? Math.round(scored.reduce((sum, a) => sum + a.health_score, 0) / scored.length)
+      : null;
+
+  const gradeCounts = { A: 0, B: 0, C: 0, D: 0, F: 0 } as Record<string, number>;
+  for (const a of scored) {
+    if (a.health_grade) gradeCounts[a.health_grade] = (gradeCounts[a.health_grade] ?? 0) + 1;
+  }
+  const total = scored.length || 1;
+  const bars: [string, string][] = [
+    ["A", "bg-green-500"],
+    ["B", "bg-blue-500"],
+    ["C", "bg-yellow-500"],
+    ["D", "bg-orange-500"],
+    ["F", "bg-red-500"],
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Fleet Health</span>
+          <HealthScoreBadge score={avg} size="md" />
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {scored.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No health scores yet. Scores are computed for every registered
+            agent and refreshed hourly.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Average across {scored.length} agent{scored.length === 1 ? "" : "s"}
+            </p>
+            <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted/30">
+              {bars.map(([grade, color]) => {
+                const pct = ((gradeCounts[grade] ?? 0) / total) * 100;
+                if (pct === 0) return null;
+                return (
+                  <div
+                    key={grade}
+                    className={color}
+                    style={{ width: `${pct}%` }}
+                    title={`${grade}: ${gradeCounts[grade]}`}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-3 pt-1 text-xs text-muted-foreground">
+              {bars.map(([grade]) => (
+                <span key={grade}>
+                  <span className="font-semibold text-foreground">{grade}</span>{" "}
+                  {gradeCounts[grade]}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

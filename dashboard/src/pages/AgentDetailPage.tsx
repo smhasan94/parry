@@ -14,6 +14,30 @@ import { useResourceHistory } from "@/hooks/useAuditLog";
 import { Button } from "@/components/ui/button";
 import { Activity, Clock, Cpu, Zap, History } from "lucide-react";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
+import { HealthScoreBadge } from "@/components/HealthScoreBadge";
+
+function HealthComponent({
+  label,
+  value,
+  hurt,
+}: {
+  label: string;
+  value: number | string;
+  hurt: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p
+        className={`text-lg font-semibold tabular-nums ${
+          hurt ? "text-orange-300" : "text-foreground"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
 
 export function AgentDetailPage() {
   const { agentId } = useParams({ from: "/agents/$agentId" });
@@ -178,6 +202,50 @@ export function AgentDetailPage() {
       />
 
       <div className="space-y-6 p-6">
+        {/* Health Score */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between text-base">
+              <span>Agent Health</span>
+              <HealthScoreBadge
+                score={agent.health_score}
+                grade={agent.health_grade}
+                size="md"
+              />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {agent.health_components ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <HealthComponent
+                  label="Triggered (7d)"
+                  value={agent.health_components.triggered_detections_7d}
+                  hurt={agent.health_components.triggered_detections_7d > 0}
+                />
+                <HealthComponent
+                  label="Open Incidents"
+                  value={agent.health_components.open_incidents}
+                  hurt={agent.health_components.open_incidents > 0}
+                />
+                <HealthComponent
+                  label="Critical (30d)"
+                  value={agent.health_components.critical_incidents_30d}
+                  hurt={agent.health_components.critical_incidents_30d > 0}
+                />
+                <HealthComponent
+                  label="Anomaly Score"
+                  value={agent.health_components.anomaly_score.toFixed(2)}
+                  hurt={agent.health_components.anomaly_score > 0.3}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Health score is being computed — refresh in a moment.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Agent Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>

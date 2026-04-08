@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAgents, useCreateAgent, useRecomputeAllBaselines } from "@/hooks/useAgents";
 import { useRole } from "@/hooks/useRole";
+import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { Bot, Plus, RefreshCw } from "lucide-react";
 
 export function AgentsPage() {
@@ -116,9 +117,15 @@ export function AgentsPage() {
                           )}
                         </div>
                       </div>
-                      <div
-                        className={`h-2.5 w-2.5 rounded-full ${agent.is_active ? "bg-green-500" : "bg-zinc-500"}`}
-                      />
+                      <div className="flex items-center gap-2">
+                        <HealthScoreBadge
+                          score={agent.health_score}
+                          grade={agent.health_grade}
+                        />
+                        <div
+                          className={`h-2.5 w-2.5 rounded-full ${agent.is_active ? "bg-green-500" : "bg-zinc-500"}`}
+                        />
+                      </div>
                     </div>
                     <div className="mt-4 flex gap-4 text-xs text-muted-foreground">
                       <span>Created {new Date(agent.created_at).toLocaleDateString()}</span>
