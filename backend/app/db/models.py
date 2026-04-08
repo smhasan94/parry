@@ -90,6 +90,12 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         nullable=False,
         server_default=Plan.FREE.value,
     )
+    # WorkOS organization id. When set, the org has SAML SSO enabled
+    # — login via /api/v1/sso/login instead of the standard Clerk
+    # flow. Optional: SaaS customers on Clerk-only remain on Clerk.
+    workos_organization_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
 
     # Relationships
     agents: Mapped[list["Agent"]] = relationship(back_populates="org", lazy="selectin")

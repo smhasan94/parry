@@ -82,6 +82,15 @@ class Settings(BaseSettings):
     # via env var in dev; production builds ship with this populated.
     license_public_key_pem: str = ""
 
+    # WorkOS SSO (enterprise SAML). Optional — only orgs that flip on
+    # SAML in their settings need these. Missing values mean
+    # sso_service.get_client() returns None and the /sso routes 503.
+    workos_api_key: str = ""
+    workos_client_id: str = ""
+    # Where WorkOS should redirect after a successful SAML flow. The
+    # dashboard handles this path and swaps the code for a session.
+    workos_redirect_uri: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]
