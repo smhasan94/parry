@@ -1,0 +1,108 @@
+# Parry on-prem deployment.
+#
+# Single-host air-gapped stack: postgres, redis, backend, worker,
+# dashboard. No outbound network required beyond ca-certificates
+# for the customer's own LLM provider (which the SDK talks to, not
+# Parry).
+#
+# Required customer-supplied files:
+#
+#   ./license/parry.license          — signed license file (issued by Parry)
+#   ./keys/parry_license_ed25519.pub — baked into image, or passed via build-arg
+#
+# Build + run:
+#
+#   docker compose -f docker-compose.onprem.yml build \
+#     --build-arg LICENSE_PUBLIC_KEY_PEM="$(cat ./keys/parry_license_ed25519.pub)"
+#   docker compose -f docker-compose.onprem.yml up -d
+#
+# The license is mounted read-only at /etc/parry/parry.license. Any
+# tampering would break the Ed25519 signature and the backend would
+# hard-fail at startup.
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: parry
+      POSTGRES_PASSWORD: parry
+      POSTGRES_DB: parry
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parry"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.onprem
+      args:
+        LICENSE_PUBLIC_KEY_PEM: ${LICENSE_PUBLIC_KEY_PEM:?set LICENSE_PUBLIC_KEY_PEM to the contents of parry_license_ed25519.pub}
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://parry:parry@db:5432/parry
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      # ON_PREM_MODE + LICENSE_PUBLIC_KEY_PEM are baked into the image.
+      # LICENSE_PATH can be overridden if the mount point differs.
+    volumes:
+      - ./license:/etc/parry:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.onprem
+      args:
+        LICENSE_PUBLIC_KEY_PEM: ${LICENSE_PUBLIC_KEY_PEM:?set LICENSE_PUBLIC_KEY_PEM to the contents of parry_license_ed25519.pub}
+    command: ["uv", "run", "celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info"]
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://parry:parry@db:5432/parry
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./license:/etc/parry:ro
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
