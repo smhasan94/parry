@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.services import agent_service, audit_service
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
+from app.services.agent_stats_service import get_or_build_agent_stats
 from app.services.health_score_service import get_or_compute_health
 
 router = APIRouter()
@@ -103,6 +104,31 @@ async def get_agent(
     resp.health_grade = health["grade"]
     resp.health_components = health["components"]
     return resp
+
+
+@router.get(
+    "/{agent_id}/stats",
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def get_agent_stats(
+    agent_id: uuid.UUID,
+    window: str = Query("30d", pattern="^(7d|30d|90d)$"),
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Agent behavioural stats for the charts on AgentDetailPage.
+
+    Returns event volume, top tool calls, model usage, anomaly trend,
+    and per-detector triggered counts over the requested window. Read
+    through a 5 minute Redis cache.
+    """
+    # Confirm the agent belongs to the caller's org before leaking any
+    # aggregate data.
+    await agent_service.get_agent(db, org.id, agent_id)
+    try:
+        return await get_or_build_agent_stats(db, agent_id, window)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post(
