@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import uuid
 from collections.abc import AsyncGenerator
@@ -140,23 +141,50 @@ async def live_stream(
     _live_stream_counts[org_key] = current + 1
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
+        # Decouple the Redis subscription from the keepalive timer
+        # with a queue. Cancelling wait_for on the queue get is
+        # harmless — cancelling wait_for on the subscription's
+        # __anext__ would terminate the async generator (confirmed
+        # via asyncio repro: a cancelled __anext__ makes the next
+        # __anext__ call raise StopAsyncIteration). Keeping the
+        # subscriber on its own task means the SSE loop can emit
+        # keepalives forever without tearing the pubsub down.
+        queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=256)
+        stop = asyncio.Event()
+
+        async def _pump() -> None:
+            try:
+                async for message in subscribe_event_bus(org_key):
+                    if stop.is_set():
+                        return
+                    try:
+                        queue.put_nowait(message)
+                    except asyncio.QueueFull:
+                        # Drop the oldest message rather than blocking
+                        # the subscriber — the dashboard is best-effort
+                        # anyway and a backed-up consumer means the
+                        # browser tab is paused / asleep.
+                        with contextlib.suppress(asyncio.QueueEmpty):
+                            queue.get_nowait()
+                        queue.put_nowait(message)
+            except Exception:
+                log.debug("live_stream.pump_error", exc_info=True)
+
+        pump_task = asyncio.create_task(_pump())
+
         try:
-            subscription = subscribe_event_bus(org_key)
-            sub_iter = subscription.__aiter__()
             while True:
                 try:
-                    next_msg = asyncio.wait_for(sub_iter.__anext__(), timeout=15.0)
-                    msg = await next_msg
+                    msg = await asyncio.wait_for(queue.get(), timeout=15.0)
                 except TimeoutError:
                     yield {"data": json.dumps({"type": "keepalive"})}
                     continue
-                except StopAsyncIteration:
-                    # Redis went away — send a final keepalive and exit
-                    # so the client can reconnect.
-                    yield {"data": json.dumps({"type": "keepalive"})}
-                    return
                 yield {"data": json.dumps(msg)}
         finally:
+            stop.set()
+            pump_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await pump_task
             _live_stream_counts[org_key] = max(0, _live_stream_counts.get(org_key, 1) - 1)
 
     return EventSourceResponse(event_generator())
