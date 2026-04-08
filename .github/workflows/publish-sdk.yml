@@ -1,0 +1,78 @@
+name: Publish SDK
+
+# Tag-driven release: push an annotated tag like `sdk/v0.1.0` to
+# trigger a build + upload to PyPI. The tag scheme is intentionally
+# namespaced so we can add a separate dashboard/backend release
+# cadence later without stepping on each other.
+
+on:
+  push:
+    tags:
+      - "sdk/v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build only, do not publish"
+        required: false
+        default: "true"
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Required for PyPI trusted publishing (OIDC). Falls back to
+      # PYPI_API_TOKEN if trusted publishing isn't configured.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify tag matches pyproject version
+        working-directory: sdk
+        env:
+          TAG_REF: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          pyproject_version=$(grep -E '^version\s*=' pyproject.toml | head -1 | sed -E 's/version\s*=\s*"([^"]+)"/\1/')
+          tag_version="${TAG_REF#sdk/v}"
+          echo "pyproject: $pyproject_version"
+          echo "tag:       $tag_version"
+          if [ "$EVENT_NAME" = "push" ] && [ "$pyproject_version" != "$tag_version" ]; then
+            echo "FAIL: tag $tag_version does not match sdk/pyproject.toml version $pyproject_version"
+            exit 1
+          fi
+
+      - name: Install build deps
+        working-directory: sdk
+        run: uv pip install --system -e ".[dev]"
+
+      - name: Run tests
+        working-directory: sdk
+        run: uv run pytest tests/ -q
+
+      - name: Build distributions
+        working-directory: sdk
+        run: uv build
+
+      - name: Show built artifacts
+        working-directory: sdk
+        run: ls -lh dist/
+
+      - name: Publish to PyPI (trusted publishing)
+        if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/dist/
+          # Token fallback when the repository environment hasn't
+          # been registered as a trusted publisher yet. Remove this
+          # once trusted publishing is wired up in PyPI.
+          password: ${{ secrets.PYPI_API_TOKEN }}
