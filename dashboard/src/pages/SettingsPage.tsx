@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -187,6 +188,9 @@ export function SettingsPage() {
 
         {/* Alerts */}
         <AlertsCard />
+
+        {/* Plan + limits */}
+        <PlanCard />
 
         {/* Billing */}
         <Card>
@@ -1157,6 +1161,87 @@ function BlockingModeCard() {
             </button>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function formatLimit(value: number | null, unit = ""): string {
+  if (value === null) return "Unlimited";
+  return `${value.toLocaleString()}${unit ? " " + unit : ""}`;
+}
+
+function PlanCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["billing-plan"],
+    queryFn: () => api.getPlan(),
+  });
+
+  if (isLoading || !data) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Plan</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading plan…</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { plan, limits } = data;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Plan</span>
+          <Badge variant="secondary" className="uppercase">
+            {plan}
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          Your current subscription tier. Quotas are enforced in real time —
+          free-tier ingestion returns HTTP 402 once the monthly event limit
+          is reached.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-xs uppercase text-muted-foreground">Max agents</dt>
+            <dd className="font-medium">{formatLimit(limits.max_agents)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-muted-foreground">Monthly events</dt>
+            <dd className="font-medium">
+              {formatLimit(limits.max_events_per_month)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-muted-foreground">Retention</dt>
+            <dd className="font-medium">
+              {limits.retention_days === null
+                ? "Unlimited"
+                : `${limits.retention_days} days`}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-muted-foreground">Custom rules</dt>
+            <dd className="font-medium">
+              {limits.custom_rules ? "Included" : "Upgrade required"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-muted-foreground">
+              Compliance export
+            </dt>
+            <dd className="font-medium">
+              {limits.compliance_export ? "Included" : "Upgrade required"}
+            </dd>
+          </div>
+        </dl>
       </CardContent>
     </Card>
   );

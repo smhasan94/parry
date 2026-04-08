@@ -39,7 +39,16 @@ class ApiClient {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new ApiError(res.status, body.detail || "Request failed", body.code);
+      const err = new ApiError(res.status, body.detail || "Request failed", body.code);
+      // 402 = plan quota or feature gate tripped. Broadcast a global
+      // event so the UpgradeModal mounted at the layout level can
+      // prompt the user without every caller needing to handle it.
+      if (res.status === 402 && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("parry:upgrade-required", { detail: { message: err.message } }),
+        );
+      }
+      throw err;
     }
 
     if (res.status === 204) return undefined as T;
@@ -177,6 +186,23 @@ class ApiClient {
   async createBillingPortal(returnUrl: string): Promise<{ url: string }> {
     const params = new URLSearchParams({ return_url: returnUrl });
     return this.request(`/api/v1/billing/portal?${params}`, { method: "POST" });
+  }
+
+  async getPlan(): Promise<PlanResponse> {
+    return this.request("/api/v1/billing/plan");
+  }
+
+  async createCheckoutSession(
+    priceId: string,
+    successUrl: string,
+    cancelUrl: string,
+  ): Promise<{ url: string }> {
+    const params = new URLSearchParams({
+      price_id: priceId,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    });
+    return this.request(`/api/v1/billing/checkout?${params}`, { method: "POST" });
   }
 
   // Alerts
@@ -412,6 +438,17 @@ export interface AgentStats {
   model_usage: { model: string; count: number }[];
   anomaly_trend: { date: string; avg_score: number }[];
   detection_counts: Record<string, number>;
+}
+
+export interface PlanResponse {
+  plan: "free" | "growth" | "pro" | "enterprise";
+  limits: {
+    max_agents: number | null;
+    max_events_per_month: number | null;
+    retention_days: number | null;
+    custom_rules: boolean;
+    compliance_export: boolean;
+  };
 }
 
 export class ApiError extends Error {

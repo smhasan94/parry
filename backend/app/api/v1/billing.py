@@ -10,11 +10,26 @@ from app.core.dependencies import get_current_org
 from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import async_session_factory, get_db
-from app.services import billing_service
+from app.services import billing_service, plan_service
 
 log = structlog.get_logger()
 
 router = APIRouter()
+
+
+@router.get("/plan", dependencies=[Depends(require_role(Role.VIEWER))])
+async def get_plan(
+    org: Org = Depends(get_current_org),
+) -> dict:
+    """Return the org's current plan and its limit table.
+
+    Consumed by the SettingsPage plan card. Returns raw None for
+    unlimited fields so the UI can show "Unlimited" explicitly.
+    """
+    return {
+        "plan": org.plan.value,
+        "limits": plan_service.get_limits(org.plan),
+    }
 
 
 @router.post("/checkout", dependencies=[Depends(require_role(Role.OWNER))])
