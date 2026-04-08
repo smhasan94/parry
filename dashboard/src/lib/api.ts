@@ -196,6 +196,18 @@ class ApiClient {
     return this.request("/api/v1/slo");
   }
 
+  // SSO (WorkOS SAML)
+  async getSSOStatus(): Promise<SSOStatusResponse> {
+    return this.request("/api/v1/sso/status");
+  }
+
+  async generateSSOAdminPortal(returnUrl: string): Promise<{ url: string }> {
+    return this.request("/api/v1/sso/admin-portal", {
+      method: "POST",
+      body: JSON.stringify({ return_url: returnUrl }),
+    });
+  }
+
   async createCheckoutSession(
     priceId: string,
     successUrl: string,
@@ -534,6 +546,12 @@ export interface SLOStatus {
 export interface SLOStatusResponse {
   statuses: SLOStatus[];
   note: string;
+}
+
+export interface SSOStatusResponse {
+  enabled: boolean;
+  configured_on_backend: boolean;
+  workos_organization_id: string | null;
 }
 
 export interface PlanResponse {

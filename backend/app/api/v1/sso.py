@@ -138,6 +138,41 @@ async def _resolve_workos_org_id(
 # ── Routes ──────────────────────────────────────────────────────────
 
 
+class SSOStatusResponse(ParrySchema):
+    """Tiny status surface for the dashboard's Settings SSO card."""
+
+    enabled: bool
+    configured_on_backend: bool
+    workos_organization_id: str | None
+
+
+@router.get(
+    "/status",
+    response_model=SSOStatusResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def sso_status(
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+) -> SSOStatusResponse:
+    """Return whether SAML SSO is enabled for the caller's org.
+
+    Split into two booleans:
+
+    * ``configured_on_backend`` — do we have WorkOS credentials at
+      all? When false the whole feature is off for every org.
+    * ``enabled`` — is this specific org configured with a WorkOS
+      organization id? Independent of the backend config, so the UI
+      can show "contact us to enable" vs "SSO is configured" vs
+      "SSO feature unavailable on this deployment".
+    """
+    org, _actor = org_actor
+    return SSOStatusResponse(
+        enabled=bool(org.workos_organization_id),
+        configured_on_backend=sso_service.get_client() is not None,
+        workos_organization_id=org.workos_organization_id,
+    )
+
+
 @router.post("/login", response_model=LoginResponse)
 async def sso_login(
     body: LoginRequest,

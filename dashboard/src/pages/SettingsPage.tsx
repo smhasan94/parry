@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRole } from "@/hooks/useRole";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -191,6 +192,9 @@ export function SettingsPage() {
 
         {/* Plan + limits */}
         <PlanCard />
+
+        {/* SSO (WorkOS SAML) */}
+        <SSOCard />
 
         {/* Billing */}
         <Card>
@@ -1242,6 +1246,118 @@ function PlanCard() {
             </dd>
           </div>
         </dl>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SSOCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["sso-status"],
+    queryFn: () => api.getSSOStatus(),
+  });
+  const { can } = useRole();
+  const canManage = can("owner");
+  const [busy, setBusy] = useState(false);
+
+  async function handleOpenPortal() {
+    setBusy(true);
+    try {
+      const { url } = await api.generateSSOAdminPortal(window.location.href);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to generate link";
+      toast(msg, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (isLoading || !data) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Single Sign-On (SAML)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading SSO status…</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data.configured_on_backend) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Single Sign-On (SAML)</CardTitle>
+          <CardDescription>
+            Enterprise feature — layer your existing identity provider
+            (Okta, Azure AD, Google Workspace, …) on top of Parry's auth.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            SAML SSO is not available on this Parry deployment. Contact
+            your Parry admin to enable it.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Single Sign-On (SAML)</span>
+          {data.enabled ? (
+            <Badge variant="secondary" className="text-xs text-green-400">
+              Enabled
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs">
+              Not configured
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          Route your users through your own identity provider (Okta,
+          Azure AD, Google Workspace, …). Parry issues a session after
+          WorkOS confirms the SAML assertion.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {data.enabled ? (
+          <>
+            <div className="rounded-md border border-border bg-muted/20 p-3 text-xs">
+              <div className="text-muted-foreground">WorkOS organization</div>
+              <div className="mt-1 font-mono text-foreground">
+                {data.workos_organization_id}
+              </div>
+            </div>
+            {canManage ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleOpenPortal}
+                disabled={busy}
+              >
+                {busy ? "Generating link…" : "Open Admin Portal"}
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Owner role required to manage SAML metadata.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            SSO is available on this deployment but not enabled for your
+            organization. Contact your Parry admin to provision a WorkOS
+            organization id.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
