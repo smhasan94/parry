@@ -54,10 +54,17 @@ def _previous_month_range(now: datetime) -> tuple[datetime, datetime, str]:
 
 
 async def _export_audit_log_monthly() -> dict[str, int]:
+    from app.core import on_prem
     from app.core.config import settings
     from app.db.models import Org
     from app.db.session import async_session_factory
     from app.services import audit_export_service, audit_service
+
+    if on_prem.is_on_prem():
+        # On-prem deployments generate audit exports via the admin
+        # route, not S3 upload — the box is air-gapped.
+        log.info("audit.export_skipped_on_prem")
+        return {"exported": 0, "skipped": 0, "errored": 0}
 
     if not settings.audit_export_s3_bucket:
         log.info("audit.export_s3_disabled")

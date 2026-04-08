@@ -122,3 +122,65 @@ def test_resolve_plan_from_subscription_unknown_price_is_free(
 def test_resolve_plan_from_subscription_empty_items_is_free() -> None:
     assert resolve_plan_from_subscription({}) == Plan.FREE
     assert resolve_plan_from_subscription({"items": {"data": []}}) == Plan.FREE
+
+
+# ── on-prem license override ────────────────────────────────────────
+
+
+def test_effective_limits_uses_license_in_on_prem_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    from app.core import on_prem
+    from app.services.license_service import License
+
+    lic = License(
+        license_id="lic_1",
+        customer_name="Acme",
+        issued_at=datetime(2026, 1, 1, tzinfo=UTC),
+        expires_at=datetime(2099, 1, 1, tzinfo=UTC),
+        max_agents=25,
+        max_events_per_month=250_000,
+        features=("custom_rules",),
+        schema_version="1.0",
+    )
+
+    monkeypatch.setattr(on_prem, "_license", lic)
+    monkeypatch.setattr(on_prem.settings, "on_prem_mode", True)
+
+    try:
+        org = _make_org(Plan.FREE)  # plan column should be ignored
+        limits = plan_service._effective_limits(org)
+        assert limits["max_agents"] == 25
+        assert limits["max_events_per_month"] == 250_000
+        assert limits["custom_rules"] is True
+        assert limits["compliance_export"] is False
+    finally:
+        on_prem.reset_for_tests()
+
+
+def test_effective_limits_fails_closed_when_license_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core import on_prem
+
+    monkeypatch.setattr(on_prem, "_license", None)
+    monkeypatch.setattr(on_prem.settings, "on_prem_mode", True)
+
+    try:
+        org = _make_org(Plan.ENTERPRISE)  # wouldn't matter in on-prem
+        limits = plan_service._effective_limits(org)
+        # Fail closed: no license → no access, even if the org row
+        # claimed Enterprise.
+        assert limits["max_agents"] == 0
+        assert limits["max_events_per_month"] == 0
+        assert limits["custom_rules"] is False
+    finally:
+        on_prem.reset_for_tests()
+
+
+def test_effective_limits_uses_plan_table_when_not_on_prem() -> None:
+    org = _make_org(Plan.GROWTH)
+    limits = plan_service._effective_limits(org)
+    assert limits == plan_service.PLAN_LIMITS[Plan.GROWTH]

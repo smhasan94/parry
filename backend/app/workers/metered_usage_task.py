@@ -30,10 +30,15 @@ def report_metered_usage() -> dict[str, int]:
 
 
 async def _report_metered_usage() -> dict[str, int]:
+    from app.core import on_prem
     from app.core.config import settings
     from app.db.models import Org, Plan
     from app.db.session import async_session_factory
     from app.services import plan_service
+
+    if on_prem.is_on_prem():
+        log.info("metered.skipped_on_prem")
+        return {"reported": 0, "skipped": 0, "errored": 0}
 
     stripe.api_key = settings.stripe_secret_key
     since = datetime.now(UTC) - timedelta(days=1)

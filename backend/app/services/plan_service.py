@@ -100,9 +100,41 @@ async def _count_events_this_month(db: AsyncSession, org_id: uuid.UUID) -> int:
     return total
 
 
+def _effective_limits(org: Org) -> dict[str, Any]:
+    """Return the limit dict to enforce, considering on-prem mode.
+
+    In on-prem deployments the signed license file is the source of
+    truth — the ``orgs.plan`` column is ignored because billing
+    doesn't exist in that world. The license is loaded once at
+    startup (see ``core.on_prem``).
+    """
+    from app.core import on_prem
+
+    if on_prem.is_on_prem():
+        lic = on_prem.get_license()
+        if lic is None:
+            # Startup should have failed loudly if we get here. Fail
+            # closed rather than silently granting unlimited access.
+            return {
+                "max_agents": 0,
+                "max_events_per_month": 0,
+                "retention_days": None,
+                "custom_rules": False,
+                "compliance_export": False,
+            }
+        return {
+            "max_agents": lic.max_agents,
+            "max_events_per_month": lic.max_events_per_month,
+            "retention_days": None,
+            "custom_rules": lic.has_feature("custom_rules"),
+            "compliance_export": lic.has_feature("compliance_export"),
+        }
+    return dict(PLAN_LIMITS[org.plan])
+
+
 async def check_agent_limit(db: AsyncSession, org: Org) -> None:
     """Raise 402 if the org can't create another agent."""
-    limits = PLAN_LIMITS[org.plan]
+    limits = _effective_limits(org)
     max_agents = limits["max_agents"]
     if max_agents is None:
         return
@@ -116,14 +148,14 @@ async def check_agent_limit(db: AsyncSession, org: Org) -> None:
             limit=max_agents,
         )
         raise _upgrade_required(
-            f"Agent limit reached for the {org.plan.value} plan "
-            f"({max_agents}). Upgrade to add more agents."
+            f"Agent limit reached ({max_agents}). "
+            "Upgrade plan or license to add more agents."
         )
 
 
 async def check_event_quota(db: AsyncSession, org: Org) -> None:
     """Raise 402 if the org is over its rolling 30-day event quota."""
-    limits = PLAN_LIMITS[org.plan]
+    limits = _effective_limits(org)
     max_events = limits["max_events_per_month"]
     if max_events is None:
         return
@@ -137,8 +169,8 @@ async def check_event_quota(db: AsyncSession, org: Org) -> None:
             limit=max_events,
         )
         raise _upgrade_required(
-            f"Monthly event limit reached for the {org.plan.value} plan "
-            f"({max_events}). Upgrade to continue."
+            f"Monthly event limit reached ({max_events}). "
+            "Upgrade plan or license to continue."
         )
 
 
@@ -147,11 +179,11 @@ def require_feature(org: Org, feature: str) -> None:
 
     Synchronous — no DB needed, just the limit table lookup.
     """
-    limits = PLAN_LIMITS[org.plan]
+    limits = _effective_limits(org)
     if not limits.get(feature, False):
         raise _upgrade_required(
-            f"The '{feature}' feature is not available on the "
-            f"{org.plan.value} plan. Upgrade to unlock it."
+            f"The '{feature}' feature is not available on this plan / license. "
+            "Upgrade to unlock it."
         )
 
 

@@ -87,7 +87,16 @@ async def evaluate_ambiguous(
     Returns a DetectionResult if Claude confirms a threat, None otherwise.
     Returns None silently if the API key is not configured.
     """
+    from app.core import on_prem
     from app.core.config import settings
+
+    # On-prem deployments are air-gapped — no outbound LLM calls.
+    # The ambiguous zone falls through to "no confirmed detection"
+    # and the built-in detectors' verdicts stand on their own.
+    if on_prem.is_on_prem():
+        log.debug("llm_fallback.skipped", reason="on_prem_mode")
+        record_llm_fallback_call("no_key")
+        return None
 
     if not settings.anthropic_api_key:
         log.debug("llm_fallback.skipped", reason="no API key configured")
