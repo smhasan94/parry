@@ -4,9 +4,9 @@ import time
 from typing import Any
 
 import structlog
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from app.core.config import settings
 
@@ -103,10 +103,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     count=request_count,
                     limit=limit,
                 )
-                raise HTTPException(
+                # BaseHTTPMiddleware can't rely on the FastAPI
+                # exception handlers — raising HTTPException here
+                # escapes as an unhandled error and Starlette
+                # converts it to 500. Return a Response directly.
+                return JSONResponse(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Rate limit exceeded. Try again later.",
-                    headers={"Retry-After": str(window)},
+                    content={"detail": "Rate limit exceeded. Try again later."},
+                    headers={
+                        "Retry-After": str(window),
+                        "X-RateLimit-Limit": str(limit),
+                        "X-RateLimit-Remaining": "0",
+                    },
                 )
 
             response = await call_next(request)
@@ -114,9 +122,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             response.headers["X-RateLimit-Remaining"] = str(max(0, limit - request_count))
             return response
 
-        except HTTPException:
-            raise
         except Exception:
-            # Fail open — if Redis is down, don't block requests
+            # Fail open — if Redis is down, don't block requests.
+            # There's no HTTPException branch here anymore because
+            # the 429 path returns a JSONResponse directly above.
             log.debug("rate_limit.redis_unavailable", exc_info=True)
             return await call_next(request)
