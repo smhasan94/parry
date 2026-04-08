@@ -93,6 +93,8 @@ def should_alert(org: Org, severity: Severity) -> bool:
         config.get("slack_webhook_url")
         or config.get("alert_emails")
         or config.get("webhook_url")
+        or config.get("pagerduty_routing_key")
+        or config.get("opsgenie_api_key")
     )
     if not has_channel:
         return False
@@ -270,6 +272,138 @@ async def send_email_alert(
         return False
 
 
+PAGERDUTY_SEVERITY = {
+    Severity.CRITICAL: "critical",
+    Severity.HIGH: "error",
+    Severity.MEDIUM: "warning",
+    Severity.LOW: "info",
+}
+
+OPSGENIE_PRIORITY = {
+    Severity.CRITICAL: "P1",
+    Severity.HIGH: "P2",
+    Severity.MEDIUM: "P3",
+    Severity.LOW: "P5",
+}
+
+
+def build_pagerduty_payload(
+    incident: Incident, routing_key: str, dashboard_url: str | None = None
+) -> dict:
+    """Build a PagerDuty Events API v2 payload.
+
+    Uses the incident id as the dedup key so PagerDuty collapses
+    retriggers into a single open alert (idempotent on our side).
+    """
+    custom: dict = {
+        "incident_id": str(incident.id),
+        "agent_id": str(incident.agent_id),
+        "org_id": str(incident.org_id),
+    }
+    if dashboard_url:
+        custom["dashboard_url"] = f"{dashboard_url.rstrip('/')}/incidents"
+    if incident.detections:
+        top = max(incident.detections, key=lambda d: d.confidence)
+        custom["top_detector"] = top.detector
+        custom["top_reason"] = top.reason
+
+    return {
+        "routing_key": routing_key,
+        "event_action": "trigger",
+        "dedup_key": f"parry-incident-{incident.id}",
+        "payload": {
+            "summary": incident.title,
+            "severity": PAGERDUTY_SEVERITY[incident.severity],
+            "source": "Parry AI Security",
+            "custom_details": custom,
+        },
+    }
+
+
+async def send_pagerduty_alert(
+    routing_key: str, incident: Incident, dashboard_url: str | None = None
+) -> bool:
+    """POST the incident to PagerDuty's Events API v2.
+
+    Returns True on success. PagerDuty's sink-side severity mapping is
+    narrower than our Severity enum, so callers should still gate on
+    ``_meets_min_severity``.
+    """
+    payload = build_pagerduty_payload(incident, routing_key, dashboard_url)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://events.pagerduty.com/v2/enqueue", json=payload
+            )
+            resp.raise_for_status()
+        log.info(
+            "alert.pagerduty_sent",
+            incident_id=str(incident.id),
+            severity=incident.severity.value,
+        )
+        record_alert_sent(channel="pagerduty", success=True)
+        return True
+    except httpx.HTTPError as e:
+        log.warning(
+            "alert.pagerduty_failed",
+            incident_id=str(incident.id),
+            error=str(e),
+        )
+        record_alert_sent(channel="pagerduty", success=False)
+        return False
+
+
+def build_opsgenie_payload(
+    incident: Incident, dashboard_url: str | None = None
+) -> dict:
+    details: dict = {
+        "incident_id": str(incident.id),
+        "agent_id": str(incident.agent_id),
+        "org_id": str(incident.org_id),
+    }
+    if dashboard_url:
+        details["dashboard_url"] = f"{dashboard_url.rstrip('/')}/incidents"
+
+    return {
+        "message": incident.title,
+        "alias": f"parry-{incident.id}",
+        "priority": OPSGENIE_PRIORITY[incident.severity],
+        "source": "Parry",
+        "tags": ["parry", "ai-security", incident.severity.value],
+        "details": details,
+    }
+
+
+async def send_opsgenie_alert(
+    api_key: str, incident: Incident, dashboard_url: str | None = None
+) -> bool:
+    """POST the incident to Opsgenie's Alerts API. Returns True on success."""
+    payload = build_opsgenie_payload(incident, dashboard_url)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://api.opsgenie.com/v2/alerts",
+                json=payload,
+                headers={"Authorization": f"GenieKey {api_key}"},
+            )
+            resp.raise_for_status()
+        log.info(
+            "alert.opsgenie_sent",
+            incident_id=str(incident.id),
+            severity=incident.severity.value,
+        )
+        record_alert_sent(channel="opsgenie", success=True)
+        return True
+    except httpx.HTTPError as e:
+        log.warning(
+            "alert.opsgenie_failed",
+            incident_id=str(incident.id),
+            error=str(e),
+        )
+        record_alert_sent(channel="opsgenie", success=False)
+        return False
+
+
 async def send_webhook_alert(
     webhook_url: str,
     incident: Incident,
@@ -321,3 +455,11 @@ async def dispatch_incident_alert(
     if webhook_url:
         webhook_headers = config.get("webhook_headers") or {}
         await send_webhook_alert(webhook_url, incident, dashboard_url, headers=webhook_headers)
+
+    pagerduty_key = config.get("pagerduty_routing_key")
+    if pagerduty_key:
+        await send_pagerduty_alert(pagerduty_key, incident, dashboard_url)
+
+    opsgenie_key = config.get("opsgenie_api_key")
+    if opsgenie_key:
+        await send_opsgenie_alert(opsgenie_key, incident, dashboard_url)

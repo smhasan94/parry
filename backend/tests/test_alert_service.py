@@ -7,6 +7,8 @@ from app.services.alert_service import (
     SEVERITY_RANK,
     build_email_html,
     build_email_subject,
+    build_opsgenie_payload,
+    build_pagerduty_payload,
     build_slack_payload,
     build_webhook_payload,
     should_alert,
@@ -286,6 +288,79 @@ class TestBuildWebhookPayload:
         # Must not raise
         json_str = json.dumps(payload)
         assert "schema_version" in json_str
+
+
+class TestBuildPagerDutyPayload:
+    def test_severity_mapping(self) -> None:
+        for sev, expected in [
+            (Severity.CRITICAL, "critical"),
+            (Severity.HIGH, "error"),
+            (Severity.MEDIUM, "warning"),
+            (Severity.LOW, "info"),
+        ]:
+            payload = build_pagerduty_payload(_make_incident(severity=sev), "rk_x")
+            assert payload["payload"]["severity"] == expected
+
+    def test_dedup_key_uses_incident_id(self) -> None:
+        incident = _make_incident()
+        payload = build_pagerduty_payload(incident, "rk_x")
+        assert payload["dedup_key"] == f"parry-incident-{incident.id}"
+        assert payload["event_action"] == "trigger"
+        assert payload["routing_key"] == "rk_x"
+        assert payload["payload"]["source"] == "Parry AI Security"
+
+    def test_custom_details_include_ids(self) -> None:
+        incident = _make_incident(detections=[_make_detection(confidence=0.88)])
+        payload = build_pagerduty_payload(
+            incident, "rk_x", dashboard_url="https://parry.example.com/"
+        )
+        details = payload["payload"]["custom_details"]
+        assert details["incident_id"] == str(incident.id)
+        assert details["agent_id"] == str(incident.agent_id)
+        assert details["dashboard_url"].endswith("/incidents")
+        assert details["top_detector"] == "prompt_injection"
+
+
+class TestBuildOpsgeniePayload:
+    def test_priority_mapping(self) -> None:
+        for sev, expected in [
+            (Severity.CRITICAL, "P1"),
+            (Severity.HIGH, "P2"),
+            (Severity.MEDIUM, "P3"),
+            (Severity.LOW, "P5"),
+        ]:
+            payload = build_opsgenie_payload(_make_incident(severity=sev))
+            assert payload["priority"] == expected
+
+    def test_alias_is_deterministic(self) -> None:
+        incident = _make_incident()
+        payload = build_opsgenie_payload(incident)
+        assert payload["alias"] == f"parry-{incident.id}"
+        assert "parry" in payload["tags"]
+        assert incident.severity.value in payload["tags"]
+
+    def test_details_include_dashboard_url(self) -> None:
+        incident = _make_incident()
+        payload = build_opsgenie_payload(
+            incident, dashboard_url="https://parry.example.com/"
+        )
+        assert payload["details"]["dashboard_url"].endswith("/incidents")
+
+
+class TestShouldAlertPagerDutyOpsgenie:
+    def test_pagerduty_key_counts_as_channel(self) -> None:
+        org = _make_org(
+            alert_config={"pagerduty_routing_key": "rk_x", "min_severity": "high"}
+        )
+        assert should_alert(org, Severity.HIGH)
+        assert not should_alert(org, Severity.MEDIUM)
+
+    def test_opsgenie_key_counts_as_channel(self) -> None:
+        org = _make_org(
+            alert_config={"opsgenie_api_key": "k", "min_severity": "critical"}
+        )
+        assert should_alert(org, Severity.CRITICAL)
+        assert not should_alert(org, Severity.HIGH)
 
 
 class TestSeverityRank:

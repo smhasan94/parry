@@ -17,6 +17,8 @@ from app.schemas.base import ParrySchema
 from app.services import audit_service
 from app.services.alert_service import (
     send_email_alert,
+    send_opsgenie_alert,
+    send_pagerduty_alert,
     send_slack_alert,
     send_webhook_alert,
 )
@@ -31,6 +33,11 @@ class AlertConfigResponse(ParrySchema):
     alert_emails: list[str] = []
     webhook_url: str | None = None
     webhook_headers: dict[str, str] = {}
+    # PagerDuty/Opsgenie keys are never returned in cleartext — the UI
+    # only ever needs to know whether one is configured, so we surface
+    # a masked preview ("******abcd") that's safe to log.
+    pagerduty_routing_key: str | None = None
+    opsgenie_api_key: str | None = None
     min_severity: str = "high"
     enabled: bool = False
 
@@ -40,7 +47,18 @@ class AlertConfigUpdate(ParrySchema):
     alert_emails: list[EmailStr] | None = None
     webhook_url: HttpUrl | None = None
     webhook_headers: dict[str, str] | None = None
+    pagerduty_routing_key: str | None = None
+    opsgenie_api_key: str | None = None
     min_severity: str | None = None
+
+
+def _mask_secret(value: str | None) -> str | None:
+    """Return a safe preview of a secret — never the cleartext value."""
+    if not value:
+        return None
+    if len(value) <= 4:
+        return "****"
+    return "****" + value[-4:]
 
 
 def _config_to_response(config: dict | None) -> AlertConfigResponse:
@@ -50,11 +68,15 @@ def _config_to_response(config: dict | None) -> AlertConfigResponse:
         alert_emails=config.get("alert_emails") or [],
         webhook_url=config.get("webhook_url"),
         webhook_headers=config.get("webhook_headers") or {},
+        pagerduty_routing_key=_mask_secret(config.get("pagerduty_routing_key")),
+        opsgenie_api_key=_mask_secret(config.get("opsgenie_api_key")),
         min_severity=config.get("min_severity", "high"),
         enabled=bool(
             config.get("slack_webhook_url")
             or config.get("alert_emails")
             or config.get("webhook_url")
+            or config.get("pagerduty_routing_key")
+            or config.get("opsgenie_api_key")
         ),
     )
 
@@ -90,6 +112,10 @@ def _audit_safe_config(config: dict | None) -> dict:
     if "webhook_headers" in cfg and cfg["webhook_headers"]:
         # Header values may carry tokens — keep keys, redact values
         cfg["webhook_headers"] = {k: "[Filtered]" for k in cfg["webhook_headers"]}
+    if "pagerduty_routing_key" in cfg:
+        cfg["pagerduty_routing_key"] = _mask_secret(cfg.get("pagerduty_routing_key"))
+    if "opsgenie_api_key" in cfg:
+        cfg["opsgenie_api_key"] = _mask_secret(cfg.get("opsgenie_api_key"))
     return cfg
 
 
@@ -119,6 +145,20 @@ async def update_alert_config(
 
     if body.webhook_headers is not None:
         config["webhook_headers"] = body.webhook_headers
+
+    if body.pagerduty_routing_key is not None:
+        # Empty string is treated as "clear this integration" so the UI
+        # can disable PagerDuty without a separate DELETE.
+        if body.pagerduty_routing_key:
+            config["pagerduty_routing_key"] = body.pagerduty_routing_key
+        else:
+            config.pop("pagerduty_routing_key", None)
+
+    if body.opsgenie_api_key is not None:
+        if body.opsgenie_api_key:
+            config["opsgenie_api_key"] = body.opsgenie_api_key
+        else:
+            config.pop("opsgenie_api_key", None)
 
     if body.min_severity is not None:
         try:
@@ -247,6 +287,40 @@ async def send_test_alert(
             )
         return {"status": "sent", "channel": "email"}
 
+    if channel == "pagerduty":
+        routing_key = config.get("pagerduty_routing_key")
+        if not routing_key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No PagerDuty routing key configured",
+            )
+        success = await send_pagerduty_alert(
+            routing_key, test_incident, dashboard_url=dashboard
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to send PagerDuty test alert. Check the routing key.",
+            )
+        return {"status": "sent", "channel": "pagerduty"}
+
+    if channel == "opsgenie":
+        api_key = config.get("opsgenie_api_key")
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No Opsgenie API key configured",
+            )
+        success = await send_opsgenie_alert(
+            api_key, test_incident, dashboard_url=dashboard
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to send Opsgenie test alert. Check the API key.",
+            )
+        return {"status": "sent", "channel": "opsgenie"}
+
     if channel == "webhook":
         webhook_url = config.get("webhook_url")
         if not webhook_url:
@@ -267,5 +341,5 @@ async def send_test_alert(
 
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="channel must be 'slack', 'email', or 'webhook'",
+        detail="channel must be 'slack', 'email', 'webhook', 'pagerduty', or 'opsgenie'",
     )
