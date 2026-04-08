@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { api } from "@/lib/api";
+import { toast } from "@/components/ui/toast";
 import type { AuditEntry } from "@/lib/types";
-import { Activity, User, Key, Server } from "lucide-react";
+import { Activity, Download, Key, Server, User } from "lucide-react";
 
 const ACTION_OPTIONS = [
   { value: "", label: "All actions" },
@@ -87,6 +89,36 @@ const RECOMPUTE_REASON_OPTIONS = [
 export function AuditLogPage() {
   const [actionFilter, setActionFilter] = useState("");
   const [reasonFilter, setReasonFilter] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  // Default the export window to the last 90 days. Admins needing a
+  // full SOC 2 year can hit the /audit-log/export endpoint directly
+  // with a longer range (backend caps at 400 days).
+  async function handleExport(format: "csv" | "json") {
+    setExporting(true);
+    try {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - 90);
+      const startStr = start.toISOString().slice(0, 10);
+      const endStr = end.toISOString().slice(0, 10);
+      const blob = await api.downloadAuditLogExport(startStr, endStr, format);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `parry-audit-${startStr}-${endStr}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast(`Audit log exported (${format.toUpperCase()})`, "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Export failed";
+      toast(msg, "error");
+    } finally {
+      setExporting(false);
+    }
+  }
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useAuditLog(
     actionFilter ? { action: actionFilter } : undefined
   );
@@ -107,6 +139,28 @@ export function AuditLogPage() {
       <Header
         title="Audit Log"
         description="Append-only record of who did what, for compliance and forensics."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={exporting}
+              onClick={() => handleExport("csv")}
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? "Exporting…" : "Export CSV"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={exporting}
+              onClick={() => handleExport("json")}
+            >
+              <Download className="h-4 w-4" />
+              JSON
+            </Button>
+          </div>
+        }
       />
 
       <div className="space-y-4 p-6">

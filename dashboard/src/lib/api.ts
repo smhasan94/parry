@@ -343,6 +343,25 @@ class ApiClient {
   }
 
   // Compliance reports — returns a PDF blob (binary) rather than JSON.
+  async downloadAuditLogExport(
+    start: string,
+    end: string,
+    format: "csv" | "json" = "csv",
+  ): Promise<Blob> {
+    const headers: Record<string, string> = {};
+    if (this.tokenGetter) {
+      const token = await this.tokenGetter();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    }
+    const params = new URLSearchParams({ start, end, format });
+    const res = await fetch(`${BASE_URL}/api/v1/audit-log/export?${params}`, { headers });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body.detail || "Audit export failed", body.code);
+    }
+    return res.blob();
+  }
+
   async downloadComplianceReport(start: string, end: string): Promise<Blob> {
     const headers: Record<string, string> = {};
     if (this.tokenGetter) {
