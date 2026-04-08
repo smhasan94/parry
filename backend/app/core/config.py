@@ -69,6 +69,19 @@ class Settings(BaseSettings):
     audit_export_aws_access_key_id: str = ""
     audit_export_aws_secret_access_key: str = ""
 
+    # On-prem mode — air-gapped deployment, enforced by a signed
+    # license file. When enabled:
+    #   * Stripe metered usage reporting is a no-op
+    #   * Monthly S3 audit export is a no-op
+    #   * LLM fallback is disabled (no outbound Anthropic calls)
+    #   * plan_service reads limits from the license, not the org row
+    #   * Startup is a hard-fail if the license can't be verified
+    on_prem_mode: bool = False
+    license_path: str = "/etc/parry/parry.license"
+    # Baked-in Ed25519 public key for license verification. Override
+    # via env var in dev; production builds ship with this populated.
+    license_public_key_pem: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]

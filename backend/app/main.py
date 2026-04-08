@@ -24,7 +24,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings.validate_for_production()
     settings.log_startup_warnings()
     init_sentry()
-    log.info("parry.startup", env=settings.app_env)
+    # License verification is fatal in on-prem mode — the backend
+    # must not come up with a tampered or missing license file.
+    from app.core import on_prem
+
+    on_prem.load_on_startup()
+    log.info(
+        "parry.startup",
+        env=settings.app_env,
+        on_prem=on_prem.is_on_prem(),
+    )
     yield
     log.info("parry.shutdown")
 
