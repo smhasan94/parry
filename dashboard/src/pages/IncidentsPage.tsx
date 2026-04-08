@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { SeverityBadge, Badge } from "@/components/ui/badge";
 import { useIncidents, useUpdateIncident } from "@/hooks/useIncidents";
 import { useResourceHistory } from "@/hooks/useAuditLog";
 import type { IncidentStatus, Severity, AuditEntry } from "@/lib/types";
-import { AlertTriangle, CheckCircle, Eye, XCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, CheckCircle, Eye, Film, XCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 
 const SEVERITY_OPTIONS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
 const STATUS_OPTIONS: (IncidentStatus | "all")[] = ["all", "open", "acknowledged", "resolved", "dismissed"];
@@ -131,6 +132,21 @@ export function IncidentsPage() {
                       )}
                     </div>
                     <div className="flex gap-1">
+                      {(() => {
+                        const sessionId = (incident.metadata as { trigger_session_id?: string } | null)
+                          ?.trigger_session_id;
+                        if (!sessionId) return null;
+                        return (
+                          <Link
+                            to="/sessions/$sessionId"
+                            params={{ sessionId }}
+                          >
+                            <Button size="sm" variant="ghost" title="View session replay">
+                              <Film className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        );
+                      })()}
                       {incident.status === "open" && (
                         <Button
                           size="sm"

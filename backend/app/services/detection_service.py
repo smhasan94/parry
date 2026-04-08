@@ -94,6 +94,8 @@ async def run_and_persist_detections(
             agent_id=agent.id,
             detections=[d for d in detections if d.triggered],
             severity=max_severity or Severity.MEDIUM,
+            trigger_session_id=event.session_id,
+            trigger_event_id=event.id,
         )
         log.info(
             "detection.incident_created",
@@ -179,16 +181,30 @@ async def _create_or_update_incident(
     agent_id: uuid.UUID,
     detections: list[Detection],
     severity: Severity,
+    trigger_session_id: uuid.UUID | None = None,
+    trigger_event_id: uuid.UUID | None = None,
 ) -> Incident:
-    """Create a new incident grouping the triggered detections."""
+    """Create a new incident grouping the triggered detections.
+
+    ``trigger_session_id`` / ``trigger_event_id`` are stashed in
+    ``metadata`` so the dashboard can deep-link to the session replay
+    without needing a new column on the incidents table.
+    """
     top_detection = max(detections, key=lambda d: d.confidence)
     title = f"[{severity.value.upper()}] {top_detection.detector}: {top_detection.reason}"
+
+    metadata: dict = {}
+    if trigger_session_id is not None:
+        metadata["trigger_session_id"] = str(trigger_session_id)
+    if trigger_event_id is not None:
+        metadata["trigger_event_id"] = str(trigger_event_id)
 
     incident = Incident(
         org_id=org_id,
         agent_id=agent_id,
         title=title,
         severity=severity,
+        metadata_=metadata or None,
     )
     db.add(incident)
     await db.flush()
