@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
-from app.db.models import Agent, AgentEvent
+from app.db.models import Agent, AgentEvent, AgentSession
 
 log = structlog.get_logger()
 
@@ -35,14 +35,54 @@ async def ingest_event(
         await db.flush()
         log.info("agent.auto_created", agent_id=str(agent.id), name=agent_name)
 
-    # Resolve or create session
+    # Resolve or create session. session_id on the wire is a client
+    # hint — the SDK sends whatever identifier makes sense to the
+    # caller (a UUID, a request id, a chat thread id). We treat it as
+    # a deterministic key: same agent + same client session_id ⇒
+    # same AgentSession row, created on first sighting.
     db_session_id: uuid.UUID | None = None
     if session_id:
+        # Try to interpret the client hint as an existing UUID that
+        # already points to a session row for this agent. Otherwise
+        # we create a fresh session. This is the only path that
+        # ever creates AgentSession rows — without it the FK on
+        # agent_events.session_id would fail the INSERT.
         try:
-            db_session_id = uuid.UUID(session_id)
+            parsed = uuid.UUID(session_id)
         except ValueError:
-            log.warning("event.invalid_session_id", session_id=session_id)
-            db_session_id = uuid.uuid4()
+            parsed = None
+
+        existing: AgentSession | None = None
+        if parsed is not None:
+            existing = await db.get(AgentSession, parsed)
+            if existing is not None and existing.agent_id != agent.id:
+                # Defence in depth: a client that sends a stolen
+                # session_id from another agent shouldn't be able to
+                # hijack its timeline.
+                log.warning(
+                    "event.session_id_cross_agent",
+                    session_id=session_id,
+                    claimed_agent=str(agent.id),
+                    actual_agent=str(existing.agent_id),
+                )
+                existing = None
+
+        if existing is None:
+            new_session = AgentSession(
+                id=parsed or uuid.uuid4(),
+                agent_id=agent.id,
+                metadata_={"client_session_id": session_id},
+            )
+            db.add(new_session)
+            await db.flush()
+            db_session_id = new_session.id
+            log.info(
+                "session.auto_created",
+                session_id=str(db_session_id),
+                agent_id=str(agent.id),
+            )
+        else:
+            db_session_id = existing.id
 
     event = AgentEvent(
         agent_id=agent.id,
