@@ -300,6 +300,11 @@ class ApiClient {
     });
   }
 
+  // Agent behavioural stats (charts on AgentDetailPage)
+  async getAgentStats(agentId: string, window: "7d" | "30d" | "90d"): Promise<AgentStats> {
+    return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
+  }
+
   // Compliance reports — returns a PDF blob (binary) rather than JSON.
   async downloadComplianceReport(start: string, end: string): Promise<Blob> {
     const headers: Record<string, string> = {};
@@ -392,6 +397,16 @@ export interface CustomRuleInput {
   target: CustomRuleTarget;
   severity: CustomRuleSeverity;
   enabled: boolean;
+}
+
+export interface AgentStats {
+  window: "7d" | "30d" | "90d";
+  generated_at: string;
+  event_volume: { date: string; count: number }[];
+  tool_calls: { tool: string; count: number }[];
+  model_usage: { model: string; count: number }[];
+  anomaly_trend: { date: string; avg_score: number }[];
+  detection_counts: Record<string, number>;
 }
 
 export class ApiError extends Error {

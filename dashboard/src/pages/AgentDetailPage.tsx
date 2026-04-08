@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Activity, Clock, Cpu, Zap, History } from "lucide-react";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
+import { EventVolume } from "@/components/charts/EventVolume";
+import { ToolCallHeatmap } from "@/components/charts/ToolCallHeatmap";
+import { ModelUsageDonut } from "@/components/charts/ModelUsageDonut";
+import { AnomalyTrend } from "@/components/charts/AnomalyTrend";
+import { useAgentStats, type AgentStatsWindow } from "@/hooks/useAgentStats";
+import { cn } from "@/lib/utils";
 
 function HealthComponent({
   label,
@@ -44,6 +50,8 @@ export function AgentDetailPage() {
   const navigate = useNavigate();
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [anomaliesOnly, setAnomaliesOnly] = useState(false);
+  const [statsWindow, setStatsWindow] = useState<AgentStatsWindow>("30d");
+  const { data: stats, isLoading: statsLoading } = useAgentStats(agentId, statsWindow);
   const [showDriftHistory, setShowDriftHistory] = useState(false);
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const deleteAgent = useDeleteAgent();
@@ -330,6 +338,67 @@ export function AgentDetailPage() {
             </Card>
           );
         })()}
+
+        {/* Behavioural Graph */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between text-base">
+              <span>Behavioural Graph</span>
+              <div className="flex gap-1 rounded-md border border-border p-0.5">
+                {(["7d", "30d", "90d"] as const).map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => setStatsWindow(w)}
+                    className={cn(
+                      "rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                      statsWindow === w
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statsLoading && !stats ? (
+              <p className="text-sm text-muted-foreground">Loading stats…</p>
+            ) : !stats ? (
+              <p className="text-sm text-muted-foreground">
+                No events yet. Install the SDK to start monitoring this agent.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Event Volume
+                  </p>
+                  <EventVolume data={stats.event_volume} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Anomaly Trend
+                  </p>
+                  <AnomalyTrend data={stats.anomaly_trend} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Top Tool Calls
+                  </p>
+                  <ToolCallHeatmap data={stats.tool_calls} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Model Usage
+                  </p>
+                  <ModelUsageDonut data={stats.model_usage} />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Baseline Info */}
         {agent.baseline && (() => {
