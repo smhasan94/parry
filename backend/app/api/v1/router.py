@@ -14,6 +14,7 @@ from app.api.v1 import (
     policies,
     proxy,
     reports,
+    sessions,
     webhooks,
 )
 
@@ -35,3 +36,4 @@ api_router.include_router(custom_rules.router, prefix="/custom-rules", tags=["cu
 api_router.include_router(metrics_query.router, prefix="/metrics", tags=["metrics"])
 api_router.include_router(proxy.router, prefix="/proxy", tags=["proxy"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(sessions.router, prefix="/sessions", tags=["sessions"])

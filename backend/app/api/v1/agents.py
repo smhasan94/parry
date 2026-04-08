@@ -9,7 +9,7 @@ from app.core.rbac import Role, require_role
 from app.db.models import Agent, Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
-from app.services import agent_service, audit_service, plan_service
+from app.services import agent_service, audit_service, plan_service, session_service
 from app.services.agent_stats_service import get_or_build_agent_stats
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
 from app.services.health_score_service import get_or_compute_health
@@ -129,6 +129,30 @@ async def get_agent_stats(
         return await get_or_build_agent_stats(db, agent_id, window)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get(
+    "/{agent_id}/sessions",
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def list_agent_sessions_route(
+    agent_id: uuid.UUID,
+    limit: int = Query(20, ge=1, le=100),
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Recent sessions for an agent, newest first.
+
+    Used by the Sessions tab on AgentDetailPage. Each entry carries
+    its event count so the UI can summarize without fetching full
+    session payloads.
+    """
+    sessions = await session_service.list_agent_sessions(
+        db, agent_id, org.id, limit=limit
+    )
+    if sessions is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return sessions
 
 
 @router.post(
