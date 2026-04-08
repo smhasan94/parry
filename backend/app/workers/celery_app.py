@@ -35,6 +35,12 @@ celery_app.conf.update(
             # Daily at 01:00 UTC — well outside any dashboard/user peak.
             "schedule": crontab(hour=1, minute=0),
         },
+        "export-audit-log-monthly": {
+            "task": "export_audit_log_monthly",
+            # 1st of every month at 02:00 UTC — covers the previous
+            # full calendar month.
+            "schedule": crontab(hour=2, minute=0, day_of_month=1),
+        },
     },
 )
 

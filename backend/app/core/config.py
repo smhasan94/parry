@@ -61,6 +61,14 @@ class Settings(BaseSettings):
     sentry_traces_sample_rate: float = 0.1
     sentry_environment: str = ""
 
+    # SOC 2 audit log export to S3 (optional — missing bucket = disabled).
+    # Scheduled monthly task writes one JSON artefact per org per month.
+    audit_export_s3_bucket: str = ""
+    audit_export_s3_prefix: str = "audit-log"
+    audit_export_s3_region: str = "us-east-1"
+    audit_export_aws_access_key_id: str = ""
+    audit_export_aws_secret_access_key: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]
