@@ -22,9 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor, get_org_from_sdk_key
+from app.core.event_bus import publish_blocked_event
 from app.db.models import Org, Policy, ResponseScanMode
 from app.db.session import get_db
-from app.core.event_bus import publish_blocked_event
 from app.proxy.check import run_blocking_check
 from app.proxy.response_scan import scan_response
 from app.schemas.base import ParrySchema

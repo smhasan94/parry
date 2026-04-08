@@ -8,7 +8,7 @@ rejected; the async/Celery path is TODO for a future plan.
 """
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status

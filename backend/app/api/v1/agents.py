@@ -10,8 +10,8 @@ from app.db.models import Agent, Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.services import agent_service, audit_service
-from app.services.baseline_service import MIN_EVENTS, compute_baseline
 from app.services.agent_stats_service import get_or_build_agent_stats
+from app.services.baseline_service import MIN_EVENTS, compute_baseline
 from app.services.health_score_service import get_or_compute_health
 
 router = APIRouter()

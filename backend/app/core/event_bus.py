@@ -12,9 +12,11 @@ across the wire beyond what's already shown in the dashboard.
 """
 from __future__ import annotations
 
+import contextlib
 import json
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from typing import Any, AsyncIterator
+from typing import Any
 
 import structlog
 
@@ -98,12 +100,8 @@ async def subscribe(org_id: str) -> AsyncIterator[dict[str, Any]]:
     except Exception:
         log.debug("event_bus.subscribe_error", exc_info=True)
     finally:
-        try:
+        with contextlib.suppress(Exception):
             await pubsub.unsubscribe(channel_for(org_id))
             await pubsub.close()
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             await client.close()
-        except Exception:
-            pass

@@ -149,7 +149,7 @@ async def live_stream(
                 try:
                     next_msg = asyncio.wait_for(sub_iter.__anext__(), timeout=15.0)
                     msg = await next_msg
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield {"data": json.dumps({"type": "keepalive"})}
                     continue
                 except StopAsyncIteration:
