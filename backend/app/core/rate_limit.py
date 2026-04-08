@@ -22,6 +22,12 @@ RATE_LIMITS: dict[str, int] = {
     "/api/v1/api-keys": 30,
     "/api/v1/billing": 20,
     "/api/v1/webhooks": 100,  # Webhooks from external services
+    # SSO flow is unauthenticated (anyone can kick off a SAML login
+    # for any org they can name) and each POST burns a WorkOS API
+    # call plus an org lookup. 10/min per client is plenty for real
+    # users and shuts down script-kiddie enumeration.
+    "/api/v1/sso/login": 10,
+    "/api/v1/sso/callback": 20,
 }
 
 DEFAULT_LIMIT = 60  # requests per minute
