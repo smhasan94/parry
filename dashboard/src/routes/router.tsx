@@ -10,6 +10,7 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { AuditLogPage } from "@/pages/AuditLogPage";
 import { CustomRulesPage } from "@/pages/CustomRulesPage";
+import { ReportsPage } from "@/pages/ReportsPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -78,6 +79,12 @@ const customRulesRoute = createRoute({
   component: CustomRulesPage,
 });
 
+const reportsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reports",
+  component: ReportsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -86,6 +93,7 @@ const routeTree = rootRoute.addChildren([
   incidentsRoute,
   policiesRoute,
   customRulesRoute,
+  reportsRoute,
   settingsRoute,
   setupRoute,
   auditRoute,
