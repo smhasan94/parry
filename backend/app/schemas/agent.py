@@ -30,3 +30,9 @@ class AgentResponse(ParrySchema):
     metadata: dict[str, Any] | None = Field(None, validation_alias="metadata_")
     created_at: datetime
     updated_at: datetime
+    # Health score (0-100, lower is worse). Computed via
+    # health_score_service; read-through Redis cache in list/get handlers.
+    # None when the score hasn't been computed yet for this request.
+    health_score: int | None = None
+    health_grade: str | None = None
+    health_components: dict[str, Any] | None = None

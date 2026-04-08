@@ -24,6 +24,12 @@ celery_app.conf.update(
             # Run hourly — task itself decides which agents are actually stale
             "schedule": crontab(minute=0),
         },
+        "refresh-health-scores": {
+            "task": "refresh_health_scores",
+            # Hourly, offset 15 minutes so it doesn't contend with the
+            # baseline refresh run.
+            "schedule": crontab(minute=15),
+        },
     },
 )
 

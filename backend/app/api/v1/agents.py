@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.services import agent_service, audit_service
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
+from app.services.health_score_service import get_or_compute_health
 
 router = APIRouter()
 
@@ -27,7 +28,15 @@ async def list_agents(
     limit: int = Query(50, ge=1, le=100),
 ) -> list[AgentResponse]:
     agents, next_cursor = await agent_service.list_agents(db, org.id, cursor, limit)
-    return [AgentResponse.model_validate(a) for a in agents]
+    responses: list[AgentResponse] = []
+    for a in agents:
+        resp = AgentResponse.model_validate(a)
+        health = await get_or_compute_health(db, a.id)
+        resp.health_score = health["score"]
+        resp.health_grade = health["grade"]
+        resp.health_components = health["components"]
+        responses.append(resp)
+    return responses
 
 
 @router.post("/baselines/recompute-all")
@@ -88,7 +97,12 @@ async def get_agent(
     db: AsyncSession = Depends(get_db),
 ) -> AgentResponse:
     agent = await agent_service.get_agent(db, org.id, agent_id)
-    return AgentResponse.model_validate(agent)
+    resp = AgentResponse.model_validate(agent)
+    health = await get_or_compute_health(db, agent.id)
+    resp.health_score = health["score"]
+    resp.health_grade = health["grade"]
+    resp.health_components = health["components"]
+    return resp
 
 
 @router.post(
