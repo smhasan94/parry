@@ -11,6 +11,7 @@ import { OnboardingPage } from "@/pages/OnboardingPage";
 import { AuditLogPage } from "@/pages/AuditLogPage";
 import { CustomRulesPage } from "@/pages/CustomRulesPage";
 import { ReportsPage } from "@/pages/ReportsPage";
+import { SessionReplayPage } from "@/pages/SessionReplayPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -85,6 +86,12 @@ const reportsRoute = createRoute({
   component: ReportsPage,
 });
 
+const sessionReplayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sessions/$sessionId",
+  component: SessionReplayPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -94,6 +101,7 @@ const routeTree = rootRoute.addChildren([
   policiesRoute,
   customRulesRoute,
   reportsRoute,
+  sessionReplayRoute,
   settingsRoute,
   setupRoute,
   auditRoute,

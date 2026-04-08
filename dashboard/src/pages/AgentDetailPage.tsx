@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "@tanstack/react-router";
+import { Link, useParams, useNavigate } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkline } from "@/components/charts/Sparkline";
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, Clock, Cpu, Zap, History } from "lucide-react";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
+import { useAgentSessions } from "@/hooks/useSession";
 import { EventVolume } from "@/components/charts/EventVolume";
 import { ToolCallHeatmap } from "@/components/charts/ToolCallHeatmap";
 import { ModelUsageDonut } from "@/components/charts/ModelUsageDonut";
@@ -742,6 +743,9 @@ export function AgentDetailPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Sessions */}
+        <AgentSessionsCard agentId={agentId} />
       </div>
 
       {selectedEvent && (
@@ -751,5 +755,74 @@ export function AgentDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+function AgentSessionsCard({ agentId }: { agentId: string }) {
+  const { data: sessions = [], isLoading } = useAgentSessions(agentId);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Sessions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading sessions…</p>
+        ) : sessions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No sessions recorded yet. Sessions are created automatically when
+            the SDK groups related events.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {sessions.map((s) => {
+              const started = s.started_at ? new Date(s.started_at) : null;
+              const ended = s.ended_at ? new Date(s.ended_at) : null;
+              const durationMs =
+                started !== null
+                  ? (ended?.getTime() ?? Date.now()) - started.getTime()
+                  : null;
+              return (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between py-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {s.id.slice(0, 8)}
+                      </span>
+                      {s.is_live && (
+                        <span className="rounded bg-green-950/50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-300">
+                          Live
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {started ? started.toLocaleString() : "—"} ·{" "}
+                      {s.event_count} event{s.event_count === 1 ? "" : "s"}
+                      {durationMs !== null && (
+                        <>
+                          {" · "}
+                          {Math.floor(durationMs / 1000)}s
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <Link
+                    to="/sessions/$sessionId"
+                    params={{ sessionId: s.id }}
+                  >
+                    <Button variant="outline" size="sm">
+                      View Replay
+                    </Button>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

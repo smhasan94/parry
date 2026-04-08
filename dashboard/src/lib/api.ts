@@ -333,6 +333,15 @@ class ApiClient {
     return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
   }
 
+  // Session replay
+  async listAgentSessions(agentId: string, limit = 20): Promise<SessionSummary[]> {
+    return this.request(`/api/v1/agents/${agentId}/sessions?limit=${limit}`);
+  }
+
+  async getSession(sessionId: string): Promise<SessionReplay> {
+    return this.request(`/api/v1/sessions/${sessionId}`);
+  }
+
   // Compliance reports — returns a PDF blob (binary) rather than JSON.
   async downloadComplianceReport(start: string, end: string): Promise<Blob> {
     const headers: Record<string, string> = {};
@@ -438,6 +447,53 @@ export interface AgentStats {
   model_usage: { model: string; count: number }[];
   anomaly_trend: { date: string; avg_score: number }[];
   detection_counts: Record<string, number>;
+}
+
+export interface SessionSummary {
+  id: string;
+  agent_id: string;
+  started_at: string | null;
+  ended_at: string | null;
+  event_count: number;
+  is_live: boolean;
+}
+
+export interface SessionDetection {
+  id: string;
+  detector: string;
+  severity: "critical" | "high" | "medium" | "low";
+  confidence: number;
+  reason: string;
+  triggered: boolean;
+}
+
+export interface SessionReplayEvent {
+  id: string;
+  timestamp: string | null;
+  model: string | null;
+  latency_ms: number | null;
+  token_count: number | null;
+  tool_calls: Record<string, unknown>[];
+  prompt_preview: string | null;
+  response_preview: string | null;
+  // Admin-only, omitted for viewers
+  prompt?: string | null;
+  response?: string | null;
+  detections: SessionDetection[];
+}
+
+export interface SessionReplay {
+  session: {
+    id: string;
+    agent_id: string;
+    agent_name: string;
+    started_at: string | null;
+    ended_at: string | null;
+    event_count: number;
+    triggered_detection_count: number;
+    metadata: Record<string, unknown>;
+  };
+  events: SessionReplayEvent[];
 }
 
 export interface PlanResponse {
