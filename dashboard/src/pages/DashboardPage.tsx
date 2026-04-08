@@ -6,7 +6,7 @@ import { SeverityBreakdown } from "@/components/charts/SeverityBreakdown";
 import { IncidentTrend } from "@/components/charts/IncidentTrend";
 import { useAgents } from "@/hooks/useAgents";
 import { useIncidents } from "@/hooks/useIncidents";
-import { Bot, AlertTriangle, Shield, Activity } from "lucide-react";
+import { Bot, AlertTriangle, Shield, Activity, Sparkles, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { BlockedEventFeed } from "@/components/BlockedEventFeed";
@@ -27,19 +27,14 @@ export function DashboardPage() {
 
       <div className="space-y-6 p-6">
         {!agentsLoading && !incidentsLoading && agents.length === 0 && (
-          <Card className="border-blue-500/30 bg-blue-500/10">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="font-medium text-blue-400">Welcome to Parry!</p>
-                <p className="text-sm text-muted-foreground">Set up your first agent in minutes.</p>
-              </div>
-              <Link to="/setup">
-                <Button size="sm">Get Started</Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <FirstRunCard />
         )}
 
+        {/* Everything below the first-run card is only useful once
+            there's at least one agent registered. Hiding it on a
+            brand new dashboard prevents the "wall of zeros" look. */}
+        {!(!agentsLoading && !incidentsLoading && agents.length === 0) && (
+        <>
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
@@ -166,8 +161,103 @@ export function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+        </>
+        )}
       </div>
     </div>
+  );
+}
+
+function FirstRunCard() {
+  const installSnippet = `pip install parry
+
+from parry.wrappers.openai import SentinelOpenAI
+client = SentinelOpenAI(
+    agent_id="support-bot",
+    api_key="sk-parry-...",
+)`;
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-primary/40 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Welcome to Parry
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Runtime security for AI agents. Wrap your LLM client with
+            the Parry SDK and every call flows through the detection
+            engine — prompt injection, tool misuse, behavioural drift,
+            all in real time.
+          </p>
+          <div className="overflow-hidden rounded-md border border-border bg-background/60">
+            <div className="flex items-center gap-1.5 border-b border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-red-500/70" />
+              <span className="h-2 w-2 rounded-full bg-yellow-500/70" />
+              <span className="h-2 w-2 rounded-full bg-green-500/70" />
+              <span className="ml-2 font-mono">quickstart.py</span>
+            </div>
+            <pre className="overflow-x-auto px-4 py-3 text-xs text-foreground/90">
+              <code>{installSnippet}</code>
+            </pre>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/setup">
+              <Button size="sm">
+                <Sparkles className="h-4 w-4" />
+                Guided setup
+              </Button>
+            </Link>
+            <Link to="/settings">
+              <Button size="sm" variant="outline">
+                Create an API key
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <FeaturePreview
+          icon={Shield}
+          title="Block dangerous calls"
+          body="Rule + LLM detection stops prompt injection and tool misuse before the call fires."
+        />
+        <FeaturePreview
+          icon={Activity}
+          title="See every call"
+          body="Session replay, behavioural graphs, and live feeds show exactly what your agents are doing."
+        />
+        <FeaturePreview
+          icon={CheckCircle2}
+          title="Compliance-ready"
+          body="SOC 2 audit export, EU AI Act-shaped PDFs, signed on-prem deploys — all built in."
+        />
+      </div>
+    </div>
+  );
+}
+
+function FeaturePreview({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="space-y-2 p-4">
+        <Icon className="h-5 w-5 text-primary" />
+        <p className="font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{body}</p>
+      </CardContent>
+    </Card>
   );
 }
 
