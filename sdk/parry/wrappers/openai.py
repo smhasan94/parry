@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from parry.blocking import ParryBlockedError, check_before_call
+from parry.blocking import check_before_call
 from parry.interceptor import TimingContext, intercept_completion
 from parry.response_scanner import scan_response_before_return
 
