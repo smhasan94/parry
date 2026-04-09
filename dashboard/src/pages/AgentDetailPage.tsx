@@ -12,7 +12,8 @@ import { useIncidents } from "@/hooks/useIncidents";
 import { useAgentEventStream } from "@/hooks/useEventStream";
 import { useResourceHistory } from "@/hooks/useAuditLog";
 import { Button } from "@/components/ui/button";
-import { Activity, Clock, Cpu, Zap, History } from "lucide-react";
+import { Activity, Clock, Cpu, Zap, History, Swords } from "lucide-react";
+import { useStartRedTeamRun } from "@/hooks/useRedTeam";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { useAgentSessions } from "@/hooks/useSession";
@@ -57,6 +58,7 @@ export function AgentDetailPage() {
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const deleteAgent = useDeleteAgent();
   const recomputeBaseline = useRecomputeBaseline();
+  const startRedTeam = useStartRedTeamRun();
   const {
     data: eventData,
     isLoading: eventsLoading,
@@ -186,6 +188,20 @@ export function AgentDetailPage() {
         description={agent.description || `Agent ID: ${agent.id}`}
         actions={
           <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={startRedTeam.isPending}
+              onClick={() =>
+                startRedTeam.mutate({
+                  agent_id: agentId,
+                  mode: "sandbox",
+                })
+              }
+            >
+              <Swords className="h-4 w-4" />
+              {startRedTeam.isPending ? "Starting…" : "Red team"}
+            </Button>
             <Button
               size="sm"
               variant="ghost"

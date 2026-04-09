@@ -13,6 +13,8 @@ import { CustomRulesPage } from "@/pages/CustomRulesPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SessionReplayPage } from "@/pages/SessionReplayPage";
 import { SLOPage } from "@/pages/SLOPage";
+import { RedTeamPage } from "@/pages/RedTeamPage";
+import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -99,6 +101,18 @@ const sloRoute = createRoute({
   component: SLOPage,
 });
 
+const redTeamRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/red-team",
+  component: RedTeamPage,
+});
+
+const redTeamRunRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/red-team/$runId",
+  component: RedTeamRunDetailPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -110,6 +124,8 @@ const routeTree = rootRoute.addChildren([
   reportsRoute,
   sessionReplayRoute,
   sloRoute,
+  redTeamRoute,
+  redTeamRunRoute,
   settingsRoute,
   setupRoute,
   auditRoute,

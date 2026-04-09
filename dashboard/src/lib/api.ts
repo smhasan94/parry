@@ -367,6 +367,35 @@ class ApiClient {
     });
   }
 
+  // Red team
+  async listRedTeamRuns(agentId?: string, limit = 20): Promise<RedTeamRunSummary[]> {
+    const qs = new URLSearchParams();
+    if (agentId) qs.set("agent_id", agentId);
+    qs.set("limit", String(limit));
+    return this.request(`/api/v1/red-team/runs?${qs}`);
+  }
+
+  async getRedTeamRun(runId: string): Promise<RedTeamRunDetail> {
+    return this.request(`/api/v1/red-team/runs/${runId}`);
+  }
+
+  async startRedTeamRun(body: {
+    agent_id: string;
+    mode: "sandbox" | "live";
+  }): Promise<{ run_id: string; status: string }> {
+    return this.request("/api/v1/red-team/runs", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async getRedTeamCorpus(): Promise<{
+    total_attacks: number;
+    by_category: Record<string, number>;
+  }> {
+    return this.request("/api/v1/red-team/attacks");
+  }
+
   // Agent behavioural stats (charts on AgentDetailPage)
   async getAgentStats(agentId: string, window: "7d" | "30d" | "90d"): Promise<AgentStats> {
     return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
@@ -487,6 +516,32 @@ export interface CustomRule {
   severity: CustomRuleSeverity;
   enabled: boolean;
   created_at: string;
+}
+
+export interface RedTeamRunSummary {
+  id: string;
+  agent_id: string;
+  mode: "sandbox" | "live";
+  status: "queued" | "running" | "completed" | "failed";
+  overall_score: number | null;
+  grade: "A" | "B" | "C" | "D" | "F" | null;
+  total_attacks: number | null;
+  detected_count: number | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface RedTeamRunFailure {
+  attack_id: string;
+  category: string;
+  severity: "low" | "medium" | "high" | "critical";
+  detectors_fired: string[];
+}
+
+export interface RedTeamRunDetail extends RedTeamRunSummary {
+  by_category: Record<string, number> | null;
+  error_message: string | null;
+  failures: RedTeamRunFailure[];
 }
 
 export interface SimulationSample {

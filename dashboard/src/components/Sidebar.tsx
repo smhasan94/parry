@@ -10,6 +10,7 @@ import {
   Gauge,
   Settings,
   Activity,
+  Swords,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/reports", label: "Reports", icon: FileDown },
   { to: "/audit-log", label: "Audit Log", icon: Activity },
   { to: "/slo", label: "SLOs", icon: Gauge },
+  { to: "/red-team", label: "Red Team", icon: Swords },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
