@@ -182,6 +182,18 @@ class AnomalyDetector:
                 f"{effective_sigma:.1f}σ for quality '{baseline_quality}'"
             )
 
+        # effective_sigma can be math.inf for "low" quality baselines
+        # (the quality multiplier is inf — an explicit "never fire"
+        # marker). JSON has no representation for infinity, and
+        # asyncpg bounces the insert into the JSONB ``details``
+        # column with "Token 'Infinity' is invalid". Serialize it
+        # as the string "inf" instead so the value still round-trips
+        # and the meaning is obvious to anyone reading the row.
+        if effective_sigma == float("inf"):
+            effective_sigma_json: float | str = "inf"
+        else:
+            effective_sigma_json = round(effective_sigma, 2)
+
         return DetectionResult(
             triggered=triggered,
             severity=severity if triggered else Severity.LOW,
@@ -193,7 +205,7 @@ class AnomalyDetector:
                 "count": len(anomalies),
                 "drift": drift,
                 "sigma_threshold": sigma_threshold,
-                "effective_sigma": round(effective_sigma, 2),
+                "effective_sigma": effective_sigma_json,
                 "baseline_quality": baseline_quality,
             },
         )

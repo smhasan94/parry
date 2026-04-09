@@ -29,8 +29,9 @@ async def _ingest_events(client: AsyncClient, api_key: str, n: int) -> None:
 
 @pytest.mark.asyncio
 async def test_recompute_baseline_endpoint_writes_audit_diff(
-    client: AsyncClient, seeded_db: dict, db: AsyncSession
+    admin_client: AsyncClient, seeded_db: dict, db: AsyncSession
 ):
+    client = admin_client
     """POST /agents/{id}/baseline/recompute returns the agent and writes
     an audit log entry containing the before/after baseline diff."""
     agent_id = str(seeded_db["agent"].id)
@@ -73,7 +74,10 @@ async def test_recompute_baseline_endpoint_writes_audit_diff(
 
 
 @pytest.mark.asyncio
-async def test_recompute_baseline_404_with_too_few_events(client: AsyncClient, seeded_db: dict):
+async def test_recompute_baseline_404_with_too_few_events(
+    admin_client: AsyncClient, seeded_db: dict
+):
+    client = admin_client
     """When the agent has fewer than MIN_EVENTS, recompute returns 400."""
     agent_id = str(seeded_db["agent"].id)
     api_key = seeded_db["api_key_raw"]
@@ -90,8 +94,9 @@ async def test_recompute_baseline_404_with_too_few_events(client: AsyncClient, s
 
 @pytest.mark.asyncio
 async def test_recompute_all_baselines_bulk_endpoint(
-    client: AsyncClient, seeded_db: dict, db: AsyncSession
+    admin_client: AsyncClient, seeded_db: dict, db: AsyncSession
 ):
+    client = admin_client
     """POST /agents/baselines/recompute-all loops every agent in the org."""
     api_key = seeded_db["api_key_raw"]
     await _ingest_events(client, api_key, MIN_EVENTS)

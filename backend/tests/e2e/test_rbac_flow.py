@@ -13,7 +13,7 @@ tested via the seeded API key fixture.
 import pytest
 from httpx import AsyncClient
 
-from app.core.dependencies import Actor, get_current_actor
+from app.core.dependencies import Actor, get_current_actor, get_current_org
 from app.db.models import Org  # noqa: F401  (re-exported for type clarity)
 
 
@@ -26,14 +26,23 @@ def _install_actor_override(app, seeded_db: dict, clerk_role: str | None):
         clerk_role=clerk_role,
     )
 
-    async def _override():
+    async def _actor_override():
         return (org, actor)
 
-    app.dependency_overrides[get_current_actor] = _override
+    async def _org_override():
+        return org
+
+    # Both deps need overriding: require_role uses get_current_actor,
+    # but routes also Depends(get_current_org) directly which would
+    # otherwise try to resolve the dummy Bearer JWT against Clerk
+    # and 500 on "invalid JWT" before the role check ever runs.
+    app.dependency_overrides[get_current_actor] = _actor_override
+    app.dependency_overrides[get_current_org] = _org_override
 
 
 def _clear_actor_override(app):
     app.dependency_overrides.pop(get_current_actor, None)
+    app.dependency_overrides.pop(get_current_org, None)
 
 
 @pytest.mark.asyncio

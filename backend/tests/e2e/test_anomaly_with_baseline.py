@@ -6,17 +6,26 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import AgentEvent, Incident
-from app.services.baseline_service import MIN_EVENTS
+from app.services.baseline_service import MEDIUM_QUALITY_EVENTS
 from app.services.detection_service import run_and_persist_detections
 
 
 @pytest.mark.asyncio
 async def test_anomaly_detected_after_baseline(
-    client: AsyncClient, seeded_db: dict, db: AsyncSession
+    admin_client: AsyncClient, seeded_db: dict, db: AsyncSession
 ):
-    """Normal events establish baseline, then an anomalous event triggers the anomaly detector."""
-    # 1. Ingest MIN_EVENTS normal events to build baseline
-    for i in range(MIN_EVENTS):
+    """Normal events establish baseline, then an anomalous event triggers the anomaly detector.
+
+    Needs at least MEDIUM_QUALITY_EVENTS (not just MIN_EVENTS) so
+    the baseline is classified "medium" quality — the anomaly
+    detector intentionally never fires on "low" quality baselines
+    (the effective sigma threshold is infinity) to avoid noise
+    from under-sampled agents.
+    """
+    client = admin_client
+    # 1. Ingest MEDIUM_QUALITY_EVENTS normal events to build a
+    # baseline that the anomaly detector will actually trust.
+    for i in range(MEDIUM_QUALITY_EVENTS):
         resp = await client.post(
             "/api/v1/events/ingest",
             json={

@@ -10,7 +10,10 @@ from app.services.detection_service import run_and_persist_detections
 
 
 @pytest.mark.asyncio
-async def test_incident_lifecycle(client: AsyncClient, seeded_db: dict, db: AsyncSession):
+async def test_incident_lifecycle(
+    admin_client: AsyncClient, seeded_db: dict, db: AsyncSession
+):
+    client = admin_client
     """Full incident lifecycle: trigger -> list -> acknowledge -> resolve."""
     # Ingest a malicious event to generate an incident
     resp = await client.post(

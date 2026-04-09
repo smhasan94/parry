@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.db.base import Base
-from app.db.models import Agent, ApiKey, Org, Policy
+from app.db.models import Agent, ApiKey, Org, Plan, Policy
 
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
@@ -65,7 +65,14 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture
 async def seeded_db(db: AsyncSession) -> dict:
     """Seed an org, API key, agent, and policy. Returns lookup dict."""
-    org = Org(name="E2E Test Org", clerk_org_id="clerk_e2e_test", is_active=True)
+    # Use GROWTH tier so tests can freely create agents without
+    # tripping the Free-tier 1-agent quota enforcement from plan-11.
+    org = Org(
+        name="E2E Test Org",
+        clerk_org_id="clerk_e2e_test",
+        is_active=True,
+        plan=Plan.GROWTH,
+    )
     db.add(org)
     await db.flush()
 
@@ -108,8 +115,17 @@ async def client(
 ) -> AsyncGenerator[AsyncClient, None]:
     """HTTPX async client wired to FastAPI app with DB override.
 
-    Also patches out Celery dispatch so tests don't hang on Redis connections.
-    Detection pipeline is called directly in tests via run_and_persist_detections().
+    Also patches out Celery dispatch so tests don't hang on Redis
+    connections. Detection pipeline is called directly in tests via
+    run_and_persist_detections().
+
+    **Auth note:** this fixture does NOT install an actor override,
+    so dashboard routes gated by ``require_role`` reject the seeded
+    API key (API keys resolve to VIEWER on the Bearer path since
+    the security fix in 3ec13ee). Tests that exercise admin-level
+    dashboard mutations should use the ``admin_client`` fixture
+    instead, which stamps requests with an admin user actor via
+    dependency_overrides.
     """
     from app.db.session import get_db
     from app.main import app
@@ -131,3 +147,42 @@ async def client(
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def admin_client(
+    client: AsyncClient, seeded_db: dict
+) -> AsyncGenerator[AsyncClient, None]:
+    """Client that also installs an org:admin actor override.
+
+    Bypasses the Clerk JWT verification path — every request through
+    this client is treated as being made by an admin user in the
+    seeded org. Use when a test needs to exercise admin-gated routes
+    (PATCH /incidents, POST /agents, etc.). Runtime SDK paths
+    (/proxy/check, /events/ingest) don't pass through this fixture
+    and should still send X-Parry-Secret per request.
+    """
+    from app.core.dependencies import Actor, get_current_actor, get_current_org
+    from app.main import app
+
+    org = seeded_db["org"]
+    admin_actor = Actor(
+        actor_type="user",
+        actor_id="admin-test",
+        label="admin@example.com",
+        clerk_role="org:admin",
+    )
+
+    async def _override_actor() -> tuple:
+        return (org, admin_actor)
+
+    async def _override_org():
+        return org
+
+    app.dependency_overrides[get_current_actor] = _override_actor
+    app.dependency_overrides[get_current_org] = _override_org
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_current_actor, None)
+        app.dependency_overrides.pop(get_current_org, None)
