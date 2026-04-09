@@ -14,6 +14,7 @@ import { useResourceHistory } from "@/hooks/useAuditLog";
 import { Button } from "@/components/ui/button";
 import { Activity, Clock, Cpu, Zap, History, Swords } from "lucide-react";
 import { useStartRedTeamRun } from "@/hooks/useRedTeam";
+import { CostCard } from "@/components/CostCard";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { useAgentSessions } from "@/hooks/useSession";
@@ -270,6 +271,9 @@ export function AgentDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Cost + Budget */}
+        <CostCard agentId={agentId} />
 
         {/* Agent Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

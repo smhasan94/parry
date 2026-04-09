@@ -415,6 +415,33 @@ class ApiClient {
     });
   }
 
+  // Budgets + cost
+  async listBudgets(agentId?: string): Promise<AgentBudgetResponse[]> {
+    const qs = agentId ? `?agent_id=${agentId}` : "";
+    return this.request(`/api/v1/budgets${qs}`);
+  }
+
+  async upsertBudget(body: {
+    agent_id?: string | null;
+    period: "hour" | "day" | "month";
+    cap_usd: number;
+    enabled?: boolean;
+    alert_at_pcts?: number[];
+  }): Promise<AgentBudgetResponse> {
+    return this.request("/api/v1/budgets", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async deleteBudget(budgetId: string): Promise<void> {
+    return this.request(`/api/v1/budgets/${budgetId}`, { method: "DELETE" });
+  }
+
+  async getAgentSpend(agentId: string): Promise<AgentSpendResponse> {
+    return this.request(`/api/v1/agents/${agentId}/spend`);
+  }
+
   // Agent behavioural stats (charts on AgentDetailPage)
   async getAgentStats(agentId: string, window: "7d" | "30d" | "90d"): Promise<AgentStats> {
     return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
@@ -535,6 +562,27 @@ export interface CustomRule {
   severity: CustomRuleSeverity;
   enabled: boolean;
   created_at: string;
+}
+
+export interface AgentBudgetResponse {
+  id: string;
+  org_id: string;
+  agent_id: string | null;
+  period: "hour" | "day" | "month";
+  cap_usd: number;
+  enabled: boolean;
+  alert_at_pcts: number[];
+}
+
+export interface AgentSpendResponse {
+  agent_id: string;
+  period_spend: { hour: number; day: number; month: number };
+  budgets: Array<{
+    period: string;
+    cap_usd: number;
+    spent_usd: number;
+    pct: number;
+  }>;
 }
 
 export type MCPTrustLevel = "observed" | "trusted" | "suspicious" | "blocked";
