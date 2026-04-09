@@ -268,7 +268,11 @@ async def simulate_policy(
     showing in the sample list).
     """
     if not isinstance(policy, dict) or not policy:
-        return _empty_report(days_back, error="Policy must be a non-empty object", pattern_valid=False)
+        return _empty_report(
+            days_back,
+            error="Policy must be a non-empty object",
+            pattern_valid=False,
+        )
 
     # Validate any forbidden_patterns up front so we surface errors
     # before walking the event store.

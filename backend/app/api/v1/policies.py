@@ -1,4 +1,7 @@
+import hashlib
+import json
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,10 +10,30 @@ from app.core.dependencies import Actor, get_current_actor, get_current_org
 from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
+from app.schemas.base import ParrySchema
 from app.schemas.policy import PolicyCreate, PolicyResponse, PolicyUpdate
-from app.services import audit_service, policy_service
+from app.services import audit_service, policy_regression_service, policy_service
 
 router = APIRouter()
+
+
+class SimulatePolicyRequest(ParrySchema):
+    policy: dict[str, Any]
+    days_back: int = 30
+    sample_limit: int = 10
+
+
+class SimulatePolicyResponse(ParrySchema):
+    days_checked: int
+    total_events_checked: int
+    matched_count: int
+    match_rate: float
+    by_agent: dict[str, int]
+    by_day: dict[str, int]
+    samples: list[dict[str, Any]]
+    truncated: bool
+    pattern_is_valid: bool
+    error: str | None = None
 
 
 def _policy_summary(policy) -> dict:
@@ -155,3 +178,52 @@ async def delete_policy(
         details=snapshot,
     )
     await db.commit()
+
+
+@router.post("/simulate", response_model=SimulatePolicyResponse)
+async def simulate_policy(
+    body: SimulatePolicyRequest,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> SimulatePolicyResponse:
+    """Run a candidate policy against the org's recent events.
+
+    Read-only — does NOT persist anything to the policies table or
+    create Detection rows. Lets admins preview the impact of adding
+    a blocked tool, blocking a domain, or tightening a forbidden
+    pattern before saving the policy. Audit-logged with a hash of
+    the candidate policy keys (not values) to keep the trail compact.
+    """
+    org, actor = org_actor
+
+    report = await policy_regression_service.simulate_policy(
+        db,
+        org.id,
+        policy=body.policy,
+        days_back=max(1, min(body.days_back, 90)),
+        sample_limit=max(1, min(body.sample_limit, 50)),
+    )
+
+    policy_hash = hashlib.sha256(
+        json.dumps(body.policy, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()[:16]
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="policy.simulated",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="policy",
+        resource_id=policy_hash,
+        details={
+            "policy_hash": policy_hash,
+            "policy_keys": sorted(body.policy.keys()),
+            "days_back": body.days_back,
+            "matched_count": report["matched_count"],
+            "total_events_checked": report["total_events_checked"],
+            "truncated": report["truncated"],
+        },
+    )
+    await db.commit()
+    return SimulatePolicyResponse(**report)

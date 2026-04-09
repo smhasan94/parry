@@ -18,7 +18,13 @@ RATE_LIMITS: dict[str, int] = {
     "/api/v1/events": 60,  # Event listing
     "/api/v1/agents": 60,
     "/api/v1/incidents": 60,
+    # Regression simulation endpoints — expensive (full event scan).
+    # Listed BEFORE the broader /policies prefix so they win the
+    # longest-match in `_get_limit_for_path`.
+    "/api/v1/policies/simulate": 10,
+    "/api/v1/custom-rules/simulate": 10,
     "/api/v1/policies": 60,
+    "/api/v1/custom-rules": 60,
     "/api/v1/api-keys": 30,
     "/api/v1/billing": 20,
     "/api/v1/webhooks": 100,  # Webhooks from external services
