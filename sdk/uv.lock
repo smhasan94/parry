@@ -3315,6 +3315,7 @@ all = [
     { name = "crewai" },
     { name = "langchain-core" },
     { name = "llama-index-core" },
+    { name = "mcp" },
     { name = "openai" },
     { name = "pyautogen" },
     { name = "pydantic-ai" },
@@ -3339,6 +3340,9 @@ langchain = [
 llamaindex = [
     { name = "llama-index-core" },
 ]
+mcp = [
+    { name = "mcp" },
+]
 openai = [
     { name = "openai" },
 ]
@@ -3357,6 +3361,8 @@ requires-dist = [
     { name = "langchain-core", marker = "extra == 'langchain'", specifier = ">=0.3.0" },
     { name = "llama-index-core", marker = "extra == 'all'", specifier = ">=0.10.0" },
     { name = "llama-index-core", marker = "extra == 'llamaindex'", specifier = ">=0.10.0" },
+    { name = "mcp", marker = "extra == 'all'", specifier = ">=1.0.0" },
+    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
     { name = "openai", marker = "extra == 'all'", specifier = ">=1.50.0" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=1.50.0" },
     { name = "pyautogen", marker = "extra == 'all'", specifier = ">=0.2.0" },
@@ -3367,7 +3373,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
 ]
-provides-extras = ["openai", "anthropic", "langchain", "crewai", "autogen", "llamaindex", "pydantic-ai", "all", "dev"]
+provides-extras = ["openai", "anthropic", "langchain", "crewai", "autogen", "llamaindex", "pydantic-ai", "mcp", "all", "dev"]
 
 [[package]]
 name = "pathable"
