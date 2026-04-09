@@ -10,6 +10,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Numeric,
     PrimaryKeyConstraint,
     String,
     Text,
@@ -203,6 +204,9 @@ class AgentEvent(Base, TimestampMixin):
     tool_calls: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    estimated_cost_usd: Mapped[float] = mapped_column(
+        Numeric(12, 8), default=0, nullable=False, server_default="0"
+    )
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     session: Mapped["AgentSession | None"] = relationship(back_populates="events")
@@ -445,4 +449,39 @@ class MCPServer(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             "reputation BETWEEN 0 AND 100",
             name="ck_mcp_servers_reputation",
         ),
+    )
+
+
+# ── Budget ──────────────────────────────────────────────────────
+
+
+class AgentBudget(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Per-agent (or org-wide default) spend cap.
+
+    When ``agent_id`` is NULL the budget acts as the org-wide default
+    for any agent that doesn't have its own row. Period is one of
+    hour / day / month, enforced via Redis counters in budget_service.
+    """
+
+    __tablename__ = "agent_budgets"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    agent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=True
+    )
+    period: Mapped[str] = mapped_column(Text, nullable=False)
+    cap_usd: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, server_default="true"
+    )
+    alert_at_pcts: Mapped[list] = mapped_column(
+        JSONB, nullable=False, server_default="[75, 90, 100]"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "agent_id", "period", name="uq_agent_budgets_org_agent_period"),
+        CheckConstraint("period IN ('hour', 'day', 'month')", name="ck_agent_budgets_period"),
+        CheckConstraint("cap_usd > 0", name="ck_agent_budgets_cap_positive"),
     )

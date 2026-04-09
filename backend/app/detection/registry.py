@@ -1,5 +1,10 @@
 from app.detection.base import BaseDetector
 from app.detection.detectors.anomaly import AnomalyDetector
+from app.detection.detectors.cost_explosion import (
+    CostExploitLoopDetector,
+    CostExploitModelEscalationDetector,
+    CostExploitVerbosityDetector,
+)
 from app.detection.detectors.custom_rules import CustomRulesDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
@@ -18,6 +23,9 @@ DETECTORS: list[BaseDetector] = [
     CustomRulesDetector(),
     AnomalyDetector(),
     MCPManifestDetector(),
+    CostExploitLoopDetector(),
+    CostExploitVerbosityDetector(),
+    CostExploitModelEscalationDetector(),
 ]
 
 DETECTOR_MAP: dict[str, BaseDetector] = {d.name: d for d in DETECTORS}

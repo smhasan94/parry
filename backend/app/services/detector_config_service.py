@@ -19,6 +19,9 @@ DEFAULT_DETECTOR_CONFIG: dict[str, dict[str, Any]] = {
     "custom_rules": {"trigger_threshold": 0.5, "enabled": True},
     "llm_fallback": {"trigger_threshold": 0.5, "enabled": True},
     "mcp_manifest": {"trigger_threshold": 0.5, "enabled": True},
+    "cost_exploit_loop": {"trigger_threshold": 0.5, "enabled": True},
+    "cost_exploit_verbosity": {"trigger_threshold": 0.5, "enabled": True},
+    "cost_exploit_model_escalation": {"trigger_threshold": 0.5, "enabled": True},
 }
 
 DETECTOR_NAMES = list(DEFAULT_DETECTOR_CONFIG.keys())

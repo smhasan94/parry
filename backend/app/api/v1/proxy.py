@@ -24,12 +24,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor, get_org_from_sdk_key
 from app.core.event_bus import publish_blocked_event
-from app.db.models import Org, Policy, ResponseScanMode
+from app.db.models import Agent, Org, Policy, ResponseScanMode
 from app.db.session import get_db
 from app.proxy.check import run_blocking_check
 from app.proxy.response_scan import scan_response
 from app.schemas.base import ParrySchema
-from app.services import audit_service
+from app.services import audit_service, budget_service
 
 log = structlog.get_logger()
 
@@ -308,6 +308,46 @@ async def proxy_check(
             model=body.model,
             agent_id=body.agent_id,
         )
+        return ProxyCheckResponse(
+            allowed=check.allowed,
+            reason=check.reason,
+            detector=check.detector,
+            severity=check.severity.value if check.severity else None,
+            confidence=check.confidence,
+        )
+
+    # Budget enforcement — runs after detection checks pass
+    if body.agent_id:
+        try:
+            agent_result = await db.execute(
+                select(Agent).where(Agent.org_id == org.id, Agent.name == body.agent_id)
+            )
+            agent = agent_result.scalar_one_or_none()
+            if agent is not None:
+                budget_ok, budget_reason = await budget_service.check_spend(
+                    db, agent.id, event_cost=0.0
+                )
+                if not budget_ok:
+                    publish_blocked_event(
+                        org_id=str(org.id),
+                        detector="budget_enforcement",
+                        reason=budget_reason or "Budget exceeded",
+                        severity="medium",
+                        confidence=1.0,
+                        prompt=body.prompt,
+                        model=body.model,
+                        agent_id=body.agent_id,
+                    )
+                    return ProxyCheckResponse(
+                        allowed=False,
+                        reason=budget_reason or "Budget exceeded",
+                        detector="budget_enforcement",
+                        severity="medium",
+                        confidence=1.0,
+                    )
+        except Exception:
+            log.debug("proxy.budget_check_failed", exc_info=True)
+
     return ProxyCheckResponse(
         allowed=check.allowed,
         reason=check.reason,

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
+from app.core.model_pricing import estimate_cost
 from app.db.models import Agent, AgentEvent, AgentSession
 
 log = structlog.get_logger()
@@ -84,6 +85,12 @@ async def ingest_event(
         else:
             db_session_id = existing.id
 
+    # Estimate USD cost from the model pricing registry. Use an 80/20
+    # input/output token split when only a total count is available.
+    input_tokens = int((token_count or 0) * 0.8)
+    output_tokens = (token_count or 0) - input_tokens
+    cost = estimate_cost(model, input_tokens, output_tokens)
+
     event = AgentEvent(
         agent_id=agent.id,
         session_id=db_session_id,
@@ -93,6 +100,7 @@ async def ingest_event(
         tool_calls=tool_calls,
         latency_ms=latency_ms,
         token_count=token_count,
+        estimated_cost_usd=cost,
         timestamp=timestamp or datetime.now(UTC),
         metadata_=metadata,
     )

@@ -35,6 +35,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "red_team": False,
         "red_team_live": False,
         "mcp_security": False,
+        "cost_exploit_detection": False,
+        "budget_enforcement": False,
     },
     Plan.GROWTH: {
         "max_agents": 10,
@@ -45,6 +47,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "red_team": True,
         "red_team_live": False,
         "mcp_security": True,
+        "cost_exploit_detection": True,
+        "budget_enforcement": True,
     },
     Plan.PRO: {
         "max_agents": 50,
@@ -55,6 +59,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "red_team": True,
         "red_team_live": True,
         "mcp_security": True,
+        "cost_exploit_detection": True,
+        "budget_enforcement": True,
     },
     Plan.ENTERPRISE: {
         "max_agents": None,
@@ -65,6 +71,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "red_team": True,
         "red_team_live": True,
         "mcp_security": True,
+        "cost_exploit_detection": True,
+        "budget_enforcement": True,
     },
 }
 

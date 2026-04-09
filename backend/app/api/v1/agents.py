@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_org
 from app.core.rbac import Role, require_role
-from app.db.models import Agent, Org
+from app.db.models import Agent, AgentBudget, Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
-from app.services import agent_service, audit_service, plan_service, session_service
+from app.services import agent_service, audit_service, budget_service, plan_service, session_service
 from app.services.agent_stats_service import get_or_build_agent_stats
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
 from app.services.health_score_service import get_or_compute_health
@@ -227,6 +227,40 @@ async def recompute_baseline(
     await db.commit()
     await db.refresh(agent)
     return AgentResponse.model_validate(agent)
+
+
+@router.get(
+    "/{agent_id}/spend",
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def get_agent_spend(
+    agent_id: uuid.UUID,
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Current spend counters and configured budgets for an agent."""
+    await agent_service.get_agent(db, org.id, agent_id)
+    period_spend = {
+        "hour": budget_service.get_spend(agent_id, "hour"),
+        "day": budget_service.get_spend(agent_id, "day"),
+        "month": budget_service.get_spend(agent_id, "month"),
+    }
+    budget_query = select(AgentBudget).where(
+        AgentBudget.org_id == org.id,
+        (AgentBudget.agent_id == agent_id) | AgentBudget.agent_id.is_(None),
+    )
+    result = await db.execute(budget_query)
+    budgets = [
+        {
+            "id": str(b.id),
+            "agent_id": str(b.agent_id) if b.agent_id else None,
+            "period": b.period,
+            "cap_usd": float(b.cap_usd),
+            "enabled": b.enabled,
+        }
+        for b in result.scalars().all()
+    ]
+    return {"period_spend": period_spend, "budgets": budgets}
 
 
 @router.delete(
