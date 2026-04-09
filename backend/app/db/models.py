@@ -399,3 +399,50 @@ class RedTeamResult(Base, UUIDPrimaryKeyMixin):
     )
 
     run: Mapped["RedTeamRun"] = relationship(back_populates="results")
+
+
+# ── MCP ──────────────────────────────────────────────────────────
+
+
+class MCPServer(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """A Model Context Protocol server an org's agent has connected to.
+
+    One row per unique ``(org_id, server_uri)``. Each row caches the
+    canonical manifest + a sha256 hash for drift detection, plus a
+    trust level that gates whether `SentinelMCPClient` will allow
+    subsequent tool calls through.
+    """
+
+    __tablename__ = "mcp_servers"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    server_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    server_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    manifest_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    manifest: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    tool_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    trust_level: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="observed"
+    )
+    reputation: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    hash_history: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "server_uri", name="uq_mcp_servers_org_uri"),
+        CheckConstraint(
+            "trust_level IN ('observed', 'trusted', 'suspicious', 'blocked')",
+            name="ck_mcp_servers_trust_level",
+        ),
+        CheckConstraint(
+            "reputation BETWEEN 0 AND 100",
+            name="ck_mcp_servers_reputation",
+        ),
+    )

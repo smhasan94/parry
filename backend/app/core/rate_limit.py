@@ -28,6 +28,12 @@ RATE_LIMITS: dict[str, int] = {
     # and weekly regression checks; anything more is abuse.
     "/api/v1/red-team/runs": 5,
     "/api/v1/red-team": 30,
+    # MCP SDK-runtime paths. Connections are rare (once per agent
+    # start), so 30/min is plenty. Dashboard reads under /mcp/servers
+    # get the default 60/min via fallthrough.
+    "/api/v1/mcp/connections": 30,
+    "/api/v1/mcp/events": 300,
+    "/api/v1/mcp": 60,
     "/api/v1/policies": 60,
     "/api/v1/custom-rules": 60,
     "/api/v1/api-keys": 30,

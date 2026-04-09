@@ -3,6 +3,7 @@ from app.detection.detectors.anomaly import AnomalyDetector
 from app.detection.detectors.custom_rules import CustomRulesDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
+from app.detection.detectors.mcp_manifest import MCPManifestDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
 from app.detection.detectors.prompt_injection import PromptInjectionDetector
 from app.detection.detectors.tool_misuse import ToolMisuseDetector
@@ -16,6 +17,7 @@ DETECTORS: list[BaseDetector] = [
     PrivilegeEscalationDetector(),
     CustomRulesDetector(),
     AnomalyDetector(),
+    MCPManifestDetector(),
 ]
 
 DETECTOR_MAP: dict[str, BaseDetector] = {d.name: d for d in DETECTORS}

@@ -51,6 +51,7 @@ _KNOWN_DETECTORS = {
     "anomaly",
     "custom_rules",
     "llm_fallback",
+    "mcp_manifest",
 }
 
 

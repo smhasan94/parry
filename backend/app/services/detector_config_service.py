@@ -18,6 +18,7 @@ DEFAULT_DETECTOR_CONFIG: dict[str, dict[str, Any]] = {
     "anomaly": {"trigger_threshold": 0.5, "enabled": True, "sigma_threshold": 3.0},
     "custom_rules": {"trigger_threshold": 0.5, "enabled": True},
     "llm_fallback": {"trigger_threshold": 0.5, "enabled": True},
+    "mcp_manifest": {"trigger_threshold": 0.5, "enabled": True},
 }
 
 DETECTOR_NAMES = list(DEFAULT_DETECTOR_CONFIG.keys())

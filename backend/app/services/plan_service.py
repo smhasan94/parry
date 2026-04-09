@@ -34,6 +34,7 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "compliance_export": False,
         "red_team": False,
         "red_team_live": False,
+        "mcp_security": False,
     },
     Plan.GROWTH: {
         "max_agents": 10,
@@ -43,6 +44,7 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "compliance_export": True,
         "red_team": True,
         "red_team_live": False,
+        "mcp_security": True,
     },
     Plan.PRO: {
         "max_agents": 50,
@@ -52,6 +54,7 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "compliance_export": True,
         "red_team": True,
         "red_team_live": True,
+        "mcp_security": True,
     },
     Plan.ENTERPRISE: {
         "max_agents": None,
@@ -61,6 +64,7 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "compliance_export": True,
         "red_team": True,
         "red_team_live": True,
+        "mcp_security": True,
     },
 }
 
