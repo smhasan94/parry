@@ -396,6 +396,25 @@ class ApiClient {
     return this.request("/api/v1/red-team/attacks");
   }
 
+  // MCP
+  async listMCPServers(): Promise<MCPServerSummary[]> {
+    return this.request("/api/v1/mcp/servers");
+  }
+
+  async getMCPServer(serverId: string): Promise<MCPServerDetail> {
+    return this.request(`/api/v1/mcp/servers/${serverId}`);
+  }
+
+  async updateMCPServer(
+    serverId: string,
+    patch: { trust_level?: string; server_name?: string },
+  ): Promise<MCPServerSummary> {
+    return this.request(`/api/v1/mcp/servers/${serverId}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+  }
+
   // Agent behavioural stats (charts on AgentDetailPage)
   async getAgentStats(agentId: string, window: "7d" | "30d" | "90d"): Promise<AgentStats> {
     return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
@@ -516,6 +535,38 @@ export interface CustomRule {
   severity: CustomRuleSeverity;
   enabled: boolean;
   created_at: string;
+}
+
+export type MCPTrustLevel = "observed" | "trusted" | "suspicious" | "blocked";
+
+export interface MCPServerSummary {
+  id: string;
+  server_uri: string;
+  server_name: string | null;
+  trust_level: MCPTrustLevel;
+  reputation: number;
+  tool_count: number;
+  manifest_hash: string;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+export interface MCPHashHistoryEntry {
+  hash: string;
+  seen_at?: string;
+  changed_at?: string;
+  previous_hash?: string;
+}
+
+export interface MCPServerDetail extends MCPServerSummary {
+  manifest: {
+    tools?: Array<{
+      name: string;
+      description?: string;
+      inputSchema?: Record<string, unknown>;
+    }>;
+  };
+  hash_history: MCPHashHistoryEntry[];
 }
 
 export interface RedTeamRunSummary {

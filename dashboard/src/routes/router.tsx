@@ -15,6 +15,8 @@ import { SessionReplayPage } from "@/pages/SessionReplayPage";
 import { SLOPage } from "@/pages/SLOPage";
 import { RedTeamPage } from "@/pages/RedTeamPage";
 import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
+import { MCPServersPage } from "@/pages/MCPServersPage";
+import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -113,6 +115,18 @@ const redTeamRunRoute = createRoute({
   component: RedTeamRunDetailPage,
 });
 
+const mcpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mcp",
+  component: MCPServersPage,
+});
+
+const mcpServerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mcp/$serverId",
+  component: MCPServerDetailPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -126,6 +140,8 @@ const routeTree = rootRoute.addChildren([
   sloRoute,
   redTeamRoute,
   redTeamRunRoute,
+  mcpRoute,
+  mcpServerRoute,
   settingsRoute,
   setupRoute,
   auditRoute,
