@@ -19,6 +19,7 @@ celery_app = Celery(
         "app.workers.health_score_task",
         "app.workers.metered_usage_task",
         "app.workers.audit_export_task",
+        "app.workers.red_team_task",
     ],
 )
 

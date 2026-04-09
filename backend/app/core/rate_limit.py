@@ -23,6 +23,11 @@ RATE_LIMITS: dict[str, int] = {
     # longest-match in `_get_limit_for_path`.
     "/api/v1/policies/simulate": 10,
     "/api/v1/custom-rules/simulate": 10,
+    # Red-team runs are expensive — full corpus replay through the
+    # detection pipeline. 5/hour per client is plenty for sales demos
+    # and weekly regression checks; anything more is abuse.
+    "/api/v1/red-team/runs": 5,
+    "/api/v1/red-team": 30,
     "/api/v1/policies": 60,
     "/api/v1/custom-rules": 60,
     "/api/v1/api-keys": 30,

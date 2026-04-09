@@ -4,8 +4,10 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     PrimaryKeyConstraint,
@@ -323,3 +325,77 @@ class AuditLog(Base, UUIDPrimaryKeyMixin):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
+
+
+# ── Red Team ─────────────────────────────────────────────────────
+
+
+class RedTeamRun(Base, UUIDPrimaryKeyMixin):
+    """One execution of the bundled attack corpus against an agent.
+
+    Has its own storage — never references AgentEvent or Detection so
+    a sandbox replay can never contaminate real telemetry.
+    """
+
+    __tablename__ = "red_team_runs"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    agent_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    mode: Mapped[str] = mapped_column(String(16), nullable=False)  # sandbox|live
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False
+    )  # queued|running|completed|failed
+    total_attacks: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    detected_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    overall_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    grade: Mapped[str | None] = mapped_column(String(1), nullable=True)
+    category_scores: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    started_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("mode IN ('sandbox', 'live')", name="ck_red_team_runs_mode"),
+        CheckConstraint(
+            "status IN ('queued', 'running', 'completed', 'failed')",
+            name="ck_red_team_runs_status",
+        ),
+    )
+
+    results: Mapped[list["RedTeamResult"]] = relationship(
+        back_populates="run",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+
+class RedTeamResult(Base, UUIDPrimaryKeyMixin):
+    __tablename__ = "red_team_results"
+
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("red_team_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    attack_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    attack_category: Mapped[str] = mapped_column(String(64), nullable=False)
+    attack_severity: Mapped[str] = mapped_column(String(16), nullable=False)
+    detected: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    detectors_fired: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    max_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    response_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    run: Mapped["RedTeamRun"] = relationship(back_populates="results")

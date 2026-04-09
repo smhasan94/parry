@@ -32,6 +32,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "retention_days": 30,
         "custom_rules": False,
         "compliance_export": False,
+        "red_team": False,
+        "red_team_live": False,
     },
     Plan.GROWTH: {
         "max_agents": 10,
@@ -39,6 +41,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "retention_days": 365,
         "custom_rules": True,
         "compliance_export": True,
+        "red_team": True,
+        "red_team_live": False,
     },
     Plan.PRO: {
         "max_agents": 50,
@@ -46,6 +50,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "retention_days": 365,
         "custom_rules": True,
         "compliance_export": True,
+        "red_team": True,
+        "red_team_live": True,
     },
     Plan.ENTERPRISE: {
         "max_agents": None,
@@ -53,6 +59,8 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "retention_days": None,
         "custom_rules": True,
         "compliance_export": True,
+        "red_team": True,
+        "red_team_live": True,
     },
 }
 
