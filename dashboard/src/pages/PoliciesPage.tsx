@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { usePolicies, useCreatePolicy, useDeletePolicy } from "@/hooks/usePolicies";
+import { useSimulatePolicy } from "@/hooks/usePolicyRegression";
+import { RegressionPreviewPanel } from "@/components/RegressionPreviewPanel";
 import { FileCheck, Plus, Trash2 } from "lucide-react";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 
@@ -13,6 +15,7 @@ export function PoliciesPage() {
   const { data: policies = [], isLoading, isError, error, refetch } = usePolicies();
   const createPolicy = useCreatePolicy();
   const deletePolicy = useDeletePolicy();
+  const simulate = useSimulatePolicy();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -122,6 +125,38 @@ export function PoliciesPage() {
               <Button onClick={handleCreate} disabled={createPolicy.isPending}>
                 {createPolicy.isPending ? "Creating..." : "Create Policy"}
               </Button>
+
+              <RegressionPreviewPanel
+                disabled={
+                  !form.blocked_tools &&
+                  !form.forbidden_patterns &&
+                  !form.max_token_budget
+                }
+                trigger={`${form.blocked_tools}|${form.forbidden_patterns}|${form.max_token_budget}`}
+                simulate={() => {
+                  const candidate: Record<string, unknown> = {};
+                  if (form.blocked_tools) {
+                    candidate.blocked_tools = form.blocked_tools
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                  }
+                  if (form.forbidden_patterns) {
+                    candidate.forbidden_patterns = form.forbidden_patterns
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                  }
+                  if (form.max_token_budget) {
+                    candidate.max_token_budget = Number(form.max_token_budget);
+                  }
+                  return simulate.mutateAsync({
+                    policy: candidate,
+                    days_back: 30,
+                    sample_limit: 10,
+                  });
+                }}
+              />
             </CardContent>
           </Card>
         )}

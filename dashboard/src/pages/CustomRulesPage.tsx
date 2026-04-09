@@ -12,6 +12,8 @@ import {
   useUpdateCustomRule,
 } from "@/hooks/useCustomRules";
 import { useRole } from "@/hooks/useRole";
+import { useSimulateCustomRule } from "@/hooks/usePolicyRegression";
+import { RegressionPreviewPanel } from "@/components/RegressionPreviewPanel";
 import type { CustomRule, CustomRuleInput } from "@/lib/api";
 import { FileCode, Plus, Trash2, X } from "lucide-react";
 
@@ -200,6 +202,7 @@ function RuleEditor({ onSubmit, onCancel, submitLabel }: EditorProps) {
   const [draft, setDraft] = useState<CustomRuleInput>(EMPTY_DRAFT);
   const [sample, setSample] = useState("");
   const testMutation = useTestCustomRule();
+  const simulate = useSimulateCustomRule();
 
   // Auto-test when pattern or sample changes (debounced via effect)
   useEffect(() => {
@@ -304,6 +307,19 @@ function RuleEditor({ onSubmit, onCancel, submitLabel }: EditorProps) {
             </p>
           )}
         </div>
+
+        <RegressionPreviewPanel
+          disabled={draft.pattern.length < 3 || !!testError}
+          trigger={`${draft.pattern}|${draft.target}`}
+          simulate={() =>
+            simulate.mutateAsync({
+              pattern: draft.pattern,
+              target: draft.target,
+              days_back: 30,
+              sample_limit: 10,
+            })
+          }
+        />
 
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button size="sm" variant="ghost" onClick={onCancel}>

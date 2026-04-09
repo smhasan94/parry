@@ -344,6 +344,29 @@ class ApiClient {
     });
   }
 
+  async simulateCustomRule(body: {
+    pattern: string;
+    target: "prompt" | "response" | "both";
+    days_back?: number;
+    sample_limit?: number;
+  }): Promise<SimulationReport> {
+    return this.request("/api/v1/custom-rules/simulate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async simulatePolicy(body: {
+    policy: Record<string, unknown>;
+    days_back?: number;
+    sample_limit?: number;
+  }): Promise<SimulationReport> {
+    return this.request("/api/v1/policies/simulate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
   // Agent behavioural stats (charts on AgentDetailPage)
   async getAgentStats(agentId: string, window: "7d" | "30d" | "90d"): Promise<AgentStats> {
     return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
@@ -464,6 +487,29 @@ export interface CustomRule {
   severity: CustomRuleSeverity;
   enabled: boolean;
   created_at: string;
+}
+
+export interface SimulationSample {
+  event_id: string;
+  agent_name: string;
+  timestamp: string;
+  matched_field: "prompt" | "response";
+  prompt_preview: string;
+  response_preview: string;
+  match_span: string;
+}
+
+export interface SimulationReport {
+  days_checked: number;
+  total_events_checked: number;
+  matched_count: number;
+  match_rate: number;
+  by_agent: Record<string, number>;
+  by_day: Record<string, number>;
+  samples: SimulationSample[];
+  truncated: boolean;
+  pattern_is_valid: boolean;
+  error: string | null;
 }
 
 export interface CustomRuleInput {
