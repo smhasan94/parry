@@ -85,6 +85,25 @@ async def run_and_persist_detections(
 
     await db.flush()
 
+    # Dispatch webhooks for triggered detections
+    for d in detections:
+        if d.triggered:
+            try:
+                from app.services.webhook_dispatch_service import dispatch_event
+
+                await dispatch_event(db, agent.org_id, "detection.triggered", {
+                    "detection_id": str(d.id),
+                    "detector": d.detector,
+                    "severity": d.severity.value,
+                    "confidence": d.confidence,
+                    "reason": d.reason[:200],
+                    "event_id": str(d.event_id),
+                    "agent_id": str(agent.id),
+                    "agent_name": agent.name,
+                })
+            except Exception:
+                log.debug("webhook.detection_dispatch_failed", exc_info=True)
+
     # Dispatch threat intel extraction for high-confidence detections
     for d in detections:
         if d.triggered and d.confidence >= 0.7:
@@ -121,6 +140,21 @@ async def run_and_persist_detections(
             detection_count=len(triggered_results),
         )
         record_incident_created(severity=incident.severity.value)
+
+        # Dispatch webhook for incident creation
+        try:
+            from app.services.webhook_dispatch_service import dispatch_event as wh_dispatch
+
+            await wh_dispatch(db, agent.org_id, "incident.created", {
+                "incident_id": str(incident.id),
+                "title": incident.title,
+                "severity": incident.severity.value,
+                "agent_id": str(agent.id),
+                "agent_name": agent.name,
+                "detection_count": len(triggered_results),
+            })
+        except Exception:
+            log.debug("webhook.incident_dispatch_failed", exc_info=True)
 
         # Dispatch alerts (Slack, etc.) if the org has alert_config
         from app.core.config import settings

@@ -29,7 +29,7 @@ from app.db.session import get_db
 from app.proxy.check import run_blocking_check
 from app.proxy.response_scan import scan_response
 from app.schemas.base import ParrySchema
-from app.services import audit_service, budget_service, permission_service
+from app.services import audit_service, budget_service, permission_service, webhook_dispatch_service
 
 log = structlog.get_logger()
 
@@ -323,6 +323,17 @@ async def proxy_check(
                                 model=body.model,
                                 agent_id=body.agent_id,
                             )
+                            # Fire webhook for permission denial
+                            try:
+                                await webhook_dispatch_service.dispatch_event(
+                                    db, org.id, "permission.denied", {
+                                        "agent_id": body.agent_id,
+                                        "tool_name": tool_name,
+                                        "reason": perm_result.reason,
+                                    },
+                                )
+                            except Exception:
+                                pass
                             return ProxyCheckResponse(
                                 allowed=False,
                                 reason=perm_result.reason,

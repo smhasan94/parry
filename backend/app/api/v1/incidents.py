@@ -8,7 +8,7 @@ from app.core.rbac import Role, require_role
 from app.db.models import IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.incident import IncidentListResponse, IncidentResponse, IncidentUpdate
-from app.services import audit_service, incident_service, plan_service, replay_service
+from app.services import audit_service, incident_service, plan_service, replay_service, webhook_dispatch_service
 
 router = APIRouter()
 
@@ -92,6 +92,21 @@ async def update_incident(
                 "severity": incident.severity.value,
             },
         )
+
+    # Dispatch webhook on status change
+    if body.status is not None and body.status.value != previous_status:
+        try:
+            await webhook_dispatch_service.dispatch_event(
+                db, org.id, f"incident.{body.status.value}", {
+                    "incident_id": str(incident_id),
+                    "title": incident.title,
+                    "severity": incident.severity.value,
+                    "previous_status": previous_status,
+                    "new_status": body.status.value,
+                },
+            )
+        except Exception:
+            pass
 
     await db.commit()
     return IncidentResponse.model_validate(incident)
