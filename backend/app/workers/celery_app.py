@@ -25,6 +25,7 @@ celery_app = Celery(
         "app.workers.compliance_refresh_task",
         "app.workers.threat_intel_task",
         "app.workers.webhook_delivery_task",
+        "app.workers.scheduled_report_task",
     ],
 )
 
@@ -58,6 +59,11 @@ celery_app.conf.update(
             "task": "compliance_refresh",
             # Daily at 03:00 UTC — after metered usage, before supplier refresh.
             "schedule": crontab(hour=3, minute=0),
+        },
+        "send-due-reports": {
+            "task": "send_due_reports",
+            # Hourly check for due scheduled reports.
+            "schedule": crontab(minute=30),
         },
         "threat-intel-decay": {
             "task": "threat_intel_decay",
