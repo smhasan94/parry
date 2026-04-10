@@ -208,6 +208,21 @@ export interface PostureResponse {
   obligations: Obligation[];
 }
 
+// ── Scheduled Reports ────────────────────────────────────────────
+
+export interface ScheduledReport {
+  id: string;
+  org_id: string;
+  schedule: "weekly" | "monthly";
+  recipients: string[];
+  report_type: string;
+  is_active: boolean;
+  last_sent_at: string | null;
+  next_send_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Agent Groups ────────────────────────────────────────────────
 
 export interface AgentGroup {

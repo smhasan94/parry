@@ -632,6 +632,37 @@ class ApiClient {
     });
   }
 
+  // ── Scheduled Reports ─────────────────────────────────────────
+
+  async listScheduledReports(): Promise<import("./types").ScheduledReport[]> {
+    return this.request("/api/v1/scheduled-reports");
+  }
+
+  async createScheduledReport(data: {
+    schedule: string;
+    recipients: string[];
+    report_type?: string;
+  }): Promise<import("./types").ScheduledReport> {
+    return this.request("/api/v1/scheduled-reports", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateScheduledReport(
+    id: string,
+    data: Record<string, unknown>,
+  ): Promise<import("./types").ScheduledReport> {
+    return this.request(`/api/v1/scheduled-reports/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteScheduledReport(id: string): Promise<void> {
+    return this.request(`/api/v1/scheduled-reports/${id}`, { method: "DELETE" });
+  }
+
   // ── Agent Groups ──────────────────────────────────────────────
 
   async listAgentGroups(): Promise<import("./types").AgentGroup[]> {

@@ -9,9 +9,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRole } from "@/hooks/useRole";
 import { api } from "@/lib/api";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { Download, FileText, Loader2, Clock, Plus, Trash2 } from "lucide-react";
+import type { ScheduledReport } from "@/lib/types";
 
 /**
  * Compliance Report export UI.
@@ -273,7 +276,138 @@ export function ReportsPage() {
             )}
           </CardContent>
         </Card>
+        {/* Scheduled Reports */}
+        <ScheduledReportsCard />
       </div>
     </div>
+  );
+}
+
+function ScheduledReportsCard() {
+  const qc = useQueryClient();
+  const { data: schedules = [], isLoading } = useQuery({
+    queryKey: ["scheduled-reports"],
+    queryFn: () => api.listScheduledReports(),
+  });
+  const createSchedule = useMutation({
+    mutationFn: (data: { schedule: string; recipients: string[]; report_type?: string }) =>
+      api.createScheduledReport(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["scheduled-reports"] });
+      toast("Report schedule created", "success");
+    },
+    onError: (err: Error) => toast(err.message, "error"),
+  });
+  const deleteSchedule = useMutation({
+    mutationFn: (id: string) => api.deleteScheduledReport(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["scheduled-reports"] });
+      toast("Schedule removed", "success");
+    },
+  });
+
+  const { can } = useRole();
+  const canCreate = can("admin");
+  const [showCreate, setShowCreate] = useState(false);
+  const [schedule, setSchedule] = useState("weekly");
+  const [emails, setEmails] = useState("");
+
+  function handleCreate() {
+    const recipients = emails.split(",").map((e) => e.trim()).filter(Boolean);
+    if (!recipients.length) return;
+    createSchedule.mutate(
+      { schedule, recipients },
+      { onSuccess: () => { setEmails(""); setShowCreate(false); } },
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Scheduled Reports
+          </span>
+          {canCreate && (
+            <Button size="sm" variant="outline" onClick={() => setShowCreate(!showCreate)}>
+              <Plus className="mr-1 h-3 w-3" />
+              New Schedule
+            </Button>
+          )}
+        </CardTitle>
+        <CardDescription>
+          Automated security report digests delivered to your team via email
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {showCreate && (
+          <div className="space-y-2 rounded border p-3">
+            <div className="flex gap-2">
+              <select
+                className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
+              >
+                <option value="weekly">Weekly (Monday)</option>
+                <option value="monthly">Monthly (1st)</option>
+              </select>
+              <Input
+                value={emails}
+                onChange={(e) => setEmails(e.target.value)}
+                placeholder="alice@acme.com, bob@acme.com"
+                className="flex-1 text-sm"
+              />
+              <Button size="sm" onClick={handleCreate} disabled={createSchedule.isPending}>
+                {createSchedule.isPending ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <p className="text-xs text-muted-foreground">Loading...</p>
+        ) : schedules.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No report schedules configured. Create one to receive automated
+            security digests.
+          </p>
+        ) : (
+          schedules.map((s: ScheduledReport) => (
+            <div key={s.id} className="flex items-center justify-between rounded border p-3 text-xs">
+              <div>
+                <span className="font-medium capitalize">{s.schedule}</span>
+                <span className="mx-2 text-muted-foreground">→</span>
+                <span className="text-muted-foreground">
+                  {s.recipients.join(", ")}
+                </span>
+                <div className="mt-1 text-muted-foreground">
+                  Next: {new Date(s.next_send_at).toLocaleDateString()}
+                  {s.last_sent_at && (
+                    <span className="ml-2">
+                      Last: {new Date(s.last_sent_at).toLocaleDateString()}
+                    </span>
+                  )}
+                  {!s.is_active && (
+                    <span className="ml-2 rounded bg-red-100 px-1 text-red-700">Paused</span>
+                  )}
+                </div>
+              </div>
+              {canCreate && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => deleteSchedule.mutate(s.id)}
+                  disabled={deleteSchedule.isPending}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 }
