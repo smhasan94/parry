@@ -18,7 +18,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import AgentPermission
+from app.db.models import Agent, AgentPermission
 
 log = structlog.get_logger()
 
@@ -58,7 +58,23 @@ async def check_permission(
     if perm:
         return _evaluate(perm, tool_name, str(agent_id), source="agent")
 
-    # 2. Try org-wide default (agent_id IS NULL)
+    # 2. Try group-level permission (if agent belongs to a group)
+    agent_result = await db.execute(
+        select(Agent).where(Agent.id == agent_id)
+    )
+    agent = agent_result.scalar_one_or_none()
+    if agent and agent.group_id:
+        group_perm_result = await db.execute(
+            select(AgentPermission).where(
+                AgentPermission.org_id == org_id,
+                AgentPermission.agent_id == agent.group_id,
+            )
+        )
+        group_perm = group_perm_result.scalar_one_or_none()
+        if group_perm:
+            return _evaluate(group_perm, tool_name, str(agent_id), source="org_default")
+
+    # 3. Try org-wide default (agent_id IS NULL)
     result = await db.execute(
         select(AgentPermission).where(
             AgentPermission.org_id == org_id,
@@ -69,7 +85,7 @@ async def check_permission(
     if perm:
         return _evaluate(perm, tool_name, str(agent_id), source="org_default")
 
-    # 3. No record → allow all
+    # 4. No record → allow all
     return PermissionResult(
         allowed=True,
         mode="disabled",
