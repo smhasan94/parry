@@ -632,6 +632,42 @@ class ApiClient {
     });
   }
 
+  // ── Agent Groups ──────────────────────────────────────────────
+
+  async listAgentGroups(): Promise<import("./types").AgentGroup[]> {
+    return this.request("/api/v1/agent-groups");
+  }
+
+  async createAgentGroup(data: {
+    name: string;
+    description?: string;
+  }): Promise<import("./types").AgentGroup> {
+    return this.request("/api/v1/agent-groups", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAgentGroup(groupId: string): Promise<void> {
+    return this.request(`/api/v1/agent-groups/${groupId}`, { method: "DELETE" });
+  }
+
+  async assignAgentToGroup(
+    groupId: string,
+    agentId: string,
+  ): Promise<{ agent_id: string; group_id: string }> {
+    return this.request(`/api/v1/agent-groups/${groupId}/agents/${agentId}`, {
+      method: "PATCH",
+      body: JSON.stringify({}),
+    });
+  }
+
+  async unassignAgentFromGroup(groupId: string, agentId: string): Promise<void> {
+    return this.request(`/api/v1/agent-groups/${groupId}/agents/${agentId}`, {
+      method: "DELETE",
+    });
+  }
+
   // ── Webhook Subscriptions ─────────────────────────────────────
 
   async listWebhookEndpoints(): Promise<import("./types").WebhookEndpoint[]> {

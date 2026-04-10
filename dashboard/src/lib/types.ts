@@ -208,6 +208,18 @@ export interface PostureResponse {
   obligations: Obligation[];
 }
 
+// ── Agent Groups ────────────────────────────────────────────────
+
+export interface AgentGroup {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  agent_count: number;
+}
+
 // ── Webhook Subscriptions ────────────────────────────────────────
 
 export interface WebhookEndpoint {

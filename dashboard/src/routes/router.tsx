@@ -18,6 +18,7 @@ import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
 import { MCPServersPage } from "@/pages/MCPServersPage";
 import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
 import { CompliancePage } from "@/pages/CompliancePage";
+import { AgentGroupsPage } from "@/pages/AgentGroupsPage";
 import { ThreatIntelPage } from "@/pages/ThreatIntelPage";
 import { WebhooksPage } from "@/pages/WebhooksPage";
 import { SSOLoginPage } from "@/pages/SSOLoginPage";
@@ -138,6 +139,12 @@ const complianceRoute = createRoute({
   component: CompliancePage,
 });
 
+const agentGroupsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/agent-groups",
+  component: AgentGroupsPage,
+});
+
 const webhooksRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/webhooks",
@@ -178,6 +185,7 @@ const routeTree = rootRoute.addChildren([
   mcpRoute,
   mcpServerRoute,
   complianceRoute,
+  agentGroupsRoute,
   threatIntelRoute,
   webhooksRoute,
   ssoLoginRoute,

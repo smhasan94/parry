@@ -15,12 +15,14 @@ import {
   Scale,
   Radio,
   Webhook,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/agents", label: "Agents", icon: Bot },
+  { to: "/agent-groups", label: "Agent Groups", icon: Users },
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/policies", label: "Policies", icon: FileCheck },
   { to: "/custom-rules", label: "Custom Rules", icon: FileCode },
