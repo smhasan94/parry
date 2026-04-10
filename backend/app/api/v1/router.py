@@ -10,6 +10,7 @@ from app.api.v1 import (
     compliance,
     custom_rules,
     permissions,
+    threat_intel,
     detector_config,
     events,
     incidents,
@@ -53,3 +54,4 @@ api_router.include_router(compliance.router, prefix="/compliance", tags=["compli
 # Permissions routes are mounted at root level since they span
 # /agents/{id}/permissions and /permissions/default
 api_router.include_router(permissions.router, tags=["permissions"])
+api_router.include_router(threat_intel.router, prefix="/threat-intel", tags=["threat-intel"])

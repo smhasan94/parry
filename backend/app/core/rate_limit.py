@@ -36,6 +36,7 @@ RATE_LIMITS: dict[str, int] = {
     "/api/v1/mcp": 60,
     "/api/v1/compliance/auditor-bundle": 5,
     "/api/v1/compliance": 30,
+    "/api/v1/threat-intel": 30,
     "/api/v1/permissions": 30,
     "/api/v1/budgets": 30,
     "/api/v1/policies": 60,
