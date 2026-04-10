@@ -129,6 +129,33 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     policies: Mapped[list["Policy"]] = relationship(back_populates="org", lazy="selectin")
 
 
+# ── Agent Group ─────────────────────────────────────────────────
+
+
+class AgentGroup(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Named group of agents within an org.
+
+    Groups inherit the org-wide default permission unless a
+    group-specific permission record exists (agent_permissions with
+    agent_id matching a synthetic group key). An agent belongs to
+    at most one group.
+    """
+
+    __tablename__ = "agent_groups"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "name", name="uq_agent_groups_org_name"),
+    )
+
+    agents: Mapped[list["Agent"]] = relationship(back_populates="group", lazy="selectin")
+
+
 # ── API Key ──────────────────────────────────────────────────────
 
 
@@ -161,10 +188,14 @@ class Agent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     baseline: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    group_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agent_groups.id", ondelete="SET NULL"), nullable=True
+    )
 
     __table_args__ = (UniqueConstraint("org_id", "name", name="uq_agent_org_name"),)
 
     org: Mapped["Org"] = relationship(back_populates="agents")
+    group: Mapped["AgentGroup | None"] = relationship(back_populates="agents")
     sessions: Mapped[list["AgentSession"]] = relationship(back_populates="agent", lazy="selectin")
 
 
