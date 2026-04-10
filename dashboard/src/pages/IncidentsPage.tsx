@@ -8,6 +8,7 @@ import { useIncidents, useUpdateIncident } from "@/hooks/useIncidents";
 import { useResourceHistory } from "@/hooks/useAuditLog";
 import type { IncidentStatus, Severity, AuditEntry } from "@/lib/types";
 import { AlertTriangle, CheckCircle, Eye, Film, XCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { AttackChainReplay } from "@/components/AttackChainReplay";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 
 const SEVERITY_OPTIONS: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
@@ -193,6 +194,7 @@ export function IncidentsPage() {
                           </Link>
                         );
                       })()}
+                      <AttackChainReplay incidentId={incident.id} />
                       {incident.status === "open" && (
                         <Button
                           size="sm"

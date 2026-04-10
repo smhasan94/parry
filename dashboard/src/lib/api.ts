@@ -632,6 +632,12 @@ class ApiClient {
     });
   }
 
+  // ── Incident Replay ───────────────────────────────────────────
+
+  async getIncidentReplay(incidentId: string): Promise<import("./types").IncidentReplay> {
+    return this.request(`/api/v1/incidents/${incidentId}/replay`);
+  }
+
   // ── Threat Intelligence ───────────────────────────────────────
 
   async getThreatFeed(): Promise<import("./types").ThreatIndicator[]> {

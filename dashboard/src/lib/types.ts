@@ -208,6 +208,50 @@ export interface PostureResponse {
   obligations: Obligation[];
 }
 
+// ── Incident Replay ─────────────────────────────────────────────
+
+export interface ReplayAnnotation {
+  detections: Array<{
+    detector: string;
+    severity: string;
+    confidence: number;
+    reason: string;
+    triggered: boolean;
+  }>;
+  permission_violations: string[];
+  threat_intel_matches: string[];
+  relevance_score: number;
+}
+
+export interface ReplayEvent {
+  id: string;
+  timestamp: string | null;
+  model: string | null;
+  prompt_preview: string | null;
+  response_preview: string | null;
+  prompt?: string | null;
+  response?: string | null;
+  tool_calls: Record<string, unknown>[] | null;
+  token_count: number | null;
+  is_trigger: boolean;
+  annotations: ReplayAnnotation;
+}
+
+export interface IncidentReplay {
+  incident: {
+    id: string;
+    title: string;
+    severity: string;
+    status: string;
+    created_at: string | null;
+  };
+  trigger_event_id: string | null;
+  session_id: string | null;
+  total_session_events: number;
+  window_size: number;
+  events: ReplayEvent[];
+}
+
 // ── Threat Intelligence ──────────────────────────────────────────
 
 export interface ThreatIndicator {
