@@ -208,6 +208,34 @@ export interface PostureResponse {
   obligations: Obligation[];
 }
 
+// ── Webhook Subscriptions ────────────────────────────────────────
+
+export interface WebhookEndpoint {
+  id: string;
+  org_id: string;
+  url: string;
+  secret: string;
+  description: string | null;
+  event_types: string[];
+  is_active: boolean;
+  failure_count: number;
+  last_triggered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  endpoint_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  status_code: number | null;
+  response_body: string | null;
+  error: string | null;
+  attempt: number;
+  delivered_at: string;
+}
+
 // ── Incident Replay ─────────────────────────────────────────────
 
 export interface ReplayAnnotation {

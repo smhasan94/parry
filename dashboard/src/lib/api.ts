@@ -632,6 +632,55 @@ class ApiClient {
     });
   }
 
+  // ── Webhook Subscriptions ─────────────────────────────────────
+
+  async listWebhookEndpoints(): Promise<import("./types").WebhookEndpoint[]> {
+    return this.request("/api/v1/webhooks/endpoints");
+  }
+
+  async createWebhookEndpoint(data: {
+    url: string;
+    event_types: string[];
+    description?: string;
+  }): Promise<import("./types").WebhookEndpoint> {
+    return this.request("/api/v1/webhooks/endpoints", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateWebhookEndpoint(
+    endpointId: string,
+    data: Record<string, unknown>,
+  ): Promise<import("./types").WebhookEndpoint> {
+    return this.request(`/api/v1/webhooks/endpoints/${endpointId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWebhookEndpoint(endpointId: string): Promise<void> {
+    return this.request(`/api/v1/webhooks/endpoints/${endpointId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async listWebhookDeliveries(
+    endpointId: string,
+    limit = 50,
+  ): Promise<import("./types").WebhookDelivery[]> {
+    return this.request(
+      `/api/v1/webhooks/endpoints/${endpointId}/deliveries?limit=${limit}`,
+    );
+  }
+
+  async testWebhookEndpoint(endpointId: string): Promise<{ status: string }> {
+    return this.request(`/api/v1/webhooks/endpoints/${endpointId}/test`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  }
+
   // ── Incident Replay ───────────────────────────────────────────
 
   async getIncidentReplay(incidentId: string): Promise<import("./types").IncidentReplay> {

@@ -19,6 +19,7 @@ import { MCPServersPage } from "@/pages/MCPServersPage";
 import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
 import { CompliancePage } from "@/pages/CompliancePage";
 import { ThreatIntelPage } from "@/pages/ThreatIntelPage";
+import { WebhooksPage } from "@/pages/WebhooksPage";
 import { SSOLoginPage } from "@/pages/SSOLoginPage";
 import { SSOCallbackPage } from "@/pages/SSOCallbackPage";
 
@@ -137,6 +138,12 @@ const complianceRoute = createRoute({
   component: CompliancePage,
 });
 
+const webhooksRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/webhooks",
+  component: WebhooksPage,
+});
+
 const threatIntelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/threat-intel",
@@ -172,6 +179,7 @@ const routeTree = rootRoute.addChildren([
   mcpServerRoute,
   complianceRoute,
   threatIntelRoute,
+  webhooksRoute,
   ssoLoginRoute,
   ssoCallbackRoute,
   settingsRoute,

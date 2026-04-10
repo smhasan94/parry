@@ -14,6 +14,7 @@ import {
   Plug,
   Scale,
   Radio,
+  Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const navItems = [
   { to: "/red-team", label: "Red Team", icon: Swords },
   { to: "/mcp", label: "MCP Servers", icon: Plug },
   { to: "/threat-intel", label: "Threat Intel", icon: Radio },
+  { to: "/webhooks", label: "Webhooks", icon: Webhook },
   { to: "/compliance", label: "AI Act Compliance", icon: Scale },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
