@@ -208,6 +208,30 @@ export interface PostureResponse {
   obligations: Obligation[];
 }
 
+// ── Threat Intelligence ──────────────────────────────────────────
+
+export interface ThreatIndicator {
+  id: string;
+  pattern_hash: string;
+  detector_source: string;
+  category: string;
+  severity: string;
+  confidence_avg: number;
+  sighting_count: number;
+  org_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  promoted_at: string | null;
+  score: number;
+  sample_reason: string | null;
+}
+
+export interface ThreatFeedStats {
+  total_indicators: number;
+  active_indicators: number;
+  by_category: Record<string, number>;
+}
+
 // ── Agent Permissions ────────────────────────────────────────────
 
 export interface AgentPermission {

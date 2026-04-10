@@ -18,6 +18,7 @@ import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
 import { MCPServersPage } from "@/pages/MCPServersPage";
 import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
 import { CompliancePage } from "@/pages/CompliancePage";
+import { ThreatIntelPage } from "@/pages/ThreatIntelPage";
 import { SSOLoginPage } from "@/pages/SSOLoginPage";
 import { SSOCallbackPage } from "@/pages/SSOCallbackPage";
 
@@ -136,6 +137,12 @@ const complianceRoute = createRoute({
   component: CompliancePage,
 });
 
+const threatIntelRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/threat-intel",
+  component: ThreatIntelPage,
+});
+
 const ssoLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth/sso",
@@ -164,6 +171,7 @@ const routeTree = rootRoute.addChildren([
   mcpRoute,
   mcpServerRoute,
   complianceRoute,
+  threatIntelRoute,
   ssoLoginRoute,
   ssoCallbackRoute,
   settingsRoute,

@@ -632,6 +632,27 @@ class ApiClient {
     });
   }
 
+  // ── Threat Intelligence ───────────────────────────────────────
+
+  async getThreatFeed(): Promise<import("./types").ThreatIndicator[]> {
+    return this.request("/api/v1/threat-intel/feed");
+  }
+
+  async getThreatIndicator(id: string): Promise<import("./types").ThreatIndicator> {
+    return this.request(`/api/v1/threat-intel/feed/${id}`);
+  }
+
+  async getThreatFeedStats(): Promise<import("./types").ThreatFeedStats> {
+    return this.request("/api/v1/threat-intel/stats");
+  }
+
+  async updateThreatSharingSettings(sharing: boolean): Promise<{ threat_intel_sharing: boolean }> {
+    return this.request("/api/v1/threat-intel/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ threat_intel_sharing: sharing }),
+    });
+  }
+
   // ── Agent Permissions ─────────────────────────────────────────
 
   async getAgentPermissions(
