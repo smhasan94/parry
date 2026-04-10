@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    agent_groups,
     agents,
     alerts,
     api_keys,
@@ -30,6 +31,7 @@ from app.api.v1 import (
 api_router = APIRouter()
 
 api_router.include_router(agents.router, prefix="/agents", tags=["agents"])
+api_router.include_router(agent_groups.router, prefix="/agent-groups", tags=["agent-groups"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(incidents.router, prefix="/incidents", tags=["incidents"])
 api_router.include_router(policies.router, prefix="/policies", tags=["policies"])
