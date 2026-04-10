@@ -23,12 +23,20 @@ async def log_action(
     resource_type: str | None = None,
     resource_id: str | None = None,
     details: dict[str, Any] | None = None,
+    obligation_ids: list[str] | None = None,
 ) -> AuditLog:
     """Append an entry to the audit log.
 
     The caller is responsible for committing the transaction. This keeps audit
     writes atomic with the action being logged (e.g., incident status update).
+
+    ``obligation_ids``: optional list of EU AI Act obligation references
+    (e.g. ["art_26_6_usage_logs"]) to tag this entry for compliance reporting.
+    Stored inside ``details`` under the ``_obligation_ids`` key.
     """
+    if obligation_ids:
+        details = {**(details or {}), "_obligation_ids": obligation_ids}
+
     entry = AuditLog(
         org_id=org_id,
         actor_type=actor_type,

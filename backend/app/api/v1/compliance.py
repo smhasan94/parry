@@ -339,6 +339,7 @@ async def approve_fria(
         actor_label=actor.label,
         resource_type="fria_document",
         resource_id=str(fria_id),
+        obligation_ids=["art_27_fria"],
     )
     await db.commit()
     return FRIAResponse.model_validate(doc)
@@ -504,6 +505,7 @@ async def finalize_serious_report(
         actor_label=actor.label,
         resource_type="serious_incident",
         resource_id=str(report_id),
+        obligation_ids=["art_73_serious_incidents"],
     )
     await db.commit()
     resp = SeriousIncidentResponse.model_validate(report)
