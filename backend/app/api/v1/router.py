@@ -9,6 +9,7 @@ from app.api.v1 import (
     budgets,
     compliance,
     custom_rules,
+    permissions,
     detector_config,
     events,
     incidents,
@@ -49,3 +50,6 @@ api_router.include_router(slo.router, prefix="/slo", tags=["slo"])
 api_router.include_router(sso.router, prefix="/sso", tags=["sso"])
 api_router.include_router(budgets.router, prefix="/budgets", tags=["budgets"])
 api_router.include_router(compliance.router, prefix="/compliance", tags=["compliance"])
+# Permissions routes are mounted at root level since they span
+# /agents/{id}/permissions and /permissions/default
+api_router.include_router(permissions.router, tags=["permissions"])
