@@ -29,7 +29,7 @@ from app.db.session import get_db
 from app.proxy.check import run_blocking_check
 from app.proxy.response_scan import scan_response
 from app.schemas.base import ParrySchema
-from app.services import audit_service, budget_service
+from app.services import audit_service, budget_service, permission_service
 
 log = structlog.get_logger()
 
@@ -287,6 +287,53 @@ async def proxy_check(
     Never raises — errors surface as {allowed: true, reason: "error"}
     since the SDK is expected to fail open on any unexpected response.
     """
+    # ── Permission boundary check (before detection) ──────────
+    # Fires regardless of blocking_enabled. If the agent has a
+    # permission record, tool calls are checked against it.
+    if body.agent_id and body.tool_calls:
+        try:
+            agent_result = await db.execute(
+                select(Agent).where(Agent.org_id == org.id, Agent.name == body.agent_id)
+            )
+            agent_row = agent_result.scalar_one_or_none()
+            if agent_row is not None:
+                for tc in body.tool_calls:
+                    tool_name = tc.get("name") or tc.get("function", {}).get("name")
+                    if not tool_name:
+                        continue
+                    perm_result = await permission_service.check_permission(
+                        db, org.id, agent_row.id, tool_name
+                    )
+                    if not perm_result.allowed:
+                        if perm_result.mode == "dry_run":
+                            log.info(
+                                "permission.dry_run_denied",
+                                agent_id=body.agent_id,
+                                tool=tool_name,
+                                reason=perm_result.reason,
+                            )
+                        else:
+                            publish_blocked_event(
+                                org_id=str(org.id),
+                                detector="permission_boundary",
+                                reason=perm_result.reason,
+                                severity="high",
+                                confidence=1.0,
+                                prompt=body.prompt,
+                                model=body.model,
+                                agent_id=body.agent_id,
+                            )
+                            return ProxyCheckResponse(
+                                allowed=False,
+                                reason=perm_result.reason,
+                                detector="permission_boundary",
+                                severity="high",
+                                confidence=1.0,
+                            )
+        except Exception:
+            log.debug("proxy.permission_check_failed", exc_info=True)
+
+    # ── Detection pipeline ──────────────────────────────────────
     policy = await _load_policy_for_org(db, org.id)
     event_data = {
         "prompt": body.prompt,
