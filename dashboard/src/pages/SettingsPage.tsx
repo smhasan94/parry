@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRole } from "@/hooks/useRole";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -1257,6 +1257,7 @@ function PlanCard() {
 }
 
 function SSOCard() {
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["sso-status"],
     queryFn: () => api.getSSOStatus(),
@@ -1264,6 +1265,9 @@ function SSOCard() {
   const { can } = useRole();
   const canManage = can("owner");
   const [busy, setBusy] = useState(false);
+  const [showProvision, setShowProvision] = useState(false);
+  const [workosOrgId, setWorkosOrgId] = useState("");
+  const [provisioning, setProvisioning] = useState(false);
 
   async function handleOpenPortal() {
     setBusy(true);
@@ -1275,6 +1279,37 @@ function SSOCard() {
       toast(msg, "error");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleProvision() {
+    if (!workosOrgId.trim()) return;
+    setProvisioning(true);
+    try {
+      await api.ssoProvision(workosOrgId.trim());
+      qc.invalidateQueries({ queryKey: ["sso-status"] });
+      setShowProvision(false);
+      setWorkosOrgId("");
+      toast("SSO enabled", "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to provision SSO";
+      toast(msg, "error");
+    } finally {
+      setProvisioning(false);
+    }
+  }
+
+  async function handleDeprovision() {
+    setProvisioning(true);
+    try {
+      await api.ssoProvision(null);
+      qc.invalidateQueries({ queryKey: ["sso-status"] });
+      toast("SSO disabled", "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to disable SSO";
+      toast(msg, "error");
+    } finally {
+      setProvisioning(false);
     }
   }
 
@@ -1342,25 +1377,77 @@ function SSOCard() {
               </div>
             </div>
             {canManage ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleOpenPortal}
-                disabled={busy}
-              >
-                {busy ? "Generating link…" : "Open Admin Portal"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleOpenPortal}
+                  disabled={busy}
+                >
+                  {busy ? "Generating link…" : "Open Admin Portal"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleDeprovision}
+                  disabled={provisioning}
+                  className="text-destructive hover:text-destructive"
+                >
+                  {provisioning ? "Disabling…" : "Disable SSO"}
+                </Button>
+              </div>
             ) : (
               <p className="text-xs text-muted-foreground">
                 Owner role required to manage SAML metadata.
               </p>
             )}
           </>
+        ) : canManage ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              SSO is available on this deployment but not enabled for your
+              organization. Enter your WorkOS organization id to enable SAML.
+            </p>
+            {showProvision ? (
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <label className="text-xs font-medium">WorkOS Organization ID</label>
+                  <Input
+                    value={workosOrgId}
+                    onChange={(e) => setWorkosOrgId(e.target.value)}
+                    placeholder="org_01..."
+                    className="mt-1 font-mono text-sm"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleProvision}
+                  disabled={provisioning || !workosOrgId.trim()}
+                >
+                  {provisioning ? "Enabling…" : "Enable SSO"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowProvision(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowProvision(true)}
+              >
+                Configure SSO
+              </Button>
+            )}
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">
             SSO is available on this deployment but not enabled for your
-            organization. Contact your Parry admin to provision a WorkOS
-            organization id.
+            organization. Contact an owner to configure it.
           </p>
         )}
       </CardContent>
