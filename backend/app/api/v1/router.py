@@ -7,6 +7,7 @@ from app.api.v1 import (
     audit,
     billing,
     budgets,
+    compliance,
     custom_rules,
     detector_config,
     events,
@@ -47,3 +48,4 @@ api_router.include_router(sessions.router, prefix="/sessions", tags=["sessions"]
 api_router.include_router(slo.router, prefix="/slo", tags=["slo"])
 api_router.include_router(sso.router, prefix="/sso", tags=["sso"])
 api_router.include_router(budgets.router, prefix="/budgets", tags=["budgets"])
+api_router.include_router(compliance.router, prefix="/compliance", tags=["compliance"])
