@@ -18,6 +18,8 @@ import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
 import { MCPServersPage } from "@/pages/MCPServersPage";
 import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
 import { CompliancePage } from "@/pages/CompliancePage";
+import { SSOLoginPage } from "@/pages/SSOLoginPage";
+import { SSOCallbackPage } from "@/pages/SSOCallbackPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -134,6 +136,18 @@ const complianceRoute = createRoute({
   component: CompliancePage,
 });
 
+const ssoLoginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/sso",
+  component: SSOLoginPage,
+});
+
+const ssoCallbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/sso/callback",
+  component: SSOCallbackPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -150,6 +164,8 @@ const routeTree = rootRoute.addChildren([
   mcpRoute,
   mcpServerRoute,
   complianceRoute,
+  ssoLoginRoute,
+  ssoCallbackRoute,
   settingsRoute,
   setupRoute,
   auditRoute,

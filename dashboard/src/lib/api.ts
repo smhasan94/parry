@@ -632,6 +632,52 @@ class ApiClient {
     });
   }
 
+  // ── SSO ──────────────────────────────────────────────────────
+
+  async ssoLogin(body: {
+    org_slug?: string;
+    workos_organization_id?: string;
+    state?: string;
+  }): Promise<{ authorization_url: string }> {
+    return this.request("/api/v1/sso/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async ssoCallback(code: string): Promise<{
+    org_id: string;
+    org_name: string;
+    workos_user_id: string;
+    workos_organization_id: string | null;
+    email: string;
+    display_name: string;
+  }> {
+    return this.request(`/api/v1/sso/callback?code=${encodeURIComponent(code)}`);
+  }
+
+  async ssoCreateSession(body: {
+    workos_user_id: string;
+    email: string;
+    org_id: string;
+    first_name?: string;
+    last_name?: string;
+  }): Promise<{ ticket: string }> {
+    return this.request("/api/v1/sso/session", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async ssoProvision(
+    workosOrganizationId: string | null,
+  ): Promise<import("./types").SSOStatusResponse> {
+    return this.request("/api/v1/sso/provision", {
+      method: "PATCH",
+      body: JSON.stringify({ workos_organization_id: workosOrganizationId }),
+    });
+  }
+
   async listAuditLog(filters?: {
     action?: string;
     resource_type?: string;

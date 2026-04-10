@@ -207,3 +207,11 @@ export interface PostureResponse {
   overall_status: ObligationStatus;
   obligations: Obligation[];
 }
+
+// ── SSO ─────────────────────────────────────────────────────────
+
+export interface SSOStatusResponse {
+  enabled: boolean;
+  configured_on_backend: boolean;
+  workos_organization_id: string | null;
+}
