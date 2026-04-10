@@ -655,3 +655,56 @@ class SeriousIncident(Base, UUIDPrimaryKeyMixin):
             name="uq_serious_incidents_incident_version",
         ),
     )
+
+
+# ── Agent Permissions ───────────────────────────────────────────
+
+
+class AgentPermission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Per-agent (or org-wide default) tool permission boundaries.
+
+    When ``agent_id`` is NULL the record acts as the org-wide default.
+    Resolution order: agent-specific → org default → allow-all.
+
+    ``mode``:
+    - ``enforcing`` — violations block the call (independent of blocking_enabled)
+    - ``dry_run`` — violations logged as detections but calls pass through
+    - ``disabled`` — no permission checking
+
+    ``default_action``:
+    - ``allow`` — unlisted tools are permitted (blocklist mode)
+    - ``deny`` — only listed tools are permitted (allowlist mode)
+    """
+
+    __tablename__ = "agent_permissions"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    agent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=True
+    )
+    mode: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="disabled", server_default="disabled"
+    )
+    default_action: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="allow", server_default="allow"
+    )
+    allowed_tools: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    blocked_tools: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "agent_id", name="uq_agent_permissions_org_agent"),
+        CheckConstraint(
+            "mode IN ('enforcing', 'dry_run', 'disabled')",
+            name="ck_agent_permissions_mode",
+        ),
+        CheckConstraint(
+            "default_action IN ('allow', 'deny')",
+            name="ck_agent_permissions_default_action",
+        ),
+    )
