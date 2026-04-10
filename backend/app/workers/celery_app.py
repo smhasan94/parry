@@ -21,6 +21,7 @@ celery_app = Celery(
         "app.workers.audit_export_task",
         "app.workers.red_team_task",
         "app.workers.supplier_refresh_task",
+        "app.workers.auditor_bundle_task",
     ],
 )
 
