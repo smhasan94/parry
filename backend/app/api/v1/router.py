@@ -11,6 +11,7 @@ from app.api.v1 import (
     custom_rules,
     permissions,
     threat_intel,
+    webhook_endpoints,
     detector_config,
     events,
     incidents,
@@ -55,3 +56,6 @@ api_router.include_router(compliance.router, prefix="/compliance", tags=["compli
 # /agents/{id}/permissions and /permissions/default
 api_router.include_router(permissions.router, tags=["permissions"])
 api_router.include_router(threat_intel.router, prefix="/threat-intel", tags=["threat-intel"])
+api_router.include_router(
+    webhook_endpoints.router, prefix="/webhooks/endpoints", tags=["webhooks"]
+)
