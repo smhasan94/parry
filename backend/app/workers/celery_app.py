@@ -20,6 +20,7 @@ celery_app = Celery(
         "app.workers.metered_usage_task",
         "app.workers.audit_export_task",
         "app.workers.red_team_task",
+        "app.workers.supplier_refresh_task",
     ],
 )
 
@@ -48,6 +49,11 @@ celery_app.conf.update(
             "task": "report_metered_usage",
             # Daily at 01:00 UTC — well outside any dashboard/user peak.
             "schedule": crontab(hour=1, minute=0),
+        },
+        "refresh-supplier-register": {
+            "task": "refresh_supplier_register",
+            # Daily at 04:00 UTC — after audit export, before business hours.
+            "schedule": crontab(hour=4, minute=0),
         },
         "export-audit-log-monthly": {
             "task": "export_audit_log_monthly",
