@@ -122,3 +122,88 @@ export interface AuditEntry {
   details: Record<string, unknown> | null;
   created_at: string;
 }
+
+// ── EU AI Act Compliance ────────────────────────────────────────
+
+export type RiskLevel = "minimal" | "limited" | "high" | "unacceptable";
+export type FRIAStatus = "not_required" | "missing" | "draft" | "approved" | "stale";
+export type ObligationStatus = "green" | "yellow" | "red" | "na";
+
+export interface AISystem {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  risk_level: RiskLevel;
+  intended_purpose: string;
+  deployer_name: string | null;
+  provider_name: string | null;
+  provider_contact: string | null;
+  deployment_date: string | null;
+  retired_date: string | null;
+  fria_required: boolean;
+  fria_status: FRIAStatus;
+  agent_ids: string[];
+  annex_iii_category: string | null;
+  jurisdiction: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Supplier {
+  id: string;
+  system_id: string;
+  supplier_name: string;
+  model_id: string;
+  model_version: string | null;
+  first_used_at: string;
+  last_used_at: string;
+  event_count: number;
+  jurisdiction: string | null;
+  provider_url: string | null;
+}
+
+export interface FRIADocument {
+  id: string;
+  org_id: string;
+  system_id: string;
+  version: number;
+  status: "draft" | "approved" | "archived";
+  content: Record<string, unknown>;
+  generated_at: string;
+  generated_by: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  approver_title: string | null;
+  next_review_date: string | null;
+}
+
+export interface SeriousIncidentReport {
+  id: string;
+  org_id: string;
+  incident_id: string;
+  system_id: string | null;
+  deadline_at: string;
+  reported_to_authority_at: string | null;
+  authority_jurisdiction: string | null;
+  report_version: number;
+  report_content: Record<string, unknown>;
+  created_at: string;
+  created_by: string | null;
+  days_remaining: number | null;
+}
+
+export interface Obligation {
+  id: string;
+  article: string;
+  title: string;
+  status: ObligationStatus;
+  evidence: Record<string, unknown>;
+  remediation: string | null;
+}
+
+export interface PostureResponse {
+  overall_status: ObligationStatus;
+  obligations: Obligation[];
+}

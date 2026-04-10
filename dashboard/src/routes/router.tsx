@@ -17,6 +17,7 @@ import { RedTeamPage } from "@/pages/RedTeamPage";
 import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
 import { MCPServersPage } from "@/pages/MCPServersPage";
 import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
+import { CompliancePage } from "@/pages/CompliancePage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -127,6 +128,12 @@ const mcpServerRoute = createRoute({
   component: MCPServerDetailPage,
 });
 
+const complianceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/compliance",
+  component: CompliancePage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
@@ -142,6 +149,7 @@ const routeTree = rootRoute.addChildren([
   redTeamRunRoute,
   mcpRoute,
   mcpServerRoute,
+  complianceRoute,
   settingsRoute,
   setupRoute,
   auditRoute,

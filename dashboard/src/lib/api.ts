@@ -495,6 +495,143 @@ class ApiClient {
   }
 
   // Audit log
+  // ── EU AI Act Compliance ──────────────────────────────────────
+
+  async getCompliancePosture(): Promise<import("./types").PostureResponse> {
+    return this.request("/api/v1/compliance/posture");
+  }
+
+  async listAISystems(riskLevel?: string): Promise<import("./types").AISystem[]> {
+    const params = new URLSearchParams();
+    if (riskLevel) params.set("risk_level", riskLevel);
+    return this.request(`/api/v1/compliance/systems?${params}`);
+  }
+
+  async getAISystem(systemId: string): Promise<import("./types").AISystem> {
+    return this.request(`/api/v1/compliance/systems/${systemId}`);
+  }
+
+  async createAISystem(data: {
+    name: string;
+    risk_level: string;
+    intended_purpose: string;
+    description?: string;
+    deployer_name?: string;
+    provider_name?: string;
+    deployment_date?: string;
+    agent_ids?: string[];
+    annex_iii_category?: string;
+    jurisdiction?: string;
+  }): Promise<import("./types").AISystem> {
+    return this.request("/api/v1/compliance/systems", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAISystem(
+    systemId: string,
+    data: Record<string, unknown>,
+  ): Promise<import("./types").AISystem> {
+    return this.request(`/api/v1/compliance/systems/${systemId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAISystem(systemId: string): Promise<void> {
+    return this.request(`/api/v1/compliance/systems/${systemId}`, { method: "DELETE" });
+  }
+
+  async listSuppliers(systemId: string): Promise<import("./types").Supplier[]> {
+    return this.request(`/api/v1/compliance/systems/${systemId}/suppliers`);
+  }
+
+  async listSystemFRIAs(systemId: string): Promise<import("./types").FRIADocument[]> {
+    return this.request(`/api/v1/compliance/systems/${systemId}/fria`);
+  }
+
+  async createFRIA(systemId: string): Promise<import("./types").FRIADocument> {
+    return this.request(`/api/v1/compliance/systems/${systemId}/fria`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  }
+
+  async getFRIA(friaId: string): Promise<import("./types").FRIADocument> {
+    return this.request(`/api/v1/compliance/fria/${friaId}`);
+  }
+
+  async updateFRIA(
+    friaId: string,
+    content: Record<string, unknown>,
+  ): Promise<import("./types").FRIADocument> {
+    return this.request(`/api/v1/compliance/fria/${friaId}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async approveFRIA(
+    friaId: string,
+    approverTitle?: string,
+  ): Promise<import("./types").FRIADocument> {
+    return this.request(`/api/v1/compliance/fria/${friaId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ approver_title: approverTitle }),
+    });
+  }
+
+  async listSeriousIncidents(
+    unreportedOnly = false,
+  ): Promise<import("./types").SeriousIncidentReport[]> {
+    const params = new URLSearchParams();
+    if (unreportedOnly) params.set("unreported_only", "true");
+    return this.request(`/api/v1/compliance/serious-incidents?${params}`);
+  }
+
+  async createSeriousReport(
+    incidentId: string,
+    systemId?: string,
+  ): Promise<import("./types").SeriousIncidentReport> {
+    return this.request(`/api/v1/compliance/incidents/${incidentId}/serious-report`, {
+      method: "POST",
+      body: JSON.stringify({ system_id: systemId }),
+    });
+  }
+
+  async updateSeriousReport(
+    reportId: string,
+    data: Record<string, unknown>,
+  ): Promise<import("./types").SeriousIncidentReport> {
+    return this.request(`/api/v1/compliance/serious-incidents/${reportId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async finalizeSeriousReport(
+    reportId: string,
+  ): Promise<import("./types").SeriousIncidentReport> {
+    return this.request(`/api/v1/compliance/serious-incidents/${reportId}/finalize`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  }
+
+  async requestAuditorBundle(
+    periodStart?: string,
+    periodEnd?: string,
+  ): Promise<{ job_id: string; status: string }> {
+    return this.request("/api/v1/compliance/auditor-bundle", {
+      method: "POST",
+      body: JSON.stringify({
+        period_start: periodStart,
+        period_end: periodEnd,
+      }),
+    });
+  }
+
   async listAuditLog(filters?: {
     action?: string;
     resource_type?: string;

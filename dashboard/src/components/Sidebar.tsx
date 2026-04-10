@@ -12,6 +12,7 @@ import {
   Activity,
   Swords,
   Plug,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ const navItems = [
   { to: "/slo", label: "SLOs", icon: Gauge },
   { to: "/red-team", label: "Red Team", icon: Swords },
   { to: "/mcp", label: "MCP Servers", icon: Plug },
+  { to: "/compliance", label: "AI Act Compliance", icon: Scale },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
