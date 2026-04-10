@@ -632,6 +632,51 @@ class ApiClient {
     });
   }
 
+  // ── Agent Permissions ─────────────────────────────────────────
+
+  async getAgentPermissions(
+    agentId: string,
+  ): Promise<import("./types").AgentPermission | null> {
+    return this.request(`/api/v1/agents/${agentId}/permissions`);
+  }
+
+  async setAgentPermissions(
+    agentId: string,
+    data: {
+      mode: string;
+      default_action: string;
+      allowed_tools: string[];
+      blocked_tools: string[];
+    },
+  ): Promise<import("./types").AgentPermission> {
+    return this.request(`/api/v1/agents/${agentId}/permissions`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAgentPermissions(agentId: string): Promise<void> {
+    return this.request(`/api/v1/agents/${agentId}/permissions`, {
+      method: "DELETE",
+    });
+  }
+
+  async getDefaultPermissions(): Promise<import("./types").AgentPermission | null> {
+    return this.request("/api/v1/permissions/default");
+  }
+
+  async setDefaultPermissions(data: {
+    mode: string;
+    default_action: string;
+    allowed_tools: string[];
+    blocked_tools: string[];
+  }): Promise<import("./types").AgentPermission> {
+    return this.request("/api/v1/permissions/default", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
   // ── SSO ──────────────────────────────────────────────────────
 
   async ssoLogin(body: {

@@ -208,6 +208,20 @@ export interface PostureResponse {
   obligations: Obligation[];
 }
 
+// ── Agent Permissions ────────────────────────────────────────────
+
+export interface AgentPermission {
+  id: string;
+  org_id: string;
+  agent_id: string | null;
+  mode: "enforcing" | "dry_run" | "disabled";
+  default_action: "allow" | "deny";
+  allowed_tools: string[];
+  blocked_tools: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 // ── SSO ─────────────────────────────────────────────────────────
 
 export interface SSOStatusResponse {

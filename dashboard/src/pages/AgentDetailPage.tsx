@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, Clock, Cpu, Zap, History, Swords } from "lucide-react";
 import { useStartRedTeamRun } from "@/hooks/useRedTeam";
 import { CostCard } from "@/components/CostCard";
+import { PermissionsCard } from "@/components/PermissionsCard";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { useAgentSessions } from "@/hooks/useSession";
@@ -271,6 +272,9 @@ export function AgentDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Permission Boundaries */}
+        <PermissionsCard agentId={agentId} />
 
         {/* Cost + Budget */}
         <CostCard agentId={agentId} />
