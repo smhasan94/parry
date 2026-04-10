@@ -1,0 +1,14 @@
+# Cloudflare Pages deployment for the Parry landing site.
+#
+# Setup:
+# 1. Create a Cloudflare Pages project named "parry-landing" in the dashboard
+#    or via `npx wrangler pages project create parry-landing`
+# 2. Set custom domain to parry.dev in Pages > Custom domains
+# 3. Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as GitHub secrets
+#
+# Manual deploy:
+#   cd landing && npm run build && npx wrangler pages deploy dist
+
+name = "parry-landing"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "dist"
