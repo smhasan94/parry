@@ -8,7 +8,7 @@ from app.core.rbac import Role, require_role
 from app.db.models import IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.incident import IncidentListResponse, IncidentResponse, IncidentUpdate
-from app.services import audit_service, incident_service
+from app.services import audit_service, incident_service, plan_service, replay_service
 
 router = APIRouter()
 
@@ -95,3 +95,58 @@ async def update_incident(
 
     await db.commit()
     return IncidentResponse.model_validate(incident)
+
+
+@router.get(
+    "/{incident_id}/replay",
+)
+async def get_incident_replay(
+    incident_id: uuid.UUID,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.VIEWER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Forensic attack chain replay for an incident.
+
+    Reconstructs the event timeline around the trigger with smart
+    windowing (top 50 most relevant events). Annotated with detections,
+    permission violations, and threat intel matches.
+
+    Content gating: viewers get 200-char previews, admins get full
+    prompt/response.
+    """
+    from dataclasses import asdict
+
+    from app.core.rbac import Role as R, actor_role
+
+    org, actor = org_actor
+    plan_service.require_feature(org, "compliance_export")
+
+    role = actor_role(actor)
+    include_content = role in (R.ADMIN, R.OWNER)
+
+    replay = await replay_service.build_incident_replay(
+        db, org.id, incident_id, include_content=include_content
+    )
+
+    return {
+        "incident": replay.incident,
+        "trigger_event_id": replay.trigger_event_id,
+        "session_id": replay.session_id,
+        "total_session_events": replay.total_session_events,
+        "window_size": replay.window_size,
+        "events": [
+            {
+                "id": e.id,
+                "timestamp": e.timestamp,
+                "model": e.model,
+                "prompt_preview": e.prompt_preview,
+                "response_preview": e.response_preview,
+                **({"prompt": e.prompt, "response": e.response} if include_content else {}),
+                "tool_calls": e.tool_calls,
+                "token_count": e.token_count,
+                "is_trigger": e.is_trigger,
+                "annotations": asdict(e.annotations),
+            }
+            for e in replay.events
+        ],
+    }
