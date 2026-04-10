@@ -85,6 +85,23 @@ async def run_and_persist_detections(
 
     await db.flush()
 
+    # Dispatch threat intel extraction for high-confidence detections
+    for d in detections:
+        if d.triggered and d.confidence >= 0.7:
+            try:
+                from app.workers.threat_intel_task import extract_threat_pattern
+
+                extract_threat_pattern.delay(
+                    str(agent.org_id),
+                    str(d.id),
+                    d.detector,
+                    d.severity.value,
+                    d.confidence,
+                    d.reason,
+                )
+            except Exception:
+                log.debug("threat_intel.dispatch_failed", exc_info=True)
+
     # Create incident if any detections triggered
     if triggered_results:
         max_severity = pipeline.max_severity(results)

@@ -23,6 +23,7 @@ celery_app = Celery(
         "app.workers.supplier_refresh_task",
         "app.workers.auditor_bundle_task",
         "app.workers.compliance_refresh_task",
+        "app.workers.threat_intel_task",
     ],
 )
 
@@ -56,6 +57,11 @@ celery_app.conf.update(
             "task": "compliance_refresh",
             # Daily at 03:00 UTC — after metered usage, before supplier refresh.
             "schedule": crontab(hour=3, minute=0),
+        },
+        "threat-intel-decay": {
+            "task": "threat_intel_decay",
+            # Daily at 05:00 UTC — after compliance refresh.
+            "schedule": crontab(hour=5, minute=0),
         },
         "refresh-supplier-register": {
             "task": "refresh_supplier_register",
