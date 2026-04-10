@@ -72,12 +72,37 @@ class CallbackResponse(ParrySchema):
     display_name: str
 
 
+class SessionRequest(ParrySchema):
+    """Exchange a WorkOS profile for a Clerk sign-in ticket.
+
+    Called by the dashboard after a successful ``/sso/callback`` so it
+    can bridge the SAML identity into a Clerk session via
+    ``signIn.create({ strategy: "ticket", ticket })``.
+    """
+
+    workos_user_id: str
+    email: str
+    org_id: str
+    first_name: str | None = None
+    last_name: str | None = None
+
+
+class SessionResponse(ParrySchema):
+    ticket: str
+
+
 class AdminPortalRequest(ParrySchema):
     return_url: HttpUrl | None = None
 
 
 class AdminPortalResponse(ParrySchema):
     url: str
+
+
+class ProvisionSSORequest(ParrySchema):
+    """Set or clear the WorkOS organization id for an org."""
+
+    workos_organization_id: str | None = None
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -267,6 +292,157 @@ async def sso_callback(
         workos_organization_id=profile.workos_organization_id,
         email=profile.email,
         display_name=profile.display_name,
+    )
+
+
+@router.post("/session", response_model=SessionResponse)
+async def create_sso_session(
+    body: SessionRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SessionResponse:
+    """Create a Clerk sign-in token for a SAML-authenticated user.
+
+    The dashboard calls this after receiving a successful callback
+    profile. The backend:
+
+    1. Verifies the org exists and has SSO enabled
+    2. Finds or creates the Clerk user via the Clerk Backend API
+    3. Creates a sign-in token for that user
+    4. Returns the token as a ``ticket`` the dashboard feeds to
+       ``signIn.create({ strategy: "ticket", ticket })``
+    """
+    import uuid as _uuid
+
+    # Verify the org
+    org = await db.get(Org, _uuid.UUID(body.org_id))
+    if org is None or not org.workos_organization_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Org not found or SSO not enabled",
+        )
+
+    # Use Clerk Backend API to find or create user + sign-in token
+    try:
+        ticket = await _create_clerk_signin_token(
+            email=body.email,
+            first_name=body.first_name,
+            last_name=body.last_name,
+        )
+    except Exception as e:
+        log.error("sso.clerk_session_failed", error=str(e), exc_info=True)
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to create Clerk sign-in token",
+        ) from e
+
+    return SessionResponse(ticket=ticket)
+
+
+async def _create_clerk_signin_token(
+    *,
+    email: str,
+    first_name: str | None = None,
+    last_name: str | None = None,
+) -> str:
+    """Find or create a Clerk user by email, then create a sign-in token.
+
+    Uses Clerk's Backend API (``clerk_secret_key``). The sign-in token
+    is a short-lived JWT the frontend exchanges via
+    ``signIn.create({ strategy: "ticket", ticket })``.
+    """
+    import httpx
+
+    base = "https://api.clerk.com/v1"
+    headers = {
+        "Authorization": f"Bearer {settings.clerk_secret_key}",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        # 1. Find existing user by email
+        resp = await client.get(
+            f"{base}/users",
+            params={"email_address": email, "limit": 1},
+            headers=headers,
+        )
+        resp.raise_for_status()
+        users = resp.json()
+
+        if users:
+            user_id = users[0]["id"]
+        else:
+            # 2. Create user if not found
+            create_payload: dict = {
+                "email_address": [email],
+                "skip_password_requirement": True,
+            }
+            if first_name:
+                create_payload["first_name"] = first_name
+            if last_name:
+                create_payload["last_name"] = last_name
+            resp = await client.post(
+                f"{base}/users",
+                json=create_payload,
+                headers=headers,
+            )
+            resp.raise_for_status()
+            user_id = resp.json()["id"]
+
+        # 3. Create sign-in token
+        resp = await client.post(
+            f"{base}/sign_in_tokens",
+            json={"user_id": user_id},
+            headers=headers,
+        )
+        resp.raise_for_status()
+        return resp.json()["token"]
+
+
+@router.patch(
+    "/provision",
+    dependencies=[Depends(require_role(Role.OWNER))],
+)
+async def provision_sso(
+    body: ProvisionSSORequest,
+    org_actor: tuple[Org, Actor] = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db),
+) -> SSOStatusResponse:
+    """Set or clear the WorkOS organization id for the caller's org.
+
+    Owner-gated — provisioning SSO changes who can access the account.
+    Setting to ``null`` disables SSO for the org (falls back to Clerk).
+    """
+    org, actor = org_actor
+
+    old_value = org.workos_organization_id
+    org.workos_organization_id = body.workos_organization_id
+
+    await audit_service.log_action(
+        db,
+        org_id=org.id,
+        action="sso.provisioned" if body.workos_organization_id else "sso.deprovisioned",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="sso",
+        details={
+            "old_workos_organization_id": old_value,
+            "new_workos_organization_id": body.workos_organization_id,
+        },
+    )
+    await db.commit()
+    await db.refresh(org)
+
+    log.info(
+        "sso.provisioned",
+        org_id=str(org.id),
+        workos_organization_id=body.workos_organization_id,
+    )
+
+    return SSOStatusResponse(
+        enabled=bool(org.workos_organization_id),
+        configured_on_backend=sso_service.get_client() is not None,
+        workos_organization_id=org.workos_organization_id,
     )
 
 

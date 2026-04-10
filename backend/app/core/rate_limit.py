@@ -46,6 +46,7 @@ RATE_LIMITS: dict[str, int] = {
     # for any org they can name) and each POST burns a WorkOS API
     # call plus an org lookup. 10/min per client is plenty for real
     # users and shuts down script-kiddie enumeration.
+    "/api/v1/sso/session": 10,
     "/api/v1/sso/login": 10,
     "/api/v1/sso/callback": 20,
 }
