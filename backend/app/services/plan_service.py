@@ -37,6 +37,11 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "mcp_security": False,
         "cost_exploit_detection": False,
         "budget_enforcement": False,
+        "ai_system_register": False,
+        "fria_generator": False,
+        "serious_incident_reporting": False,
+        "compliance_posture": False,
+        "auditor_bundle": False,
     },
     Plan.GROWTH: {
         "max_agents": 10,
@@ -49,6 +54,11 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "mcp_security": True,
         "cost_exploit_detection": True,
         "budget_enforcement": True,
+        "ai_system_register": False,
+        "fria_generator": False,
+        "serious_incident_reporting": False,
+        "compliance_posture": False,
+        "auditor_bundle": False,
     },
     Plan.PRO: {
         "max_agents": 50,
@@ -61,6 +71,11 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "mcp_security": True,
         "cost_exploit_detection": True,
         "budget_enforcement": True,
+        "ai_system_register": True,
+        "fria_generator": False,
+        "serious_incident_reporting": False,
+        "compliance_posture": True,
+        "auditor_bundle": False,
     },
     Plan.ENTERPRISE: {
         "max_agents": None,
@@ -73,6 +88,11 @@ PLAN_LIMITS: dict[Plan, dict[str, Any]] = {
         "mcp_security": True,
         "cost_exploit_detection": True,
         "budget_enforcement": True,
+        "ai_system_register": True,
+        "fria_generator": True,
+        "serious_incident_reporting": True,
+        "compliance_posture": True,
+        "auditor_bundle": True,
     },
 }
 

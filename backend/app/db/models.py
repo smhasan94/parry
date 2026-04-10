@@ -1,15 +1,18 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     Enum,
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     Numeric,
     PrimaryKeyConstraint,
     String,
@@ -17,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -484,4 +487,171 @@ class AgentBudget(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UniqueConstraint("org_id", "agent_id", "period", name="uq_agent_budgets_org_agent_period"),
         CheckConstraint("period IN ('hour', 'day', 'month')", name="ck_agent_budgets_period"),
         CheckConstraint("cap_usd > 0", name="ck_agent_budgets_cap_positive"),
+    )
+
+
+# ── EU AI Act Compliance ────────────────────────────────────────
+
+
+class AISystem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """An AI system in the Article 26 deployer register.
+
+    Maps to one or more Parry agents via ``agent_ids``. Carries risk
+    classification per Annex III and tracks FRIA obligation status.
+    """
+
+    __tablename__ = "ai_systems"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    risk_level: Mapped[str] = mapped_column(String(16), nullable=False)
+    intended_purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    deployer_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_contact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    deployment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    retired_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    fria_required: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
+    fria_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="not_required", server_default="not_required"
+    )
+    agent_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default="{}"
+    )
+    annex_iii_category: Mapped[str | None] = mapped_column(Text, nullable=True)
+    jurisdiction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "risk_level IN ('minimal', 'limited', 'high', 'unacceptable')",
+            name="ck_ai_systems_risk_level",
+        ),
+        CheckConstraint(
+            "fria_status IN ('not_required', 'missing', 'draft', 'approved', 'stale')",
+            name="ck_ai_systems_fria_status",
+        ),
+    )
+
+    suppliers: Mapped[list["AISystemSupplier"]] = relationship(
+        back_populates="system", cascade="all, delete-orphan", lazy="selectin"
+    )
+    fria_documents: Mapped[list["FRIADocument"]] = relationship(
+        back_populates="system", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class AISystemSupplier(Base, UUIDPrimaryKeyMixin):
+    """Auto-populated record of a model provider used by an AI system.
+
+    Upserted daily from agent_events by the supplier refresh task.
+    """
+
+    __tablename__ = "ai_system_suppliers"
+
+    system_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_systems.id", ondelete="CASCADE"), nullable=False
+    )
+    supplier_name: Mapped[str] = mapped_column(Text, nullable=False)
+    model_id: Mapped[str] = mapped_column(Text, nullable=False)
+    model_version: Mapped[str | None] = mapped_column(Text, nullable=True)
+    first_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    event_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    jurisdiction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "system_id", "supplier_name", "model_id",
+            name="uq_ai_system_suppliers_system_supplier_model",
+        ),
+    )
+
+    system: Mapped["AISystem"] = relationship(back_populates="suppliers")
+
+
+class FRIADocument(Base, UUIDPrimaryKeyMixin):
+    """A versioned Fundamental Rights Impact Assessment document.
+
+    Draft → approved (with PDF snapshot) → archived. Approved FRIAs
+    auto-stale after 12 months via the compliance refresh task.
+    """
+
+    __tablename__ = "fria_documents"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    system_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_systems.id", ondelete="CASCADE"), nullable=False
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    pdf_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    generated_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approver_title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    next_review_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("system_id", "version", name="uq_fria_documents_system_version"),
+        CheckConstraint(
+            "status IN ('draft', 'approved', 'archived')",
+            name="ck_fria_documents_status",
+        ),
+    )
+
+    system: Mapped["AISystem"] = relationship(back_populates="fria_documents")
+
+
+class SeriousIncident(Base, UUIDPrimaryKeyMixin):
+    """Article 73 serious incident report.
+
+    Created from a CRITICAL Parry incident, pre-filled with incident
+    data, 15-day deadline tracked via ``deadline_at``.
+    """
+
+    __tablename__ = "serious_incidents"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    incident_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("incidents.id"), nullable=False
+    )
+    system_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_systems.id"), nullable=True
+    )
+    deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reported_to_authority_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    authority_jurisdiction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    report_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default="1"
+    )
+    report_content: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    pdf_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    created_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "incident_id", "report_version",
+            name="uq_serious_incidents_incident_version",
+        ),
     )
