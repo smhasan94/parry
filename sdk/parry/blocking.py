@@ -44,6 +44,37 @@ class ParryBlockedError(Exception):
         super().__init__(f"Parry blocked this call: [{detector}] {reason}")
 
 
+class ParryPermissionDeniedError(ParryBlockedError):
+    """Raised when an agent's tool call is denied by a permission boundary.
+
+    Distinct from ParryBlockedError (threat detection) so agent code
+    can handle authorization failures differently from security blocks.
+
+    Example::
+
+        try:
+            response = openai_client.chat.completions.create(...)
+        except ParryPermissionDeniedError as e:
+            print(f"Agent not authorized to call {e.tool_name}: {e.reason}")
+        except ParryBlockedError as e:
+            print(f"Security block: {e.reason}")
+    """
+
+    def __init__(
+        self,
+        reason: str,
+        tool_name: str | None = None,
+        **kwargs: object,
+    ) -> None:
+        self.tool_name = tool_name
+        super().__init__(
+            reason=reason,
+            detector="permission_boundary",
+            severity="high",
+            confidence=1.0,
+        )
+
+
 def check_before_call(
     client: Any,  # ParryClient instance — Any to avoid circular import
     prompt: str | None,
@@ -91,9 +122,26 @@ def check_before_call(
         return
 
     if not data.get("allowed", True):
+        detector = data.get("detector", "")
+        reason = data.get("reason", "")
+        if detector == "permission_boundary":
+            raise ParryPermissionDeniedError(
+                reason=reason,
+                tool_name=_extract_tool_name(reason),
+            )
         raise ParryBlockedError(
-            reason=data.get("reason", ""),
-            detector=data.get("detector", ""),
+            reason=reason,
+            detector=detector,
             severity=data.get("severity") or "",
             confidence=float(data.get("confidence", 0.0) or 0.0),
         )
+
+
+def _extract_tool_name(reason: str) -> str | None:
+    """Best-effort extract tool name from permission denial reason."""
+    # Reason format: "Tool 'get_weather' is explicitly blocked"
+    if "'" in reason:
+        parts = reason.split("'")
+        if len(parts) >= 2:
+            return parts[1]
+    return None

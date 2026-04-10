@@ -1,6 +1,7 @@
 """Parry SDK — AI Agent Runtime Security."""
 
 from parry.async_client import AsyncParryClient
+from parry.blocking import ParryBlockedError, ParryPermissionDeniedError
 from parry.client import ParryClient
 from parry.wrappers.anthropic import ParryAnthropic
 from parry.wrappers.langchain import ParryCallbackHandler
@@ -11,9 +12,11 @@ __version__ = "0.1.0"
 __all__ = [
     "AsyncParryClient",
     "ParryAnthropic",
+    "ParryBlockedError",
     "ParryCallbackHandler",
     "ParryClient",
     "ParryOpenAI",
+    "ParryPermissionDeniedError",
     "get_client",
     "init",
 ]
