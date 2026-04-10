@@ -116,6 +116,12 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     workos_organization_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )
+    # Cross-org threat intelligence sharing. When True (default),
+    # this org's high-confidence detections contribute anonymized
+    # pattern signatures to the shared threat feed.
+    threat_intel_sharing: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, server_default="true"
+    )
 
     # Relationships
     agents: Mapped[list["Agent"]] = relationship(back_populates="org", lazy="selectin")
@@ -708,3 +714,82 @@ class AgentPermission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             name="ck_agent_permissions_default_action",
         ),
     )
+
+
+# ── Threat Intelligence ─────────────────────────────────────────
+
+
+class ThreatIndicator(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """An anonymized attack pattern aggregated across multiple orgs.
+
+    Indicators start unpromoted. Once ``org_count`` reaches 3, the
+    indicator is promoted (``promoted_at`` set) and the
+    ``ThreatIntelDetector`` starts matching against it. ``score``
+    decays daily; indicators drop out of the active feed when score
+    falls below 0.3 and are archived below 0.1.
+    """
+
+    __tablename__ = "threat_indicators"
+
+    pattern_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    detector_source: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str] = mapped_column(String(64), nullable=False)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False)
+    confidence_avg: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    sighting_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    org_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    promoted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    score: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    sample_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    sightings: Mapped[list["ThreatSighting"]] = relationship(
+        back_populates="indicator", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class ThreatSighting(Base, UUIDPrimaryKeyMixin):
+    """Records that a specific org observed a threat indicator.
+
+    One row per (indicator, org) pair — tracks distinct org count,
+    not total event count. Updated on repeat sightings.
+    """
+
+    __tablename__ = "threat_sightings"
+
+    indicator_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("threat_indicators.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    detection_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "indicator_id", "org_id",
+            name="uq_threat_sightings_indicator_org",
+        ),
+    )
+
+    indicator: Mapped["ThreatIndicator"] = relationship(back_populates="sightings")
