@@ -793,3 +793,65 @@ class ThreatSighting(Base, UUIDPrimaryKeyMixin):
     )
 
     indicator: Mapped["ThreatIndicator"] = relationship(back_populates="sightings")
+
+
+# ── Webhook Subscriptions ───────────────────────────────────────
+
+
+class WebhookEndpoint(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Customer-managed webhook subscription.
+
+    Receives HTTP POST notifications for configured event types.
+    Secret is used for HMAC-SHA256 signing of the payload so the
+    customer can verify authenticity.
+    """
+
+    __tablename__ = "webhook_endpoints"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    secret: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_types: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, server_default="true"
+    )
+    failure_count: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False, server_default="0"
+    )
+    last_triggered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    deliveries: Mapped[list["WebhookDelivery"]] = relationship(
+        back_populates="endpoint", cascade="all, delete-orphan", lazy="noload"
+    )
+
+
+class WebhookDelivery(Base, UUIDPrimaryKeyMixin):
+    """Record of a single webhook delivery attempt."""
+
+    __tablename__ = "webhook_deliveries"
+
+    endpoint_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    response_body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempt: Mapped[int] = mapped_column(
+        Integer, default=1, nullable=False, server_default="1"
+    )
+    delivered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    endpoint: Mapped["WebhookEndpoint"] = relationship(back_populates="deliveries")
