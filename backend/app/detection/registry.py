@@ -11,6 +11,7 @@ from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.mcp_manifest import MCPManifestDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
 from app.detection.detectors.prompt_injection import PromptInjectionDetector
+from app.detection.detectors.threat_intel import ThreatIntelDetector
 from app.detection.detectors.tool_misuse import ToolMisuseDetector
 
 # All registered detectors — order matters for the pipeline
@@ -26,6 +27,7 @@ DETECTORS: list[BaseDetector] = [
     CostExploitLoopDetector(),
     CostExploitVerbosityDetector(),
     CostExploitModelEscalationDetector(),
+    ThreatIntelDetector(),
 ]
 
 DETECTOR_MAP: dict[str, BaseDetector] = {d.name: d for d in DETECTORS}

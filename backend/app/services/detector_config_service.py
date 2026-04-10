@@ -22,6 +22,7 @@ DEFAULT_DETECTOR_CONFIG: dict[str, dict[str, Any]] = {
     "cost_exploit_loop": {"trigger_threshold": 0.5, "enabled": True},
     "cost_exploit_verbosity": {"trigger_threshold": 0.5, "enabled": True},
     "cost_exploit_model_escalation": {"trigger_threshold": 0.5, "enabled": True},
+    "threat_intel": {"trigger_threshold": 0.5, "enabled": True},
 }
 
 DETECTOR_NAMES = list(DEFAULT_DETECTOR_CONFIG.keys())
