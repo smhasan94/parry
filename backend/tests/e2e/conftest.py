@@ -170,7 +170,7 @@ async def admin_client(
         actor_type="user",
         actor_id="admin-test",
         label="admin@example.com",
-        clerk_role="org:admin",
+        clerk_role="org:owner",
     )
 
     async def _override_actor() -> tuple:
