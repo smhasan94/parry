@@ -886,3 +886,48 @@ class WebhookDelivery(Base, UUIDPrimaryKeyMixin):
     )
 
     endpoint: Mapped["WebhookEndpoint"] = relationship(back_populates="deliveries")
+
+
+# ── Scheduled Reports ───────────────────────────────────────────
+
+
+class ScheduledReport(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Recurring security report delivered via email.
+
+    ``schedule``: weekly (Monday 08:00 UTC) or monthly (1st, 08:00 UTC).
+    ``report_type``: security_summary (detections, incidents, health)
+    or compliance_posture (Article 26 status).
+    """
+
+    __tablename__ = "scheduled_reports"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    schedule: Mapped[str] = mapped_column(String(16), nullable=False)
+    recipients: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    report_type: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="security_summary", server_default="security_summary"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, server_default="true"
+    )
+    last_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    next_send_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "schedule IN ('weekly', 'monthly')",
+            name="ck_scheduled_reports_schedule",
+        ),
+        CheckConstraint(
+            "report_type IN ('security_summary', 'compliance_posture')",
+            name="ck_scheduled_reports_type",
+        ),
+    )
