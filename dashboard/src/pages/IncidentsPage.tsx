@@ -7,7 +7,9 @@ import { SeverityBadge, Badge } from "@/components/ui/badge";
 import { useIncidents, useUpdateIncident } from "@/hooks/useIncidents";
 import { useResourceHistory } from "@/hooks/useAuditLog";
 import type { IncidentStatus, Severity, AuditEntry } from "@/lib/types";
-import { AlertTriangle, CheckCircle, Eye, Film, XCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, CheckCircle, Eye, Film, XCircle, Clock, ChevronDown, ChevronUp, Share2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { AttackChainReplay } from "@/components/AttackChainReplay";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 
@@ -195,6 +197,7 @@ export function IncidentsPage() {
                         );
                       })()}
                       <AttackChainReplay incidentId={incident.id} />
+                      <ShareIncidentButton incidentId={incident.id} />
                       {incident.status === "open" && (
                         <Button
                           size="sm"
@@ -302,5 +305,28 @@ function IncidentHistory({ incidentId }: { incidentId: string }) {
         );
       })}
     </div>
+  );
+}
+
+function ShareIncidentButton({ incidentId }: { incidentId: string }) {
+  const share = useMutation({
+    mutationFn: () => api.getShareToken(incidentId),
+    onSuccess: (data) => {
+      const baseUrl = import.meta.env.VITE_API_URL || "";
+      const url = `${baseUrl}/api/v1/incidents/${data.incident_id}/share/${data.token}`;
+      navigator.clipboard.writeText(url);
+    },
+  });
+
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      title={share.isSuccess ? "Link copied!" : "Copy share link"}
+      onClick={() => share.mutate()}
+      disabled={share.isPending}
+    >
+      <Share2 className={`h-4 w-4 ${share.isSuccess ? "text-emerald-400" : ""}`} />
+    </Button>
   );
 }
