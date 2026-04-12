@@ -10,6 +10,8 @@ from app.db.models import Agent, AgentBudget, Org
 from app.db.session import get_db
 from app.schemas.agent import AgentCreate, AgentResponse, AgentUpdate
 from app.services import agent_service, audit_service, budget_service, plan_service, session_service
+from app.services.fleet_service import compute_fleet_overview
+from app.services.sdk_health_service import compute_sdk_health
 from app.services.agent_stats_service import get_or_build_agent_stats
 from app.services.baseline_service import MIN_EVENTS, compute_baseline
 from app.services.health_score_service import get_or_compute_health
@@ -261,6 +263,63 @@ async def get_agent_spend(
         for b in result.scalars().all()
     ]
     return {"period_spend": period_spend, "budgets": budgets}
+
+
+@router.get(
+    "/fleet-overview",
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def fleet_overview(
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Fleet-wide agent comparison with grade distribution and health scores."""
+    agents_raw, _ = await agent_service.list_agents(db, org.id, cursor=None, limit=500)
+    agent_dicts = []
+    for a in agents_raw:
+        health = await get_or_compute_health(db, a.id)
+        agent_dicts.append({
+            "id": str(a.id),
+            "name": a.name,
+            "is_active": a.is_active,
+            "health_score": health.get("score"),
+            "health_grade": health.get("grade"),
+        })
+    return compute_fleet_overview(agent_dicts)
+
+
+@router.get(
+    "/sdk-health",
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def sdk_health(
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """SDK integration health — last event, staleness, status per agent."""
+    from datetime import UTC, datetime
+
+    from sqlalchemy import func
+
+    from app.db.models import AgentEvent
+
+    agents_raw, _ = await agent_service.list_agents(db, org.id, cursor=None, limit=500)
+    agent_dicts = []
+    for a in agents_raw:
+        # Get last event timestamp
+        last_event_result = await db.execute(
+            select(func.max(AgentEvent.timestamp)).where(AgentEvent.agent_id == a.id)
+        )
+        last_ts = last_event_result.scalar_one_or_none()
+        agent_dicts.append({
+            "id": str(a.id),
+            "name": a.name,
+            "last_event_at": last_ts.isoformat() if last_ts else None,
+            "sdk_version": (a.metadata_ or {}).get("sdk_version"),
+            "wrapper_type": (a.metadata_ or {}).get("wrapper_type"),
+        })
+
+    return compute_sdk_health(agent_dicts, now=datetime.now(UTC))
 
 
 @router.delete(

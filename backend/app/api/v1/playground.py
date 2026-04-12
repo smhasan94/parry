@@ -7,10 +7,16 @@ experience Parry's detection without signing up or integrating the SDK.
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import get_current_org
+from app.core.rbac import Role, require_role
+from app.db.models import Org
+from app.db.session import get_db
 from app.detection.base import DetectionResult
+from app.services.tuning_sandbox_service import replay_with_config
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
@@ -99,3 +105,23 @@ async def playground_analyze(body: PlaygroundRequest) -> PlaygroundResponse:
         triggered_count=len(triggered),
         max_severity=max_sev,
     )
+
+
+# ── Tuning Sandbox ──────────────────────────────────────────────────
+
+
+class TuningRequest(BaseModel):
+    events: list[dict[str, Any]] = Field(..., max_length=50)
+    config_overrides: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post(
+    "/tune",
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+async def tuning_sandbox(
+    body: TuningRequest,
+    org: Org = Depends(get_current_org),
+) -> dict:
+    """Replay events through detectors with custom thresholds."""
+    return replay_with_config(body.events, body.config_overrides)

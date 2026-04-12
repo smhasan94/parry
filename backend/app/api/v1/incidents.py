@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_current_actor, get_current_org
@@ -8,7 +9,7 @@ from app.core.rbac import Role, require_role
 from app.db.models import IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.incident import IncidentListResponse, IncidentResponse, IncidentUpdate
-from app.services import audit_service, incident_service, plan_service, replay_service, webhook_dispatch_service
+from app.services import audit_service, incident_service, incident_share_service, plan_service, replay_service, webhook_dispatch_service
 
 router = APIRouter()
 
@@ -165,3 +166,57 @@ async def get_incident_replay(
             for e in replay.events
         ],
     }
+
+
+@router.get(
+    "/{incident_id}/share-token",
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+async def get_share_token(
+    incident_id: uuid.UUID,
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Generate a shareable link token for an incident."""
+    incident = await incident_service.get_incident(db, org.id, incident_id)
+    token = incident_share_service.generate_share_token(str(incident.id))
+    return {"token": token, "incident_id": str(incident.id)}
+
+
+@router.get("/{incident_id}/share/{token}")
+async def view_shared_report(
+    incident_id: uuid.UUID,
+    token: str,
+    db: AsyncSession = Depends(get_db),
+) -> HTMLResponse:
+    """Public shareable incident report — no auth, verified by HMAC token."""
+    if not incident_share_service.verify_share_token(str(incident_id), token):
+        raise HTTPException(status_code=404, detail="Invalid or expired share link")
+
+    # Fetch incident without org scoping (public access via token)
+    from sqlalchemy import select
+    from app.db.models import Incident, Detection
+
+    result = await db.execute(select(Incident).where(Incident.id == incident_id))
+    incident = result.scalar_one_or_none()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    # Build report data
+    detections = [
+        {"detector": d.detector, "confidence": d.confidence, "reason": d.reason, "severity": d.severity.value}
+        for d in (incident.detections or [])
+    ]
+    report = incident_share_service.build_share_report(
+        incident={
+            "id": str(incident.id),
+            "title": incident.title,
+            "severity": incident.severity.value,
+            "status": incident.status.value,
+            "created_at": incident.created_at.isoformat(),
+        },
+        detections=detections,
+        events=[],
+    )
+    html = incident_share_service.render_share_html(report)
+    return HTMLResponse(content=html)
