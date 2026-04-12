@@ -1,0 +1,272 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  title="Getting Started — Parry"
+  description="Get Parry running in under 5 minutes. Install the SDK, wrap your LLM client, and start detecting threats."
+>
+  <div class="relative overflow-hidden">
+    <!-- ambient gradient -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-[-20%] h-[60vh] bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.18),transparent_60%)]"
+    >
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10">
+      <div class="container-narrow flex items-center justify-between py-6">
+        <a href="/" class="flex items-center gap-2 font-semibold">
+          <span
+            class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-accent text-ink-50"
+            >P</span
+          >
+          <span class="text-ink-50">Parry</span>
+        </a>
+        <nav class="hidden gap-8 text-sm text-ink-200 sm:flex">
+          <a href="/playground" class="hover:text-ink-50">Playground</a>
+          <a href="/benchmark" class="hover:text-ink-50">Benchmark</a>
+          <a href="/docs" class="text-ink-50 font-medium">Docs</a>
+          <a href="/#pricing" class="hover:text-ink-50">Pricing</a>
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="hover:text-ink-50">GitHub</a
+          >
+        </nav>
+        <a
+          href="https://app.parry.dev"
+          class="rounded-md border border-ink-600 bg-ink-900/60 px-3 py-1.5 text-sm font-medium text-ink-50 hover:bg-ink-800"
+        >
+          Sign in
+        </a>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="relative z-10">
+      <div class="container-narrow pt-12 pb-24 sm:pt-16 sm:pb-32">
+        <span class="pill">
+          <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+          Documentation
+        </span>
+        <h1
+          class="mt-6 grad-text text-3xl font-semibold tracking-tight sm:text-5xl"
+        >
+          Get started in 5 minutes.
+        </h1>
+        <p class="mt-4 max-w-2xl text-lg text-ink-200">
+          Three steps to runtime security for your AI agents.
+        </p>
+
+        <!-- Step 1 -->
+        <section class="mt-16">
+          <div class="flex items-center gap-3">
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-ink-50"
+              >1</span
+            >
+            <h2 class="text-xl font-semibold text-ink-50">Install the SDK</h2>
+          </div>
+          <div class="mt-4 space-y-4">
+            <div>
+              <p class="mb-2 text-sm font-medium text-ink-200">Python</p>
+              <pre
+                class="overflow-x-auto rounded-lg border border-ink-600/40 bg-ink-900/80 p-4 font-mono text-sm text-ink-50"
+              ><code>pip install parry</code></pre>
+            </div>
+            <div>
+              <p class="mb-2 text-sm font-medium text-ink-200">TypeScript</p>
+              <pre
+                class="overflow-x-auto rounded-lg border border-ink-600/40 bg-ink-900/80 p-4 font-mono text-sm text-ink-50"
+              ><code>npm install @parry/sdk</code></pre>
+            </div>
+            <div>
+              <p class="mb-2 text-sm font-medium text-ink-200">Go</p>
+              <pre
+                class="overflow-x-auto rounded-lg border border-ink-600/40 bg-ink-900/80 p-4 font-mono text-sm text-ink-50"
+              ><code>go get github.com/sharukhhasan/parry/sdk-go</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Step 2 -->
+        <section class="mt-16">
+          <div class="flex items-center gap-3">
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-ink-50"
+              >2</span
+            >
+            <h2 class="text-xl font-semibold text-ink-50">
+              Choose your integration style
+            </h2>
+          </div>
+
+          <div class="mt-6 grid gap-6 lg:grid-cols-2">
+            <!-- Option A: Wrapper -->
+            <div
+              class="rounded-xl border border-ink-600/30 bg-ink-900/40 p-6"
+            >
+              <h3 class="text-base font-semibold text-ink-50">
+                Option A: Wrap your client
+              </h3>
+              <p class="mt-2 text-sm text-ink-200">
+                Replace your LLM client import with the Parry wrapper.
+                Every call is intercepted automatically.
+              </p>
+              <pre
+                class="mt-4 overflow-x-auto rounded-lg border border-ink-600/40 bg-ink-950 p-4 font-mono text-sm text-ink-50"
+              ><code><span class="text-ink-400"># Before</span>
+from openai import OpenAI
+client = OpenAI()
+
+<span class="text-ink-400"># After</span>
+from parry import ParryOpenAI
+client = ParryOpenAI(
+    parry_api_key="sk-parry-...",
+    parry_agent_id="my-agent",
+)</code></pre>
+            </div>
+
+            <!-- Option B: Auto-instrument -->
+            <div
+              class="rounded-xl border border-accent/30 bg-ink-900/40 p-6"
+            >
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-semibold text-ink-50">
+                  Option B: Auto-instrument
+                </h3>
+                <span
+                  class="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-semibold text-accent"
+                  >NEW</span
+                >
+              </div>
+              <p class="mt-2 text-sm text-ink-200">
+                Zero code changes. Monkey-patches OpenAI and Anthropic SDKs
+                globally. Works with any framework.
+              </p>
+              <pre
+                class="mt-4 overflow-x-auto rounded-lg border border-ink-600/40 bg-ink-950 p-4 font-mono text-sm text-ink-50"
+              ><code>import parry
+parry.init(api_key="sk-parry-...", agent_id="my-agent")
+parry.auto_instrument()
+
+<span class="text-ink-400"># That's it. Every LLM call is now monitored.</span>
+from openai import OpenAI
+client = OpenAI()
+client.chat.completions.create(...)</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Step 3 -->
+        <section class="mt-16">
+          <div class="flex items-center gap-3">
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-ink-50"
+              >3</span
+            >
+            <h2 class="text-xl font-semibold text-ink-50">
+              Watch the dashboard
+            </h2>
+          </div>
+          <p class="mt-4 text-sm text-ink-200">
+            As soon as your agent makes its first LLM call, events appear in the
+            dashboard. From there you can:
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-ink-200">
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 text-accent">&#10003;</span>
+              <span>See real-time detections in the live block feed</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 text-accent">&#10003;</span>
+              <span>Configure policies, custom rules, and alert channels</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 text-accent">&#10003;</span>
+              <span>Replay sessions call-by-call with detection annotations</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 text-accent">&#10003;</span>
+              <span>Red team your agent with a built-in attack corpus</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 text-accent">&#10003;</span>
+              <span>Generate compliance reports for SOC 2 and EU AI Act</span>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Supported frameworks -->
+        <section class="mt-16">
+          <h2 class="text-xl font-semibold text-ink-50">
+            Supported frameworks
+          </h2>
+          <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {
+              [
+                "OpenAI",
+                "Anthropic",
+                "LangChain",
+                "LangGraph",
+                "CrewAI",
+                "AutoGen",
+                "LlamaIndex",
+                "Pydantic AI",
+              ].map((fw) => (
+                <div class="rounded-lg border border-ink-600/30 bg-ink-900/40 px-4 py-3 text-center text-sm font-medium text-ink-200">
+                  {fw}
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        <!-- CTA -->
+        <div
+          class="mt-16 rounded-xl border border-ink-600/30 bg-ink-900/40 px-6 py-8 text-center sm:px-12"
+        >
+          <h2 class="text-xl font-semibold text-ink-50">
+            Ready to secure your agents?
+          </h2>
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="https://app.parry.dev/sign-up"
+              class="rounded-md bg-accent px-5 py-2 text-sm font-medium text-ink-50 transition hover:bg-accent-hover"
+            >
+              Start free
+            </a>
+            <a
+              href="/playground"
+              class="rounded-md border border-ink-600 bg-ink-900/60 px-5 py-2 text-sm font-medium text-ink-50 transition hover:bg-ink-800"
+            >
+              Try the playground
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-ink-800 py-8">
+      <div
+        class="container-narrow flex flex-col items-center justify-between gap-4 text-xs text-ink-400 sm:flex-row"
+      >
+        <span>&copy; {new Date().getFullYear()} Parry</span>
+        <div class="flex gap-6">
+          <a href="https://app.parry.dev" class="hover:text-ink-200"
+            >Dashboard</a
+          >
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="hover:text-ink-200">GitHub</a
+          >
+          <a href="mailto:hello@parry.dev" class="hover:text-ink-200"
+            >Contact</a
+          >
+        </div>
+      </div>
+    </footer>
+  </div>
+</Base>
