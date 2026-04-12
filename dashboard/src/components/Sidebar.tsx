@@ -16,6 +16,7 @@ import {
   Radio,
   Webhook,
   Users,
+  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ const navItems = [
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/policies", label: "Policies", icon: FileCheck },
   { to: "/custom-rules", label: "Custom Rules", icon: FileCode },
+  { to: "/community-rules", label: "Community Rules", icon: Store },
   { to: "/reports", label: "Reports", icon: FileDown },
   { to: "/audit-log", label: "Audit Log", icon: Activity },
   { to: "/slo", label: "SLOs", icon: Gauge },

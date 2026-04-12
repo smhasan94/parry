@@ -21,6 +21,7 @@ import { CompliancePage } from "@/pages/CompliancePage";
 import { AgentGroupsPage } from "@/pages/AgentGroupsPage";
 import { ThreatIntelPage } from "@/pages/ThreatIntelPage";
 import { WebhooksPage } from "@/pages/WebhooksPage";
+import { CommunityRulesPage } from "@/pages/CommunityRulesPage";
 import { SSOLoginPage } from "@/pages/SSOLoginPage";
 import { SSOCallbackPage } from "@/pages/SSOCallbackPage";
 
@@ -157,6 +158,12 @@ const threatIntelRoute = createRoute({
   component: ThreatIntelPage,
 });
 
+const communityRulesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/community-rules",
+  component: CommunityRulesPage,
+});
+
 const ssoLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth/sso",
@@ -187,6 +194,7 @@ const routeTree = rootRoute.addChildren([
   complianceRoute,
   agentGroupsRoute,
   threatIntelRoute,
+  communityRulesRoute,
   webhooksRoute,
   ssoLoginRoute,
   ssoCallbackRoute,

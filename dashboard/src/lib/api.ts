@@ -879,6 +879,52 @@ class ApiClient {
     if (filters?.cursor) params.set("cursor", filters.cursor);
     return this.request(`/api/v1/audit-log?${params}`);
   }
+
+  // ── Community Rules ──────────────────────────────────────────────
+
+  async listCommunityPacks(params?: { category?: string; search?: string }): Promise<CommunityPack[]> {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set("category", params.category);
+    if (params?.search) qs.set("search", params.search);
+    const q = qs.toString();
+    return this.request(`/api/v1/community-rules/packs${q ? `?${q}` : ""}`);
+  }
+
+  async getCommunityPack(packId: string): Promise<CommunityPack> {
+    return this.request(`/api/v1/community-rules/packs/${packId}`);
+  }
+
+  async publishCommunityPack(data: {
+    name: string;
+    description?: string;
+    category: string;
+    rules: Array<{ name: string; pattern: string; target?: string; severity?: string }>;
+  }): Promise<CommunityPack> {
+    return this.request("/api/v1/community-rules/packs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async installCommunityPack(packId: string): Promise<CommunitySubscription> {
+    return this.request(`/api/v1/community-rules/packs/${packId}/install`, {
+      method: "POST",
+    });
+  }
+
+  async uninstallCommunityPack(packId: string): Promise<void> {
+    return this.request(`/api/v1/community-rules/packs/${packId}/uninstall`, {
+      method: "DELETE",
+    });
+  }
+
+  async listCommunitySubscriptions(): Promise<CommunitySubscription[]> {
+    return this.request("/api/v1/community-rules/subscriptions");
+  }
+
+  async listCommunityCategories(): Promise<string[]> {
+    return this.request("/api/v1/community-rules/categories");
+  }
 }
 
 export interface AlertConfig {
@@ -1145,6 +1191,29 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+export interface CommunityPack {
+  id: string;
+  org_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string;
+  rules: Array<{ name: string; pattern: string; target: string; severity: string }>;
+  version: number;
+  install_count: number;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunitySubscription {
+  id: string;
+  org_id: string;
+  pack_id: string;
+  installed_version: number;
+  created_at: string;
 }
 
 export const api = new ApiClient();
