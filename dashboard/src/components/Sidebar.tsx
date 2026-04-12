@@ -17,17 +17,23 @@ import {
   Webhook,
   Users,
   Store,
+  BarChart3,
+  Cpu,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/agents", label: "Agents", icon: Bot },
+  { to: "/fleet", label: "Fleet Overview", icon: BarChart3 },
   { to: "/agent-groups", label: "Agent Groups", icon: Users },
+  { to: "/sdk-health", label: "SDK Health", icon: Cpu },
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/policies", label: "Policies", icon: FileCheck },
   { to: "/custom-rules", label: "Custom Rules", icon: FileCode },
   { to: "/community-rules", label: "Community Rules", icon: Store },
+  { to: "/tuning", label: "Tuning Sandbox", icon: FlaskConical },
   { to: "/reports", label: "Reports", icon: FileDown },
   { to: "/audit-log", label: "Audit Log", icon: Activity },
   { to: "/slo", label: "SLOs", icon: Gauge },

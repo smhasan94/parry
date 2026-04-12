@@ -22,6 +22,9 @@ import { AgentGroupsPage } from "@/pages/AgentGroupsPage";
 import { ThreatIntelPage } from "@/pages/ThreatIntelPage";
 import { WebhooksPage } from "@/pages/WebhooksPage";
 import { CommunityRulesPage } from "@/pages/CommunityRulesPage";
+import { FleetOverviewPage } from "@/pages/FleetOverviewPage";
+import { SDKHealthPage } from "@/pages/SDKHealthPage";
+import { TuningSandboxPage } from "@/pages/TuningSandboxPage";
 import { SSOLoginPage } from "@/pages/SSOLoginPage";
 import { SSOCallbackPage } from "@/pages/SSOCallbackPage";
 
@@ -164,6 +167,24 @@ const communityRulesRoute = createRoute({
   component: CommunityRulesPage,
 });
 
+const fleetOverviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/fleet",
+  component: FleetOverviewPage,
+});
+
+const sdkHealthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sdk-health",
+  component: SDKHealthPage,
+});
+
+const tuningSandboxRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tuning",
+  component: TuningSandboxPage,
+});
+
 const ssoLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth/sso",
@@ -195,6 +216,9 @@ const routeTree = rootRoute.addChildren([
   agentGroupsRoute,
   threatIntelRoute,
   communityRulesRoute,
+  fleetOverviewRoute,
+  sdkHealthRoute,
+  tuningSandboxRoute,
   webhooksRoute,
   ssoLoginRoute,
   ssoCallbackRoute,

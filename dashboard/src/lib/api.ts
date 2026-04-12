@@ -880,6 +880,27 @@ class ApiClient {
     return this.request(`/api/v1/audit-log?${params}`);
   }
 
+  // ── Fleet & SDK Health ──────────────────────────────────────────
+
+  async getFleetOverview(): Promise<FleetOverview> {
+    return this.request("/api/v1/agents/fleet-overview");
+  }
+
+  async getSDKHealth(): Promise<SDKHealthResponse> {
+    return this.request("/api/v1/agents/sdk-health");
+  }
+
+  async getShareToken(incidentId: string): Promise<{ token: string; incident_id: string }> {
+    return this.request(`/api/v1/incidents/${incidentId}/share-token`);
+  }
+
+  async replayWithTuning(events: Array<Record<string, unknown>>, configOverrides: Record<string, unknown>): Promise<TuningResult> {
+    return this.request("/api/v1/playground/tune", {
+      method: "POST",
+      body: JSON.stringify({ events, config_overrides: configOverrides }),
+    });
+  }
+
   // ── Community Rules ──────────────────────────────────────────────
 
   async listCommunityPacks(params?: { category?: string; search?: string }): Promise<CommunityPack[]> {
@@ -1214,6 +1235,53 @@ export interface CommunitySubscription {
   pack_id: string;
   installed_version: number;
   created_at: string;
+}
+
+export interface FleetOverview {
+  total_agents: number;
+  grade_distribution: Record<string, number>;
+  avg_health_score: number | null;
+  agents: Array<{
+    id: string;
+    name: string;
+    is_active: boolean;
+    health_score: number | null;
+    health_grade: string | null;
+  }>;
+}
+
+export interface SDKHealthResponse {
+  total: number;
+  healthy: number;
+  stale: number;
+  silent: number;
+  agents: Array<{
+    id: string;
+    name: string;
+    last_event_at: string | null;
+    sdk_version: string | null;
+    wrapper_type: string | null;
+    status: "healthy" | "stale" | "silent";
+  }>;
+}
+
+export interface TuningResult {
+  total_events: number;
+  events_with_triggers: number;
+  trigger_rate: number;
+  detector_summary: Record<string, { triggered: number; total: number }>;
+  results: Array<{
+    event_index: number;
+    prompt_preview: string;
+    detections: Array<{
+      detector: string;
+      triggered: boolean;
+      severity: string;
+      confidence: number;
+      reason: string;
+    }>;
+    any_triggered: boolean;
+  }>;
 }
 
 export const api = new ApiClient();
