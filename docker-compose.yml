@@ -48,7 +48,7 @@ services:
       redis:
         condition: service_healthy
     command: >
-      uv run uvicorn app.main:app
+      uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
       --reload
@@ -73,12 +73,12 @@ services:
       redis:
         condition: service_healthy
     command: >
-      uv run watchmedo auto-restart
+      watchmedo auto-restart
       --directory=./app
       --pattern=*.py
       --recursive
       --
-      uv run celery -A app.workers.celery_app worker
+      celery -A app.workers.celery_app worker
       --loglevel=info
       --concurrency=2
       --beat
