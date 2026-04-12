@@ -13,7 +13,11 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(name="send_weekly_digest")
+@celery_app.task(
+    name="send_weekly_digest",
+    soft_time_limit=600,
+    time_limit=660,
+)
 def send_weekly_digest() -> dict:
     """Compute and send weekly digest for all active orgs."""
     return asyncio.get_event_loop().run_until_complete(_send_digests())

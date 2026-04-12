@@ -39,6 +39,13 @@ celery_app.conf.update(
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    # Global timeouts — individual tasks can override via decorator args.
+    # soft_time_limit raises SoftTimeLimitExceeded (catchable, allows cleanup).
+    # task_time_limit kills the worker process (last resort).
+    task_soft_time_limit=300,  # 5 minutes
+    task_time_limit=360,  # 6 minutes (hard kill)
+    task_reject_on_worker_lost=True,  # requeue if worker crashes mid-task
+    worker_max_tasks_per_child=200,  # restart worker process after 200 tasks (leak prevention)
     beat_schedule={
         "refresh-stale-baselines": {
             "task": "refresh_stale_baselines",
