@@ -6,6 +6,7 @@ from app.api.v1 import (
     alerts,
     api_keys,
     audit,
+    badges,
     billing,
     budgets,
     compliance,
@@ -67,3 +68,4 @@ api_router.include_router(
     webhook_endpoints.router, prefix="/webhooks/endpoints", tags=["webhooks"]
 )
 api_router.include_router(playground.router, prefix="/playground", tags=["playground"])
+api_router.include_router(badges.router, prefix="/badges", tags=["badges"])

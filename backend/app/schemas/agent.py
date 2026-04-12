@@ -18,6 +18,7 @@ class AgentUpdate(ParrySchema):
     description: str | None = None
     is_active: bool | None = None
     metadata: dict[str, Any] | None = None
+    badge_public: bool | None = None
 
 
 class AgentResponse(ParrySchema):
@@ -33,6 +34,7 @@ class AgentResponse(ParrySchema):
     # Health score (0-100, lower is worse). Computed via
     # health_score_service; read-through Redis cache in list/get handlers.
     # None when the score hasn't been computed yet for this request.
+    badge_public: bool = False
     health_score: int | None = None
     health_grade: str | None = None
     health_components: dict[str, Any] | None = None

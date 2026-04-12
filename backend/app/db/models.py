@@ -191,6 +191,9 @@ class Agent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     group_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("agent_groups.id", ondelete="SET NULL"), nullable=True
     )
+    badge_public: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
 
     __table_args__ = (UniqueConstraint("org_id", "name", name="uq_agent_org_name"),)
 

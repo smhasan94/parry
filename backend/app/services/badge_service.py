@@ -1,0 +1,54 @@
+"""Security score badge SVG generator.
+
+Produces shields.io-style SVG badges showing an agent's current
+health grade (A/B/C/D/F). Designed for embedding in READMEs and docs.
+"""
+
+GRADE_COLORS = {
+    "A": "#22c55e",  # green-500
+    "B": "#84cc16",  # lime-500
+    "C": "#eab308",  # yellow-500
+    "D": "#f97316",  # orange-500
+    "F": "#ef4444",  # red-500
+}
+
+_LABEL = "parry"
+_LABEL_WIDTH = 42
+_GRADE_WIDTH = 38
+_TOTAL_WIDTH = _LABEL_WIDTH + _GRADE_WIDTH
+_HEIGHT = 20
+_FONT = "font-family='DejaVu Sans,Verdana,Geneva,sans-serif' font-size='11'"
+
+
+def generate_badge_svg(grade: str, score: int) -> str:
+    """Return a shields.io-style SVG badge for the given grade."""
+    color = GRADE_COLORS.get(grade, GRADE_COLORS["F"])
+    grade_text = f"{grade} ({score})"
+    # Widen the grade section for the score text
+    grade_w = 56
+    total_w = _LABEL_WIDTH + grade_w
+
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{total_w}" height="{_HEIGHT}" role="img" aria-label="{_LABEL}: {grade_text}">
+  <title>{_LABEL}: {grade_text}</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <clipPath id="r"><rect width="{total_w}" height="{_HEIGHT}" rx="3" fill="#fff"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="{_LABEL_WIDTH}" height="{_HEIGHT}" fill="#555"/>
+    <rect x="{_LABEL_WIDTH}" width="{grade_w}" height="{_HEIGHT}" fill="{color}"/>
+    <rect width="{total_w}" height="{_HEIGHT}" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" {_FONT}>
+    <text x="{_LABEL_WIDTH / 2}" y="14" fill="#010101" fill-opacity=".3">{_LABEL}</text>
+    <text x="{_LABEL_WIDTH / 2}" y="13">{_LABEL}</text>
+    <text x="{_LABEL_WIDTH + grade_w / 2}" y="14" fill="#010101" fill-opacity=".3">{grade_text}</text>
+    <text x="{_LABEL_WIDTH + grade_w / 2}" y="13">{grade_text}</text>
+  </g>
+</svg>"""
+
+
+def generate_unknown_badge_svg() -> str:
+    """Badge shown when the agent doesn't exist or badge is disabled."""
+    return generate_badge_svg("?", 0).replace("? (0)", "unknown").replace(GRADE_COLORS.get("F", ""), "#9ca3af")
