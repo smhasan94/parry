@@ -17,6 +17,7 @@ import { useStartRedTeamRun } from "@/hooks/useRedTeam";
 import { CostCard } from "@/components/CostCard";
 import { PermissionsCard } from "@/components/PermissionsCard";
 import { BaselineDriftTimeline } from "@/components/charts/BaselineDriftTimeline";
+import { BadgeCard } from "@/components/BadgeCard";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { useAgentSessions } from "@/hooks/useSession";
 import { EventVolume } from "@/components/charts/EventVolume";
@@ -275,6 +276,9 @@ export function AgentDetailPage() {
 
         {/* Permission Boundaries */}
         <PermissionsCard agentId={agentId} />
+
+        {/* Security Badge */}
+        <BadgeCard agentId={agentId} agentName={agent.name} badgePublic={agent.badge_public} />
 
         {/* Cost + Budget */}
         <CostCard agentId={agentId} />

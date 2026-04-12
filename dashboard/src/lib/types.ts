@@ -23,6 +23,7 @@ export interface Agent {
   updated_at: string;
   health_score: number | null;
   health_grade: "A" | "B" | "C" | "D" | "F" | null;
+  badge_public: boolean;
   health_components: {
     triggered_detections_7d: number;
     open_incidents: number;
