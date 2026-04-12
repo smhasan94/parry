@@ -17,9 +17,12 @@ __all__ = [
     "ParryClient",
     "ParryOpenAI",
     "ParryPermissionDeniedError",
+    "auto_instrument",
     "get_client",
     "init",
 ]
+
+from parry.middleware.auto_instrument import auto_instrument
 
 _client: ParryClient | None = None
 
