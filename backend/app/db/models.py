@@ -934,3 +934,49 @@ class ScheduledReport(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             name="ck_scheduled_reports_type",
         ),
     )
+
+
+# ── Community Rule Packs ──────────────────────────────────────────
+
+
+class CommunityRulePack(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """A published set of detection rules shareable across orgs."""
+
+    __tablename__ = "community_rule_packs"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    rules: Mapped[list] = mapped_column(JSONB, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    install_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+    org: Mapped["Org"] = relationship()
+
+
+class CommunityRuleSubscription(Base, UUIDPrimaryKeyMixin):
+    """An org's subscription to a community rule pack."""
+
+    __tablename__ = "community_rule_subscriptions"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    pack_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("community_rule_packs.id", ondelete="CASCADE"), nullable=False
+    )
+    installed_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "pack_id", name="uq_community_sub_org_pack"),
+    )
+
+    pack: Mapped["CommunityRulePack"] = relationship()

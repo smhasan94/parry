@@ -9,6 +9,7 @@ from app.api.v1 import (
     badges,
     billing,
     budgets,
+    community_rules,
     compliance,
     custom_rules,
     permissions,
@@ -68,4 +69,7 @@ api_router.include_router(
     webhook_endpoints.router, prefix="/webhooks/endpoints", tags=["webhooks"]
 )
 api_router.include_router(playground.router, prefix="/playground", tags=["playground"])
+api_router.include_router(
+    community_rules.router, prefix="/community-rules", tags=["community-rules"]
+)
 api_router.include_router(badges.router, prefix="/badges", tags=["badges"])

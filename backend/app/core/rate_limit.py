@@ -16,6 +16,7 @@ log = structlog.get_logger()
 RATE_LIMITS: dict[str, int] = {
     "/api/v1/playground/analyze": 10,  # Public, unauthenticated — tight cap
     "/api/v1/badges": 60,  # Public badge SVGs — cached by CDN anyway
+    "/api/v1/community-rules": 30,  # Marketplace browsing + install/publish
     "/api/v1/events/ingest": 300,  # SDK ingestion — high volume
     "/api/v1/events": 60,  # Event listing
     "/api/v1/agents": 60,
