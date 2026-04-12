@@ -1,0 +1,259 @@
+---
+import Base from "../layouts/Base.astro";
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "https://api.parry.dev";
+---
+
+<Base
+  title="Attack Benchmark — Parry"
+  description="See how Parry's detection engine scores against a standardized AI attack corpus."
+>
+  <div class="relative overflow-hidden">
+    <!-- ambient gradient -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-[-20%] h-[60vh] bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.18),transparent_60%)]"
+    >
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10">
+      <div class="container-narrow flex items-center justify-between py-6">
+        <a href="/" class="flex items-center gap-2 font-semibold">
+          <span
+            class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-accent text-ink-50"
+            >P</span
+          >
+          <span class="text-ink-50">Parry</span>
+        </a>
+        <nav class="hidden gap-8 text-sm text-ink-200 sm:flex">
+          <a href="/playground" class="hover:text-ink-50">Playground</a>
+          <a href="/benchmark" class="text-ink-50 font-medium">Benchmark</a>
+          <a href="/#features" class="hover:text-ink-50">Features</a>
+          <a href="/#pricing" class="hover:text-ink-50">Pricing</a>
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="hover:text-ink-50">GitHub</a
+          >
+        </nav>
+        <a
+          href="https://app.parry.dev"
+          class="rounded-md border border-ink-600 bg-ink-900/60 px-3 py-1.5 text-sm font-medium text-ink-50 hover:bg-ink-800"
+        >
+          Sign in
+        </a>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="relative z-10">
+      <div class="container-narrow pt-12 pb-24 sm:pt-16 sm:pb-32">
+        <span class="pill">
+          <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+          Attack benchmark
+        </span>
+        <h1
+          class="mt-6 grad-text text-3xl font-semibold tracking-tight sm:text-5xl"
+        >
+          How good is the detection?
+        </h1>
+        <p class="mt-4 max-w-2xl text-lg text-ink-200">
+          We run Parry's detection engine against a standardized corpus of 25
+          attacks across 5 categories. Here are the live results.
+        </p>
+
+        <!-- Loading state -->
+        <div id="loading" class="mt-12 text-sm text-ink-400">
+          Running benchmark...
+        </div>
+
+        <!-- Overall score -->
+        <div id="overall" class="mt-12 hidden">
+          <div
+            class="flex items-center gap-6 rounded-xl border border-ink-600/30 bg-ink-900/40 p-6"
+          >
+            <div
+              id="score-ring"
+              class="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-accent"
+            >
+              <span id="overall-score" class="text-3xl font-bold text-ink-50"
+                ></span
+              >
+            </div>
+            <div>
+              <p class="text-xl font-semibold text-ink-50">Overall Detection Rate</p>
+              <p id="overall-summary" class="mt-1 text-sm text-ink-200"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category breakdown -->
+        <div
+          id="categories"
+          class="mt-8 hidden grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+        </div>
+
+        <!-- Individual results -->
+        <div id="details" class="mt-8 hidden">
+          <h2 class="mb-4 text-lg font-semibold text-ink-50">
+            Individual Results
+          </h2>
+          <div
+            id="results-list"
+            class="divide-y divide-ink-800 rounded-lg border border-ink-600/30 bg-ink-900/40"
+          >
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div
+          class="mt-16 rounded-xl border border-ink-600/30 bg-ink-900/40 px-6 py-8 text-center sm:px-12"
+        >
+          <h2 class="text-xl font-semibold text-ink-50">
+            Try it on your own prompts
+          </h2>
+          <p class="mt-2 text-ink-200">
+            The playground lets you test arbitrary inputs against the same
+            detection engine.
+          </p>
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="/playground"
+              class="rounded-md bg-accent px-5 py-2 text-sm font-medium text-ink-50 transition hover:bg-accent-hover"
+            >
+              Open playground
+            </a>
+            <a
+              href="https://app.parry.dev/sign-up"
+              class="rounded-md border border-ink-600 bg-ink-900/60 px-5 py-2 text-sm font-medium text-ink-50 transition hover:bg-ink-800"
+            >
+              Start free
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-ink-800 py-8">
+      <div
+        class="container-narrow flex flex-col items-center justify-between gap-4 text-xs text-ink-400 sm:flex-row"
+      >
+        <span>&copy; {new Date().getFullYear()} Parry</span>
+        <div class="flex gap-6">
+          <a href="https://app.parry.dev" class="hover:text-ink-200"
+            >Dashboard</a
+          >
+          <a
+            href="https://github.com/sharukhhasan/parry"
+            class="hover:text-ink-200">GitHub</a
+          >
+          <a href="mailto:hello@parry.dev" class="hover:text-ink-200"
+            >Contact</a
+          >
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script define:vars={{ API_URL }}>
+    const CATEGORY_LABELS = {
+      prompt_injection: "Prompt Injection",
+      jailbreak: "Jailbreak",
+      privilege_escalation: "Privilege Escalation",
+      data_exfiltration: "Data Exfiltration",
+      clean: "Clean (False Positive)",
+    };
+
+    const CATEGORY_COLORS = {
+      prompt_injection: { border: "border-orange-500/60", bg: "bg-orange-950/40", text: "text-orange-300" },
+      jailbreak: { border: "border-red-500/60", bg: "bg-red-950/40", text: "text-red-300" },
+      privilege_escalation: { border: "border-purple-500/60", bg: "bg-purple-950/40", text: "text-purple-300" },
+      data_exfiltration: { border: "border-rose-500/60", bg: "bg-rose-950/40", text: "text-rose-300" },
+      clean: { border: "border-emerald-500/60", bg: "bg-emerald-950/40", text: "text-emerald-300" },
+    };
+
+    function el(tag, classes, text) {
+      const node = document.createElement(tag);
+      if (classes) node.className = classes;
+      if (text) node.textContent = text;
+      return node;
+    }
+
+    async function loadBenchmark() {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/benchmark/results`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        render(data);
+      } catch (err) {
+        document.getElementById("loading").textContent =
+          "Failed to load benchmark results. Please try again later.";
+      }
+    }
+
+    function render(data) {
+      document.getElementById("loading").classList.add("hidden");
+
+      // Overall
+      const overallEl = document.getElementById("overall");
+      overallEl.classList.remove("hidden");
+      document.getElementById("overall-score").textContent = `${data.overall_score}%`;
+      document.getElementById("overall-summary").textContent =
+        `${data.total_detected} of ${data.total_attacks} test cases correctly handled`;
+
+      // Categories
+      const catContainer = document.getElementById("categories");
+      catContainer.classList.remove("hidden");
+      catContainer.replaceChildren();
+
+      for (const [cat, scores] of Object.entries(data.categories)) {
+        const c = CATEGORY_COLORS[cat] || CATEGORY_COLORS.clean;
+        const label = CATEGORY_LABELS[cat] || cat;
+
+        const card = el("div", `rounded-lg border ${c.border} ${c.bg} p-4`);
+        const header = el("div", "flex items-center justify-between");
+        const name = el("span", `text-sm font-medium ${c.text}`, label);
+        const score = el("span", `text-lg font-bold ${c.text}`, `${scores.score}%`);
+        header.append(name, score);
+
+        const detail = el("p", "mt-1 text-xs text-ink-400",
+          `${scores.detected}/${scores.total} ${cat === "clean" ? "correctly ignored" : "detected"}`);
+
+        const track = el("div", "mt-2 h-1.5 rounded-full bg-ink-800 overflow-hidden");
+        const fill = el("div", "h-full rounded-full bg-accent");
+        fill.style.width = `${scores.score}%`;
+        track.append(fill);
+
+        card.append(header, detail, track);
+        catContainer.append(card);
+      }
+
+      // Individual results
+      const detailsEl = document.getElementById("details");
+      detailsEl.classList.remove("hidden");
+      const listEl = document.getElementById("results-list");
+      listEl.replaceChildren();
+
+      for (const r of data.results) {
+        const row = el("div", "flex items-center justify-between px-4 py-2.5");
+
+        const left = el("div", "flex items-center gap-3 min-w-0");
+        const idBadge = el("span", "font-mono text-xs text-ink-400 w-14 shrink-0", r.id);
+        const catBadge = el("span", "text-xs text-ink-300", CATEGORY_LABELS[r.category] || r.category);
+        left.append(idBadge, catBadge);
+
+        const status = el("span",
+          `rounded-full px-2 py-0.5 text-[10px] font-semibold ${r.detected ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`,
+          r.detected ? "PASS" : "MISS"
+        );
+
+        row.append(left, status);
+        listEl.append(row);
+      }
+    }
+
+    loadBenchmark();
+  </script>
+</Base>
