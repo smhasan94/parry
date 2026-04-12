@@ -7,6 +7,7 @@ from app.api.v1 import (
     api_keys,
     audit,
     badges,
+    benchmark,
     billing,
     budgets,
     community_rules,
@@ -73,3 +74,4 @@ api_router.include_router(
     community_rules.router, prefix="/community-rules", tags=["community-rules"]
 )
 api_router.include_router(badges.router, prefix="/badges", tags=["badges"])
+api_router.include_router(benchmark.router, prefix="/benchmark", tags=["benchmark"])
