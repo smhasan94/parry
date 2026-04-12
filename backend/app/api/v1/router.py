@@ -16,6 +16,7 @@ from app.api.v1 import (
     permissions,
     playground,
     scheduled_reports,
+    slack,
     threat_intel,
     webhook_endpoints,
     detector_config,
@@ -73,5 +74,6 @@ api_router.include_router(playground.router, prefix="/playground", tags=["playgr
 api_router.include_router(
     community_rules.router, prefix="/community-rules", tags=["community-rules"]
 )
+api_router.include_router(slack.router, prefix="/slack", tags=["slack"])
 api_router.include_router(badges.router, prefix="/badges", tags=["badges"])
 api_router.include_router(benchmark.router, prefix="/benchmark", tags=["benchmark"])
