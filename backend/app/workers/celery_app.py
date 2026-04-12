@@ -26,6 +26,7 @@ celery_app = Celery(
         "app.workers.threat_intel_task",
         "app.workers.webhook_delivery_task",
         "app.workers.scheduled_report_task",
+        "app.workers.digest_task",
     ],
 )
 
@@ -74,6 +75,11 @@ celery_app.conf.update(
             "task": "refresh_supplier_register",
             # Daily at 04:00 UTC — after audit export, before business hours.
             "schedule": crontab(hour=4, minute=0),
+        },
+        "send-weekly-digest": {
+            "task": "send_weekly_digest",
+            # Monday at 09:00 UTC — start of the work week.
+            "schedule": crontab(hour=9, minute=0, day_of_week=1),
         },
         "export-audit-log-monthly": {
             "task": "export_audit_log_monthly",
