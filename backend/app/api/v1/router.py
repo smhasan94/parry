@@ -11,6 +11,7 @@ from app.api.v1 import (
     compliance,
     custom_rules,
     permissions,
+    playground,
     scheduled_reports,
     threat_intel,
     webhook_endpoints,
@@ -65,3 +66,4 @@ api_router.include_router(threat_intel.router, prefix="/threat-intel", tags=["th
 api_router.include_router(
     webhook_endpoints.router, prefix="/webhooks/endpoints", tags=["webhooks"]
 )
+api_router.include_router(playground.router, prefix="/playground", tags=["playground"])
