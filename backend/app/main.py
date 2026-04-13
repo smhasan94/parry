@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from app.core.config import settings
+from app.core.correlation_id import CorrelationIdMiddleware
 from app.core.exceptions import ConflictError, NotFoundError, ParryError, PolicyViolationError
 from app.core.logging import setup_logging
 from app.core.metrics import registry as metrics_registry
@@ -67,6 +68,9 @@ app.add_middleware(RequestSizeLimitMiddleware)
 
 # Rate limiting (added after CORS so CORS headers are always present)
 app.add_middleware(RateLimitMiddleware)
+
+# Correlation ID — binds request_id into structlog context for every log line
+app.add_middleware(CorrelationIdMiddleware)
 
 # Metrics — added last so it wraps everything (innermost middleware seen by requests)
 app.add_middleware(MetricsMiddleware)
