@@ -2,6 +2,8 @@
 
 import asyncio
 import smtplib
+import uuid
+from dataclasses import dataclass
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
@@ -203,13 +205,16 @@ def build_email_html(incident: Incident, dashboard_url: str | None = None) -> st
       <h2 style='margin:8px 0'>{incident.title}</h2>
       <p style='color:#666;margin:0'>Status: {incident.status.value}</p>
     </div>
-    {"<table style='width:100%;border-collapse:collapse;font-size:14px'>"
-     "<thead><tr style='background:#f5f5f5'>"
-     "<th style='padding:6px 12px;text-align:left'>Detector</th>"
-     "<th style='padding:6px 12px;text-align:left'>Reason</th>"
-     "<th style='padding:6px 12px;text-align:right'>Confidence</th>"
-     "</tr></thead><tbody>" + detection_rows + "</tbody></table>"
-     if detection_rows else ""}
+    {
+        "<table style='width:100%;border-collapse:collapse;font-size:14px'>"
+        "<thead><tr style='background:#f5f5f5'>"
+        "<th style='padding:6px 12px;text-align:left'>Detector</th>"
+        "<th style='padding:6px 12px;text-align:left'>Reason</th>"
+        "<th style='padding:6px 12px;text-align:right'>Confidence</th>"
+        "</tr></thead><tbody>" + detection_rows + "</tbody></table>"
+        if detection_rows
+        else ""
+    }
     {link_html}
     <p style='color:#999;font-size:12px;margin-top:32px'>
       You're receiving this because email alerts are enabled for your Parry organization.
@@ -459,3 +464,153 @@ async def dispatch_incident_alert(
     opsgenie_key = config.get("opsgenie_api_key")
     if opsgenie_key:
         await send_opsgenie_alert(opsgenie_key, incident, dashboard_url)
+
+
+# ── Budget threshold alerts ──────────────────────────────────────
+
+
+@dataclass
+class BudgetAlertContext:
+    """Data needed to compose a budget threshold alert message."""
+
+    budget_id: uuid.UUID
+    agent_id: uuid.UUID
+    agent_name: str
+    org_id: uuid.UUID
+    period: str
+    cap_usd: float
+    current_spend: float
+    threshold_pct: int
+
+
+def _build_budget_alert_message(ctx: BudgetAlertContext) -> str:
+    pct_used = (ctx.current_spend / ctx.cap_usd) * 100 if ctx.cap_usd else 0.0
+    return (
+        f"Budget alert for agent '{ctx.agent_name}' ({ctx.agent_id}): "
+        f"${ctx.current_spend:.4f} of ${ctx.cap_usd:.2f} {ctx.period} cap used "
+        f"({pct_used:.1f}%) — crossed {ctx.threshold_pct}% threshold."
+    )
+
+
+def _build_budget_slack_payload(ctx: BudgetAlertContext) -> dict[str, Any]:
+    pct_used = (ctx.current_spend / ctx.cap_usd) * 100 if ctx.cap_usd else 0.0
+    color = "#eab308" if ctx.threshold_pct < 90 else "#dc2626"
+    message = _build_budget_alert_message(ctx)
+    return {
+        "text": message,
+        "attachments": [
+            {
+                "color": color,
+                "title": f":warning: Budget threshold crossed: {ctx.threshold_pct}%",
+                "fields": [
+                    {"title": "Agent", "value": ctx.agent_name, "short": True},
+                    {"title": "Period", "value": ctx.period, "short": True},
+                    {
+                        "title": "Spend",
+                        "value": f"${ctx.current_spend:.4f} / ${ctx.cap_usd:.2f}",
+                        "short": True,
+                    },
+                    {"title": "Usage", "value": f"{pct_used:.1f}%", "short": True},
+                ],
+            }
+        ],
+    }
+
+
+def _build_budget_webhook_payload(ctx: BudgetAlertContext) -> dict[str, Any]:
+    pct_used = (ctx.current_spend / ctx.cap_usd) * 100 if ctx.cap_usd else 0.0
+    return {
+        "schema_version": "1.0",
+        "event": "budget.threshold_crossed",
+        "budget": {
+            "id": str(ctx.budget_id),
+            "agent_id": str(ctx.agent_id),
+            "agent_name": ctx.agent_name,
+            "org_id": str(ctx.org_id),
+            "period": ctx.period,
+            "cap_usd": ctx.cap_usd,
+            "current_spend": ctx.current_spend,
+            "pct_used": round(pct_used, 2),
+            "threshold_pct": ctx.threshold_pct,
+        },
+    }
+
+
+async def dispatch_budget_alert(org: Org, ctx: BudgetAlertContext) -> None:
+    """Send budget threshold alerts to all configured channels for the org.
+
+    Mirrors ``dispatch_incident_alert`` but accepts a BudgetAlertContext
+    instead of an Incident so that budget events don't need to go through
+    the incident pipeline.
+    """
+    config = org.alert_config or {}
+    has_channel = bool(
+        config.get("slack_webhook_url")
+        or config.get("alert_emails")
+        or config.get("webhook_url")
+        or config.get("pagerduty_routing_key")
+        or config.get("opsgenie_api_key")
+    )
+    if not has_channel:
+        log.debug(
+            "budget_alert.no_channel_configured",
+            budget_id=str(ctx.budget_id),
+            threshold_pct=ctx.threshold_pct,
+        )
+        return
+
+    log.info(
+        "budget_alert.dispatching",
+        budget_id=str(ctx.budget_id),
+        agent_id=str(ctx.agent_id),
+        threshold_pct=ctx.threshold_pct,
+        current_spend=ctx.current_spend,
+        cap_usd=ctx.cap_usd,
+    )
+
+    slack_url = config.get("slack_webhook_url")
+    if slack_url:
+        payload = _build_budget_slack_payload(ctx)
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.post(slack_url, json=payload)
+                resp.raise_for_status()
+            record_alert_sent(channel="slack", success=True)
+        except httpx.HTTPError as e:
+            log.warning("budget_alert.slack_failed", error=str(e))
+            record_alert_sent(channel="slack", success=False)
+
+    alert_emails = config.get("alert_emails") or []
+    if alert_emails and _smtp_configured():
+        subject = (
+            f"[Parry] Budget alert: {ctx.agent_name} crossed {ctx.threshold_pct}% of "
+            f"${ctx.cap_usd:.2f} {ctx.period} cap"
+        )
+        html = (
+            f"<html><body style='font-family:-apple-system,sans-serif'>"
+            f"<h2>Budget Threshold Alert</h2>"
+            f"<p>{_build_budget_alert_message(ctx)}</p>"
+            f"<p style='color:#999;font-size:12px'>Parry AI Security</p>"
+            f"</body></html>"
+        )
+        try:
+            await asyncio.get_running_loop().run_in_executor(
+                None, _send_email_sync, alert_emails, subject, html
+            )
+            record_alert_sent(channel="email", success=True)
+        except (smtplib.SMTPException, OSError) as e:
+            log.warning("budget_alert.email_failed", error=str(e))
+            record_alert_sent(channel="email", success=False)
+
+    webhook_url = config.get("webhook_url")
+    if webhook_url:
+        payload = _build_budget_webhook_payload(ctx)
+        webhook_headers: dict[str, str] = config.get("webhook_headers") or {}
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.post(webhook_url, json=payload, headers=webhook_headers)
+                resp.raise_for_status()
+            record_alert_sent(channel="webhook", success=True)
+        except httpx.HTTPError as e:
+            log.warning("budget_alert.webhook_failed", error=str(e))
+            record_alert_sent(channel="webhook", success=False)
