@@ -149,8 +149,6 @@ async def scalar_docs() -> HTMLResponse:
 @app.get("/health")
 async def health() -> dict:
     """Health check with dependency status for DB and Redis."""
-    import redis as redis_lib
-
     from app.db.session import engine
 
     checks: dict[str, str] = {}
@@ -165,9 +163,10 @@ async def health() -> dict:
 
     # Check Redis
     try:
-        r = redis_lib.Redis.from_url(settings.redis_url, socket_timeout=2)
+        from app.core.redis_pool import sync_redis
+
+        r = sync_redis()
         r.ping()
-        r.close()
         checks["redis"] = "ok"
     except Exception:
         checks["redis"] = "error"

@@ -88,10 +88,9 @@ async def _generate(
 
 def _set_job_status(job_id: str, status: str) -> None:
     try:
-        import redis  # type: ignore[import-not-found]
-        from app.core.config import settings
+        from app.core.redis_pool import sync_redis
 
-        r = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+        r = sync_redis()
         r.setex(f"bundle_job:{job_id}:status", 3600, status)
     except Exception:
         log.debug("auditor_bundle.redis_status_failed", exc_info=True)
@@ -99,10 +98,9 @@ def _set_job_status(job_id: str, status: str) -> None:
 
 def _store_bundle(job_id: str, data: bytes) -> None:
     try:
-        import redis  # type: ignore[import-not-found]
-        from app.core.config import settings
+        from app.core.redis_pool import sync_redis_raw
 
-        r = redis.Redis.from_url(settings.redis_url)
+        r = sync_redis_raw()
         r.setex(f"bundle_job:{job_id}:data", 3600, data)
     except Exception:
         log.warning("auditor_bundle.redis_store_failed", exc_info=True)

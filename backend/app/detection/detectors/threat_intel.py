@@ -21,18 +21,11 @@ log = structlog.get_logger()
 _CACHE_KEY = "threat_intel:active_hashes"
 _CACHE_TTL = 300  # 5 minutes
 
-_redis_client = None
-
-
 def _get_redis() -> Any:
-    global _redis_client
-    if _redis_client is not None:
-        return _redis_client
     try:
-        import redis  # type: ignore[import-not-found]
+        from app.core.redis_pool import sync_redis
 
-        _redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
-        return _redis_client
+        return sync_redis()
     except Exception:
         return None
 

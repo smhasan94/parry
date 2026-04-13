@@ -27,11 +27,11 @@ _PERIOD_META: dict[str, tuple[str, int]] = {
 
 
 def _get_redis():
-    """Lazy sync Redis client, same pattern as rate_limit.py."""
+    """Sync Redis client from shared pool."""
     try:
-        import redis
+        from app.core.redis_pool import sync_redis
 
-        return redis.Redis.from_url(settings.redis_url, decode_responses=True, socket_timeout=0.5)
+        return sync_redis()
     except Exception:
         log.debug("budget.redis_unavailable", exc_info=True)
         return None

@@ -35,18 +35,11 @@ _CACHE_PREFIX = "stats:"
 _CACHE_TTL_SECONDS = 5 * 60
 _TOP_TOOLS = 10
 
-_redis_client = None
-
-
 def _get_redis() -> Any | None:
-    global _redis_client
-    if _redis_client is not None:
-        return _redis_client
     try:
-        import redis  # type: ignore[import-not-found]
+        from app.core.redis_pool import sync_redis
 
-        _redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
-        return _redis_client
+        return sync_redis()
     except Exception:  # pragma: no cover
         log.debug("agent_stats.redis_unavailable", exc_info=True)
         return None

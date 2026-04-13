@@ -43,15 +43,11 @@ _redis_client = None
 
 
 def _get_redis() -> Any | None:
-    """Lazy sync Redis client. Returns None on failure (fail open)."""
-    global _redis_client
-    if _redis_client is not None:
-        return _redis_client
+    """Sync Redis client from shared pool. Returns None on failure (fail open)."""
     try:
-        import redis  # type: ignore[import-not-found]
+        from app.core.redis_pool import sync_redis
 
-        _redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
-        return _redis_client
+        return sync_redis()
     except Exception:  # pragma: no cover - redis lib or URL misconfigured
         log.debug("health_score.redis_unavailable", exc_info=True)
         return None

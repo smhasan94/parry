@@ -40,23 +40,14 @@ POLICY_CACHE_PREFIX = "policy:"
 
 # Single shared sync Redis handle, lazily initialized. The proxy check
 # is called synchronously inside a hot path, so we deliberately use the
-# sync client — no event loop handoff on cache hits.
-_redis_client = None
-
-
 def _get_redis():
-    global _redis_client
-    if _redis_client is None:
-        try:
-            import redis
+    try:
+        from app.core.redis_pool import sync_redis
 
-            _redis_client = redis.Redis.from_url(
-                settings.redis_url, decode_responses=True, socket_timeout=0.5
-            )
-        except Exception:
-            log.warning("proxy.redis_unavailable", exc_info=True)
-            return None
-    return _redis_client
+        return sync_redis()
+    except Exception:
+        log.warning("proxy.redis_unavailable", exc_info=True)
+        return None
 
 
 def _merge_policies(policies: list[Policy]) -> dict:

@@ -46,7 +46,7 @@ def publish_blocked_event(
 ) -> None:
     """Fire-and-forget pubsub write. Swallows every failure mode."""
     try:
-        import redis as redis_lib  # type: ignore[import-not-found]
+        from app.core.redis_pool import sync_redis_raw
 
         payload = {
             "type": "blocked",
@@ -60,11 +60,8 @@ def publish_blocked_event(
             "agent_id": agent_id,
             "ts": datetime.now(UTC).isoformat(),
         }
-        client = redis_lib.Redis.from_url(settings.redis_url)
-        try:
-            client.publish(channel_for(org_id), json.dumps(payload))
-        finally:
-            client.close()
+        client = sync_redis_raw()
+        client.publish(channel_for(org_id), json.dumps(payload))
     except Exception:
         # Never block the blocking path on a Redis hiccup.
         log.debug("event_bus.publish_failed", exc_info=True)
@@ -77,12 +74,12 @@ async def subscribe(org_id: str) -> AsyncIterator[dict[str, Any]]:
     cleanly so the SSE handler can emit a final keepalive and close.
     """
     try:
-        import redis.asyncio as aioredis  # type: ignore[import-not-found]
+        from app.core.redis_pool import async_redis
     except Exception:  # pragma: no cover
         log.debug("event_bus.redis_asyncio_unavailable", exc_info=True)
         return
 
-    client = aioredis.from_url(settings.redis_url, decode_responses=True)
+    client = async_redis()
     pubsub = client.pubsub()
     try:
         await pubsub.subscribe(channel_for(org_id))

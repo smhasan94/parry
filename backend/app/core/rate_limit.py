@@ -94,9 +94,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _get_redis(self) -> Any:
         if self._redis is None:
-            import redis
+            from app.core.redis_pool import sync_redis
 
-            self._redis = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+            self._redis = sync_redis()
         return self._redis
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
