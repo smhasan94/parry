@@ -37,7 +37,7 @@ RUN chmod +x /app/entrypoint.sh
 
 # Run as non-root user
 RUN groupadd --gid 1000 parry && \
-    useradd --uid 1000 --gid parry --shell /bin/sh parry && \
+    useradd --uid 1000 --gid parry --shell /bin/sh --create-home parry && \
     chown -R parry:parry /app
 USER parry
 
