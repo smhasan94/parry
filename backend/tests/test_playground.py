@@ -5,11 +5,11 @@ is a thin wrapper around the stateless detectors.
 """
 
 from app.api.v1.playground import (
+    _PLAYGROUND_DETECTORS,
+    _SEVERITY_ORDER,
     PlaygroundRequest,
     PlaygroundResponse,
-    _PLAYGROUND_DETECTORS,
     _result_to_hit,
-    _SEVERITY_ORDER,
 )
 
 

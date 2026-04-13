@@ -5,10 +5,15 @@ supplier record is created for each unique (system, supplier_name, model_id)
 tuple observed in events from that system's linked agents.
 """
 
+from __future__ import annotations
+
 import asyncio
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import structlog
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, text
 
 from app.compliance.supplier_metadata import get_supplier_info, supplier_name_for_model
@@ -76,7 +81,7 @@ async def _refresh_all() -> dict:
 
 
 async def _refresh_system_suppliers(
-    db: "AsyncSession",  # type: ignore[name-defined]
+    db: AsyncSession,
     system: AISystem,
 ) -> int:
     """Scan events for a single system's linked agents, upsert supplier rows."""

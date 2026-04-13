@@ -6,7 +6,7 @@ and model construction for the 4 new compliance tables.
 """
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from app.compliance.fria_template import FRIA_TEMPLATE
 from app.compliance.supplier_metadata import (
@@ -22,7 +22,6 @@ from app.db.models import (
 )
 from app.services.compliance_posture_service import Obligation, overall_status
 from app.services.serious_incident_service import days_remaining
-
 
 # ── Supplier Metadata ───────────────────────────────────────────
 

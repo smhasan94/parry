@@ -28,27 +28,39 @@ def generate_badge_svg(grade: str, score: int) -> str:
     grade_w = 56
     total_w = _LABEL_WIDTH + grade_w
 
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{total_w}" height="{_HEIGHT}" role="img" aria-label="{_LABEL}: {grade_text}">
-  <title>{_LABEL}: {grade_text}</title>
-  <linearGradient id="s" x2="0" y2="100%">
-    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
-    <stop offset="1" stop-opacity=".1"/>
-  </linearGradient>
-  <clipPath id="r"><rect width="{total_w}" height="{_HEIGHT}" rx="3" fill="#fff"/></clipPath>
-  <g clip-path="url(#r)">
-    <rect width="{_LABEL_WIDTH}" height="{_HEIGHT}" fill="#555"/>
-    <rect x="{_LABEL_WIDTH}" width="{grade_w}" height="{_HEIGHT}" fill="{color}"/>
-    <rect width="{total_w}" height="{_HEIGHT}" fill="url(#s)"/>
-  </g>
-  <g fill="#fff" text-anchor="middle" {_FONT}>
-    <text x="{_LABEL_WIDTH / 2}" y="14" fill="#010101" fill-opacity=".3">{_LABEL}</text>
-    <text x="{_LABEL_WIDTH / 2}" y="13">{_LABEL}</text>
-    <text x="{_LABEL_WIDTH + grade_w / 2}" y="14" fill="#010101" fill-opacity=".3">{grade_text}</text>
-    <text x="{_LABEL_WIDTH + grade_w / 2}" y="13">{grade_text}</text>
-  </g>
-</svg>"""
+    aria = f"{_LABEL}: {grade_text}"
+    lx = _LABEL_WIDTH + grade_w / 2
+    lx2 = _LABEL_WIDTH / 2
+    shadow = 'fill="#010101" fill-opacity=".3"'
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg"'
+        f' width="{total_w}" height="{_HEIGHT}" role="img" aria-label="{aria}">\n'
+        f"  <title>{_LABEL}: {grade_text}</title>\n"
+        f'  <linearGradient id="s" x2="0" y2="100%">\n'
+        f'    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>\n'
+        f'    <stop offset="1" stop-opacity=".1"/>\n'
+        f"  </linearGradient>\n"
+        f'  <clipPath id="r">'
+        f'<rect width="{total_w}" height="{_HEIGHT}" rx="3" fill="#fff"/></clipPath>\n'
+        f'  <g clip-path="url(#r)">\n'
+        f'    <rect width="{_LABEL_WIDTH}" height="{_HEIGHT}" fill="#555"/>\n'
+        f'    <rect x="{_LABEL_WIDTH}" width="{grade_w}" height="{_HEIGHT}" fill="{color}"/>\n'
+        f'    <rect width="{total_w}" height="{_HEIGHT}" fill="url(#s)"/>\n'
+        f"  </g>\n"
+        f'  <g fill="#fff" text-anchor="middle" {_FONT}>\n'
+        f'    <text x="{lx2}" y="14" {shadow}>{_LABEL}</text>\n'
+        f'    <text x="{lx2}" y="13">{_LABEL}</text>\n'
+        f'    <text x="{lx}" y="14" {shadow}>{grade_text}</text>\n'
+        f'    <text x="{lx}" y="13">{grade_text}</text>\n'
+        f"  </g>\n"
+        f"</svg>"
+    )
 
 
 def generate_unknown_badge_svg() -> str:
     """Badge shown when the agent doesn't exist or badge is disabled."""
-    return generate_badge_svg("?", 0).replace("? (0)", "unknown").replace(GRADE_COLORS.get("F", ""), "#9ca3af")
+    return (
+        generate_badge_svg("?", 0)
+        .replace("? (0)", "unknown")
+        .replace(GRADE_COLORS.get("F", ""), "#9ca3af")
+    )

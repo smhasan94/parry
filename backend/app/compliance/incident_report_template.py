@@ -41,14 +41,25 @@ def render_incident_html(report: SeriousIncident) -> str:
     contact = c.get("contact_information", {})
     authority = c.get("authority_information", {})
 
+    deadline_str = (
+        report.deadline_at.strftime("%Y-%m-%d %H:%M UTC") if report.deadline_at else "N/A"
+    )
+    reported_str = (
+        " | <strong>REPORTED</strong> on "
+        + report.reported_to_authority_at.strftime("%Y-%m-%d")
+        if report.reported_to_authority_at
+        else ""
+    )
+    jurisdiction = _val(report.authority_jurisdiction or authority.get("authority_jurisdiction"))
+
     html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Serious Incident Report — Art. 73</title>
 <style>{_STYLE}</style></head><body>
 <h1>Serious Incident Report</h1>
 <p class="meta">EU AI Act — Article 73 | Report Version {report.report_version}</p>
 
-<div class="deadline">Reporting deadline: {report.deadline_at.strftime('%Y-%m-%d %H:%M UTC') if report.deadline_at else 'N/A'}
-{' | <strong>REPORTED</strong> on ' + report.reported_to_authority_at.strftime('%Y-%m-%d') if report.reported_to_authority_at else ''}</div>
+<div class="deadline">Reporting deadline: {deadline_str}
+{reported_str}</div>
 
 <h2>Incident Summary</h2>
 <table>
@@ -84,7 +95,7 @@ def render_incident_html(report: SeriousIncident) -> str:
 <h2>Authority Information</h2>
 <table>
 <tr><th>Authority</th><td>{_val(authority.get('authority_name'))}</td></tr>
-<tr><th>Jurisdiction</th><td>{_val(report.authority_jurisdiction or authority.get('authority_jurisdiction'))}</td></tr>
+<tr><th>Jurisdiction</th><td>{jurisdiction}</td></tr>
 <tr><th>Reference #</th><td>{_val(authority.get('reference_number'))}</td></tr>
 </table>
 

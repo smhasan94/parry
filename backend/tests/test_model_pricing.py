@@ -51,7 +51,7 @@ def test_all_models_have_valid_pricing() -> None:
 
 def test_is_pricing_stale_not_stale_recently() -> None:
     """The table was just reviewed — should not be stale yet."""
-    from datetime import UTC, datetime, timedelta
+    from datetime import UTC, datetime
 
     now = datetime.now(UTC)
     age = now - PRICING_LAST_REVIEWED

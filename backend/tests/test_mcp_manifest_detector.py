@@ -12,7 +12,6 @@ from app.detection.detectors.mcp_manifest import (
     scan_manifest,
 )
 
-
 DETECTOR = MCPManifestDetector()
 
 

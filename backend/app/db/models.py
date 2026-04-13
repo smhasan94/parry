@@ -602,7 +602,9 @@ class AISystemSupplier(Base, UUIDPrimaryKeyMixin):
     model_version: Mapped[str | None] = mapped_column(Text, nullable=True)
     first_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    event_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    event_count: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0, server_default="0"
+    )
     jurisdiction: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
@@ -968,7 +970,9 @@ class CommunityRuleSubscription(Base, UUIDPrimaryKeyMixin):
         UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
     pack_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("community_rule_packs.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("community_rule_packs.id", ondelete="CASCADE"),
+        nullable=False,
     )
     installed_version: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

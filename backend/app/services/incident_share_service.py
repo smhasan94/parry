@@ -109,15 +109,30 @@ def _generate_recommendations(detections: list[dict[str, Any]]) -> list[str]:
     det_types = {d.get("detector") for d in detections}
 
     if "prompt_injection" in det_types:
-        recs.append("Review and strengthen system prompt boundaries. Consider adding explicit instruction anchoring.")
+        recs.append(
+            "Review and strengthen system prompt boundaries."
+            " Consider adding explicit instruction anchoring."
+        )
     if "jailbreak" in det_types:
-        recs.append("Audit agent permissions and ensure the model cannot be coerced into bypassing safety controls.")
+        recs.append(
+            "Audit agent permissions and ensure the model cannot be coerced"
+            " into bypassing safety controls."
+        )
     if "data_exfiltration" in det_types:
-        recs.append("Review response content filtering. Ensure PII and credentials are stripped before reaching the user.")
+        recs.append(
+            "Review response content filtering."
+            " Ensure PII and credentials are stripped before reaching the user."
+        )
     if "privilege_escalation" in det_types:
-        recs.append("Restrict agent tool permissions to minimum required scope. Enable enforcing mode on permission boundaries.")
+        recs.append(
+            "Restrict agent tool permissions to minimum required scope."
+            " Enable enforcing mode on permission boundaries."
+        )
     if "tool_misuse" in det_types:
-        recs.append("Update tool allowlists and blocklists in the agent's policy. Consider enabling blocking mode.")
+        recs.append(
+            "Update tool allowlists and blocklists in the agent's policy."
+            " Consider enabling blocking mode."
+        )
 
     if not recs:
         recs.append("Review the detection details above and adjust detector thresholds if needed.")
@@ -139,18 +154,32 @@ def render_share_html(report: dict[str, Any]) -> str:
     timeline_html = ""
     for entry in report["timeline"]:
         marker = "&#128308;" if entry["type"] == "detection" else "&#9679;"
-        timeline_html += f"<div style='padding:8px 0;border-bottom:1px solid #334155'>{marker} <span style='color:#94a3b8'>{entry.get('timestamp', '')}</span> — {entry['summary']}</div>"
+        ts = entry.get("timestamp", "")
+        timeline_html += (
+            f"<div style='padding:8px 0;border-bottom:1px solid #334155'>"
+            f"{marker} <span style='color:#94a3b8'>{ts}</span> — {entry['summary']}</div>"
+        )
 
     recs_html = "".join(f"<li style='margin:4px 0'>{r}</li>" for r in report["recommendations"])
 
+    title = inc.get("title", "Parry")
+    sev_line = (
+        f"{inc.get('severity', '').upper()} &middot;"
+        f" {inc.get('status', '')} &middot; {inc.get('created_at', '')}"
+    )
+    body_style = (
+        "font-family:system-ui,sans-serif;color:#e2e8f0;background:#0f172a;"
+        "padding:32px;max-width:720px;margin:0 auto"
+    )
+
     return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Incident Report — {inc.get('title', 'Parry')}</title></head>
-<body style="font-family:system-ui,sans-serif;color:#e2e8f0;background:#0f172a;padding:32px;max-width:720px;margin:0 auto">
+<html><head><meta charset="utf-8"><title>Incident Report — {title}</title></head>
+<body style="{body_style}">
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
 <div style="width:12px;height:12px;border-radius:50%;background:{color}"></div>
 <h1 style="margin:0;color:#f8fafc;font-size:22px">{inc.get('title', 'Security Incident')}</h1>
 </div>
-<p style="color:#94a3b8;font-size:14px">{inc.get('severity', '').upper()} &middot; {inc.get('status', '')} &middot; {inc.get('created_at', '')}</p>
+<p style="color:#94a3b8;font-size:14px">{sev_line}</p>
 
 <h2 style="color:#f8fafc;font-size:16px;margin-top:32px">Summary</h2>
 <p style="font-size:14px;line-height:1.6">{report['summary']}</p>

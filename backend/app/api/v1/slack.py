@@ -9,10 +9,9 @@ from __future__ import annotations
 import json
 
 import structlog
-from fastapi import APIRouter, Form, HTTPException, status
-from sqlalchemy import select, update
+from fastapi import APIRouter, Depends, Form, HTTPException, status
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
 
 from app.db.models import Incident
 from app.db.session import get_db
@@ -38,8 +37,10 @@ async def slack_interactive(
     """Handle Slack interactive action payloads."""
     try:
         data = json.loads(payload)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload")
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
+        ) from e
 
     actions = data.get("actions", [])
     if not actions:

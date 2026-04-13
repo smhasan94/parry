@@ -183,7 +183,7 @@ class TestPermissionResult:
         )
         try:
             r.allowed = False  # type: ignore[misc]
-            assert False, "Should have raised"
+            raise AssertionError("Should have raised")
         except AttributeError:
             pass
 

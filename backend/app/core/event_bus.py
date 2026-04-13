@@ -21,8 +21,6 @@ from typing import Any
 
 import structlog
 
-from app.core.config import settings
-
 log = structlog.get_logger()
 
 CHANNEL_PATTERN = "org:{org_id}:events"

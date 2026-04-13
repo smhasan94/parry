@@ -35,7 +35,9 @@ def compute_next_send(schedule: str, from_dt: datetime | None = None) -> datetim
 
     # monthly
     if now.month == 12:
-        next_dt = now.replace(year=now.year + 1, month=1, day=1, hour=8, minute=0, second=0, microsecond=0)
+        next_dt = now.replace(
+            year=now.year + 1, month=1, day=1, hour=8, minute=0, second=0, microsecond=0
+        )
     else:
         next_dt = now.replace(month=now.month + 1, day=1, hour=8, minute=0, second=0, microsecond=0)
     return next_dt

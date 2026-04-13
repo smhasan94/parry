@@ -14,6 +14,7 @@ Contract:
   to the DB. Redis down is quiet — we just skip the cache.
 """
 
+import contextlib
 import json
 
 import structlog
@@ -21,7 +22,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor, get_org_from_sdk_key
 from app.core.event_bus import publish_blocked_event
 from app.db.models import Agent, Org, Policy, ResponseScanMode
@@ -315,7 +315,7 @@ async def proxy_check(
                                 agent_id=body.agent_id,
                             )
                             # Fire webhook for permission denial
-                            try:
+                            with contextlib.suppress(Exception):
                                 await webhook_dispatch_service.dispatch_event(
                                     db, org.id, "permission.denied", {
                                         "agent_id": body.agent_id,
@@ -323,8 +323,6 @@ async def proxy_check(
                                         "reason": perm_result.reason,
                                     },
                                 )
-                            except Exception:
-                                pass
                             return ProxyCheckResponse(
                                 allowed=False,
                                 reason=perm_result.reason,

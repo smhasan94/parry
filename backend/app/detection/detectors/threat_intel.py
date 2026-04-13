@@ -11,7 +11,6 @@ from typing import Any
 
 import structlog
 
-from app.core.config import settings
 from app.db.models import Severity
 from app.detection.base import DetectionResult
 from app.services.threat_intel_service import compute_pattern_hash

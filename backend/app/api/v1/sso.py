@@ -32,6 +32,7 @@ from pydantic import HttpUrl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor
 from app.core.rbac import Role, require_role
 from app.db.models import Org

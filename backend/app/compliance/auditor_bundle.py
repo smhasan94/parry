@@ -302,10 +302,10 @@ async def _add_audit_log(
     start: date,
     end: date,
 ) -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    start_dt = datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc)
-    end_dt = datetime.combine(end, datetime.max.time(), tzinfo=timezone.utc)
+    start_dt = datetime.combine(start, datetime.min.time(), tzinfo=UTC)
+    end_dt = datetime.combine(end, datetime.max.time(), tzinfo=UTC)
 
     result = await db.execute(
         select(AuditLog)

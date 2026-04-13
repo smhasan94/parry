@@ -45,7 +45,7 @@ def test_detector_summary_counts():
         {"prompt": "Hello world"},
     ]
     result = replay_with_config(events, {})
-    for det_name, counts in result["detector_summary"].items():
+    for _det_name, counts in result["detector_summary"].items():
         assert counts["total"] == 2
         assert 0 <= counts["triggered"] <= 2
 

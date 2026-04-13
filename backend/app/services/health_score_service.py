@@ -29,7 +29,6 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.db.models import Detection, Incident, IncidentStatus, Severity
 
 log = structlog.get_logger()

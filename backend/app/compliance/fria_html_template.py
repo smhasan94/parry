@@ -75,6 +75,8 @@ def render_fria_html(doc: FRIADocument) -> str:
     system_name = system_fields.get("system_name", "Unknown System")
     risk_level = system_fields.get("risk_level", "unknown")
 
+    generated_str = doc.generated_at.strftime("%Y-%m-%d %H:%M UTC") if doc.generated_at else "N/A"
+
     cover = f"""
     <h1>Fundamental Rights Impact Assessment (FRIA)</h1>
     <table>
@@ -85,7 +87,7 @@ def render_fria_html(doc: FRIADocument) -> str:
       <tr><td class="field-label">Version</td>
           <td>{doc.version}</td></tr>
       <tr><td class="field-label">Generated</td>
-          <td>{doc.generated_at.strftime('%Y-%m-%d %H:%M UTC') if doc.generated_at else 'N/A'}</td></tr>
+          <td>{generated_str}</td></tr>
       <tr><td class="field-label">Status</td>
           <td>{escape(doc.status.upper())}</td></tr>
     """

@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Org, ThreatIndicator, ThreatSighting
@@ -201,7 +201,6 @@ async def extract_and_record(
             )
     else:
         # Update existing sighting timestamp
-        existing = existing_sighting.scalar_one_or_none()
         # Already checked above — just update seen_at on the indicator
         pass
 

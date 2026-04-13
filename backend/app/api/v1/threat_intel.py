@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends

@@ -9,19 +9,17 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_org
 from app.core.rbac import Role, require_role
 from app.db.models import Org
-from app.db.session import get_db
 from app.detection.base import DetectionResult
-from app.services.tuning_sandbox_service import replay_with_config
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
 from app.detection.detectors.prompt_injection import PromptInjectionDetector
 from app.detection.detectors.tool_misuse import ToolMisuseDetector
+from app.services.tuning_sandbox_service import replay_with_config
 
 log = structlog.get_logger()
 

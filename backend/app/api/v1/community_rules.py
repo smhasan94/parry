@@ -131,7 +131,7 @@ async def publish_pack(
         )
         return PackResponse.model_validate(pack, from_attributes=True)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
 @router.patch(
@@ -164,7 +164,7 @@ async def update_pack(
         )
         return PackResponse.model_validate(pack, from_attributes=True)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
 
 # ── Installation ────────────────────────────────────────────────────

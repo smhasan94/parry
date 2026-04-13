@@ -359,7 +359,9 @@ async def download_fria_pdf(
     plan_service.require_feature(org, "fria_generator")
     doc = await fria_service.get_fria(db, org.id, fria_id)
     if doc.pdf_bytes is None:
-        raise HTTPException(status_code=404, detail="PDF not yet generated (approve the FRIA first)")
+        raise HTTPException(
+            status_code=404, detail="PDF not yet generated (approve the FRIA first)"
+        )
     return Response(
         content=doc.pdf_bytes,
         media_type="application/pdf",

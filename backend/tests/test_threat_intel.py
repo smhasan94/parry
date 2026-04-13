@@ -1,7 +1,6 @@
 """Tests for threat intelligence — pattern hashing, normalization, promotion, decay, models."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
 
 from app.db.models import Plan, ThreatIndicator, ThreatSighting
 from app.services.plan_service import PLAN_LIMITS
@@ -15,7 +14,6 @@ from app.services.threat_intel_service import (
     normalize_reason,
     severity_rank,
 )
-
 
 # ── Pattern hashing ─────────────────────────────────────────────
 

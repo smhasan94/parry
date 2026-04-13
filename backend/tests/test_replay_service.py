@@ -111,7 +111,7 @@ class TestScoreEvent:
             + SCORE_HIGH_TOKENS
             + SCORE_NEAR_TRIGGER
         )
-        assert 100.0 > max_non_trigger
+        assert max_non_trigger < 100.0
 
 
 class TestScoreWeights:

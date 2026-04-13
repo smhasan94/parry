@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor
@@ -137,7 +137,7 @@ async def assign_agent(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     org, actor = org_actor
-    agent = await agent_group_service.assign_agent_to_group(
+    await agent_group_service.assign_agent_to_group(
         db, org.id, agent_id, group_id,
     )
     await audit_service.log_action(

@@ -92,10 +92,7 @@ async def _generate_and_send(db, schedule, org) -> None:
     from app.services.report_service import build_report_data
 
     # Build report data for the last period
-    if schedule.schedule == "weekly":
-        days = 7
-    else:
-        days = 30
+    days = 7 if schedule.schedule == "weekly" else 30
 
     end = datetime.now(UTC)
     start = end - timedelta(days=days)
@@ -152,9 +149,6 @@ async def _generate_and_send(db, schedule, org) -> None:
 
     try:
         import asyncio
-        from email.mime.application import MIMEApplication
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
 
         from app.services.alert_service import _send_email_sync
 

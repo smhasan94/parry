@@ -1,3 +1,4 @@
+import contextlib
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,7 +10,14 @@ from app.core.rbac import Role, require_role
 from app.db.models import IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.incident import IncidentListResponse, IncidentResponse, IncidentUpdate
-from app.services import audit_service, incident_service, incident_share_service, plan_service, replay_service, webhook_dispatch_service
+from app.services import (
+    audit_service,
+    incident_service,
+    incident_share_service,
+    plan_service,
+    replay_service,
+    webhook_dispatch_service,
+)
 
 router = APIRouter()
 
@@ -96,7 +104,7 @@ async def update_incident(
 
     # Dispatch webhook on status change
     if body.status is not None and body.status.value != previous_status:
-        try:
+        with contextlib.suppress(Exception):
             await webhook_dispatch_service.dispatch_event(
                 db, org.id, f"incident.{body.status.value}", {
                     "incident_id": str(incident_id),
@@ -106,8 +114,6 @@ async def update_incident(
                     "new_status": body.status.value,
                 },
             )
-        except Exception:
-            pass
 
     await db.commit()
     return IncidentResponse.model_validate(incident)
@@ -132,13 +138,13 @@ async def get_incident_replay(
     """
     from dataclasses import asdict
 
-    from app.core.rbac import Role as R, actor_role
+    from app.core.rbac import Role, actor_role
 
     org, actor = org_actor
     plan_service.require_feature(org, "compliance_export")
 
     role = actor_role(actor)
-    include_content = role in (R.ADMIN, R.OWNER)
+    include_content = role in (Role.ADMIN, Role.OWNER)
 
     replay = await replay_service.build_incident_replay(
         db, org.id, incident_id, include_content=include_content
@@ -195,7 +201,8 @@ async def view_shared_report(
 
     # Fetch incident without org scoping (public access via token)
     from sqlalchemy import select
-    from app.db.models import Incident, Detection
+
+    from app.db.models import Incident
 
     result = await db.execute(select(Incident).where(Incident.id == incident_id))
     incident = result.scalar_one_or_none()
@@ -204,7 +211,12 @@ async def view_shared_report(
 
     # Build report data
     detections = [
-        {"detector": d.detector, "confidence": d.confidence, "reason": d.reason, "severity": d.severity.value}
+        {
+            "detector": d.detector,
+            "confidence": d.confidence,
+            "reason": d.reason,
+            "severity": d.severity.value,
+        }
         for d in (incident.detections or [])
     ]
     report = incident_share_service.build_share_report(

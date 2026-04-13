@@ -9,7 +9,6 @@ import pytest
 
 from app.services import budget_service
 
-
 # ── record_spend ───────────────────────────────────────────────
 
 

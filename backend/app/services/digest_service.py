@@ -94,40 +94,81 @@ def render_digest_html(digest: dict[str, Any], org_name: str = "Your Org") -> st
     fleet = digest["fleet"]
     events = digest["events"]
     dets = digest["detections"]
-    ev_arrow = "&#9650;" if events["trend"] == "up" else "&#9660;" if events["trend"] == "down" else "&#8212;"
-    det_arrow = "&#9650;" if dets["trend"] == "up" else "&#9660;" if dets["trend"] == "down" else "&#8212;"
+    def _trend_arrow(trend: str) -> str:
+        if trend == "up":
+            return "&#9650;"
+        if trend == "down":
+            return "&#9660;"
+        return "&#8212;"
+
+    ev_arrow = _trend_arrow(events["trend"])
+    det_arrow = _trend_arrow(dets["trend"])
 
     incident_rows = ""
     for inc in digest["top_incidents"]:
         sev = inc.get("severity", "low").upper()
         title = inc.get("title", "Untitled")
-        incident_rows += f"<tr><td style='padding:4px 8px'>{sev}</td><td style='padding:4px 8px'>{title}</td></tr>"
+        incident_rows += (
+            f"<tr><td style='padding:4px 8px'>{sev}</td>"
+            f"<td style='padding:4px 8px'>{title}</td></tr>"
+        )
 
     attention_rows = ""
     for ag in digest["attention_agents"]:
-        attention_rows += f"<tr><td style='padding:4px 8px'>{ag['name']}</td><td style='padding:4px 8px'>Grade {ag['grade']}</td></tr>"
+        attention_rows += (
+            f"<tr><td style='padding:4px 8px'>{ag['name']}</td>"
+            f"<td style='padding:4px 8px'>Grade {ag['grade']}</td></tr>"
+        )
+
+    _h2 = "color:#f8fafc;font-size:16px;margin-top:24px"
+    incidents_section = (
+        f'<h2 style="{_h2}">Top Incidents</h2>'
+        f'<table style="font-size:14px">{incident_rows}</table>'
+        if incident_rows
+        else ""
+    )
+    attention_section = (
+        f'<h2 style="{_h2}">Agents Needing Attention</h2>'
+        f'<table style="font-size:14px">{attention_rows}</table>'
+        if attention_rows
+        else ""
+    )
+    period = f"{digest['period_start'][:10]} to {digest['period_end'][:10]}"
+    ev_line = (
+        f"Events: <b>{events['count_7d']}</b> {ev_arrow} {events['change_pct']}% vs prior week"
+    )
+    det_line = (
+        f"Detections: <b>{dets['count_7d']}</b> {det_arrow} {dets['change_pct']}% vs prior week"
+    )
+    _p = "padding:2px 12px"
+    fleet_rows = (
+        f"<tr><td style='{_p}'>Total agents</td><td><b>{fleet['total']}</b></td></tr>\n"
+        f"<tr><td style='{_p};color:#22c55e'>Healthy (A/B)</td>"
+        f"<td><b>{fleet['healthy']}</b></td></tr>\n"
+        f"<tr><td style='{_p};color:#eab308'>Degraded (C/D)</td>"
+        f"<td><b>{fleet['degraded']}</b></td></tr>\n"
+        f"<tr><td style='{_p};color:#ef4444'>Critical (F)</td>"
+        f"<td><b>{fleet['critical']}</b></td></tr>"
+    )
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="font-family:system-ui,sans-serif;color:#e2e8f0;background:#0f172a;padding:24px">
 <h1 style="color:#f8fafc;font-size:20px">Parry Weekly Digest &mdash; {org_name}</h1>
-<p style="color:#94a3b8;font-size:14px">{digest['period_start'][:10]} to {digest['period_end'][:10]}</p>
+<p style="color:#94a3b8;font-size:14px">{period}</p>
 
-<h2 style="color:#f8fafc;font-size:16px;margin-top:24px">Fleet Health</h2>
+<h2 style="{_h2}">Fleet Health</h2>
 <table style="font-size:14px">
-<tr><td style="padding:2px 12px">Total agents</td><td><b>{fleet['total']}</b></td></tr>
-<tr><td style="padding:2px 12px;color:#22c55e">Healthy (A/B)</td><td><b>{fleet['healthy']}</b></td></tr>
-<tr><td style="padding:2px 12px;color:#eab308">Degraded (C/D)</td><td><b>{fleet['degraded']}</b></td></tr>
-<tr><td style="padding:2px 12px;color:#ef4444">Critical (F)</td><td><b>{fleet['critical']}</b></td></tr>
+{fleet_rows}
 </table>
 
-<h2 style="color:#f8fafc;font-size:16px;margin-top:24px">Activity</h2>
-<p style="font-size:14px">Events: <b>{events['count_7d']}</b> {ev_arrow} {events['change_pct']}% vs prior week</p>
-<p style="font-size:14px">Detections: <b>{dets['count_7d']}</b> {det_arrow} {dets['change_pct']}% vs prior week</p>
+<h2 style="{_h2}">Activity</h2>
+<p style="font-size:14px">{ev_line}</p>
+<p style="font-size:14px">{det_line}</p>
 
-{'<h2 style="color:#f8fafc;font-size:16px;margin-top:24px">Top Incidents</h2><table style="font-size:14px">' + incident_rows + '</table>' if incident_rows else ''}
+{incidents_section}
 
-{'<h2 style="color:#f8fafc;font-size:16px;margin-top:24px">Agents Needing Attention</h2><table style="font-size:14px">' + attention_rows + '</table>' if attention_rows else ''}
+{attention_section}
 
 <hr style="border:1px solid #334155;margin:24px 0">
 <p style="color:#64748b;font-size:12px">Parry &mdash; AI Agent Runtime Security</p>

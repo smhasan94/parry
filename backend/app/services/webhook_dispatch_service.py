@@ -11,7 +11,6 @@ import hmac
 import json
 import secrets
 import uuid
-from datetime import UTC, datetime
 from typing import Any
 
 import structlog

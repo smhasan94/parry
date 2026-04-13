@@ -5,12 +5,10 @@ and SSO profile dataclass behavior.
 """
 
 import uuid
-from typing import Any
 
 from app.api.v1.sso import (
     CallbackResponse,
     LoginRequest,
-    LoginResponse,
     ProvisionSSORequest,
     SessionRequest,
     SessionResponse,
@@ -138,7 +136,7 @@ class TestSSOProfileDataclass:
         )
         try:
             p.email = "changed@acme.com"  # type: ignore[misc]
-            assert False, "Should have raised"
+            raise AssertionError("Should have raised")
         except AttributeError:
             pass
 

@@ -7,7 +7,7 @@ compliance.fria_html_template.
 
 import copy
 import uuid
-from datetime import date, timedelta
+from datetime import UTC, date, timedelta
 
 import structlog
 from sqlalchemy import func, select
@@ -19,7 +19,6 @@ from app.db.models import (
     AISystem,
     AISystemSupplier,
     FRIADocument,
-    Org,
     Policy,
 )
 
@@ -151,9 +150,9 @@ async def approve_fria(
     doc.status = "approved"
     doc.approved_by = approved_by
     doc.approver_title = approver_title
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    doc.approved_at = datetime.now(timezone.utc)
+    doc.approved_at = datetime.now(UTC)
     doc.next_review_date = date.today() + timedelta(days=365)
 
     # Render PDF
@@ -299,10 +298,9 @@ async def _compute_field(
     db: AsyncSession, org_id: uuid.UUID, key: str
 ) -> str | dict | None:
     """Compute derived fields for auto-populated sections."""
-    if key == "human_oversight_rbac":
-        return "RBAC enabled with viewer/admin/owner roles"
-    elif key == "audit_log_retention":
-        return "Audit log maintained with tamper-evident hash chain"
-    elif key == "incident_workflow":
-        return "Automated incident detection with severity-based escalation"
-    return None
+    _field_values: dict[str, str] = {
+        "human_oversight_rbac": "RBAC enabled with viewer/admin/owner roles",
+        "audit_log_retention": "Audit log maintained with tamper-evident hash chain",
+        "incident_workflow": "Automated incident detection with severity-based escalation",
+    }
+    return _field_values.get(key)

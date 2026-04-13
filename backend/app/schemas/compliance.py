@@ -6,7 +6,6 @@ from pydantic import Field
 
 from app.schemas.base import ParrySchema
 
-
 # ── AI System ───────────────────────────────────────────────────
 
 RiskLevel = Literal["minimal", "limited", "high", "unacceptable"]

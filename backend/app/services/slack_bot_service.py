@@ -120,7 +120,10 @@ def build_block_kit_message(
         "elements": [
             {
                 "type": "mrkdwn",
-                "text": f"Incident `{str(incident.id)[:8]}` · {incident.created_at.strftime('%Y-%m-%d %H:%M UTC')}",
+                "text": (
+                    f"Incident `{str(incident.id)[:8]}`"
+                    f" · {incident.created_at.strftime('%Y-%m-%d %H:%M UTC')}"
+                ),
             },
         ],
     })
@@ -138,7 +141,9 @@ def build_action_response(
 ) -> dict[str, Any]:
     """Build a Slack response message for an interactive action."""
     action_labels = {
-        "parry_acknowledge": f":white_check_mark: *{user_name}* acknowledged incident `{incident_id[:8]}`",
+        "parry_acknowledge": (
+            f":white_check_mark: *{user_name}* acknowledged incident `{incident_id[:8]}`"
+        ),
         "parry_escalate": f":rotating_light: *{user_name}* escalated incident `{incident_id[:8]}`",
         "parry_snooze": f":zzz: *{user_name}* snoozed incident `{incident_id[:8]}` for 1 hour",
     }

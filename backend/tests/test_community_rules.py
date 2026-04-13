@@ -1,12 +1,11 @@
 """Unit tests for the community rules service."""
 
-import re
 
 import pytest
 
 from app.services.community_rules_service import (
-    VALID_CATEGORIES,
     MAX_RULES_PER_PACK,
+    VALID_CATEGORIES,
     _slugify,
     _validate_rules,
 )

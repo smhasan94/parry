@@ -5,7 +5,7 @@ reporting deadline, and handles finalization with PDF rendering.
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import structlog
 from sqlalchemy import select
@@ -142,7 +142,7 @@ async def finalize(
     if report.reported_to_authority_at is not None:
         raise ConflictError("Report already finalized")
 
-    report.reported_to_authority_at = datetime.now(timezone.utc)
+    report.reported_to_authority_at = datetime.now(UTC)
 
     # Render PDF
     try:
@@ -199,5 +199,5 @@ def days_remaining(report: SeriousIncident) -> int:
     """Days until the 15-day reporting deadline. Negative if overdue."""
     if report.reported_to_authority_at:
         return 0
-    delta = report.deadline_at - datetime.now(timezone.utc)
+    delta = report.deadline_at - datetime.now(UTC)
     return delta.days

@@ -48,7 +48,7 @@ def _validate_rules(rules: list[dict]) -> None:
         try:
             re.compile(rule["pattern"])
         except re.error as e:
-            raise ValueError(f"Rule {i}: invalid regex: {e}")
+            raise ValueError(f"Rule {i}: invalid regex: {e}") from e
         if rule.get("target") and rule["target"] not in ("prompt", "response", "both"):
             raise ValueError(f"Rule {i}: target must be prompt, response, or both")
         if rule.get("severity") and rule["severity"] not in ("low", "medium", "high", "critical"):

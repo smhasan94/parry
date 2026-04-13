@@ -4,7 +4,6 @@ Long-running for large orgs — writes result to Redis for polling.
 """
 
 import asyncio
-import json
 from datetime import date
 
 import structlog

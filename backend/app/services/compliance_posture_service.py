@@ -15,11 +15,9 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.db.models import (
     AISystem,
     AuditLog,
-    FRIADocument,
     Incident,
     Org,
     SeriousIncident,
@@ -177,7 +175,7 @@ async def _check_risk_monitoring(db: AsyncSession, org_id: uuid.UUID) -> Obligat
     detection_enabled = bool(org and org.detector_config)
 
     # Check for recent events (last 7 days)
-    from app.db.models import AgentEvent, Agent
+    from app.db.models import Agent, AgentEvent
 
     recent_result = await db.execute(
         select(func.count())

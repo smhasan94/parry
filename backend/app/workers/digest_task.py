@@ -25,9 +25,9 @@ def send_weekly_digest() -> dict:
 
 async def _send_digests() -> dict:
     """Async implementation — fetches orgs, builds digests, sends emails."""
-    from sqlalchemy import func, select
+    from sqlalchemy import select
 
-    from app.db.models import Agent, Detection, Incident, Org
+    from app.db.models import Agent, Incident, Org
     from app.db.session import async_session_factory
     from app.services.digest_service import compute_digest, render_digest_html
 
@@ -90,7 +90,7 @@ async def _send_digests() -> dict:
                         detections_prev_7d=0,
                     )
 
-                    html = render_digest_html(digest, org_name=org.name)
+                    _html = render_digest_html(digest, org_name=org.name)
 
                     log.info(
                         "digest.computed",

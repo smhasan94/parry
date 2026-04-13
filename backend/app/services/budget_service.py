@@ -13,7 +13,6 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.db.models import Agent, AgentBudget
 
 log = structlog.get_logger()

@@ -13,13 +13,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
-    Agent,
     AgentEvent,
-    AgentSession,
     Detection,
     Incident,
 )

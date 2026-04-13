@@ -223,8 +223,9 @@ async def test_endpoint(
     if endpoint is None:
         raise HTTPException(status_code=404, detail="Webhook endpoint not found")
 
-    from app.workers.webhook_delivery_task import deliver_webhook
     import json
+
+    from app.workers.webhook_delivery_task import deliver_webhook
 
     test_payload = {
         "test": True,
@@ -237,7 +238,7 @@ async def test_endpoint(
             "test",
             json.dumps(test_payload),
         )
-    except Exception:
-        raise HTTPException(status_code=502, detail="Failed to enqueue test delivery")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail="Failed to enqueue test delivery") from e
 
     return {"status": "test_enqueued", "endpoint_id": str(endpoint_id)}

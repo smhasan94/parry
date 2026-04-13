@@ -4,12 +4,18 @@ Recomputes posture for every org, checks for stale FRIAs (>12 months),
 and alerts on overdue CRITICAL incidents past the 15-day deadline.
 """
 
+from __future__ import annotations
+
 import asyncio
 from datetime import UTC, date, datetime, timedelta
+from typing import TYPE_CHECKING
 
 import structlog
 
 from app.workers.celery_app import celery_app
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger()
 
@@ -77,8 +83,7 @@ async def _refresh_all() -> dict:
         await task_engine.dispose()
 
 
-async def _refresh_org(db: "AsyncSession", org_id) -> dict:  # type: ignore[name-defined]
-    import uuid
+async def _refresh_org(db: AsyncSession, org_id) -> dict:  # type: ignore[no-untyped-def]
 
     from sqlalchemy import select
 
@@ -90,7 +95,7 @@ async def _refresh_org(db: "AsyncSession", org_id) -> dict:  # type: ignore[name
         Severity,
     )
     from app.services import audit_service
-    from app.services.compliance_posture_service import compute_posture, _cache_posture
+    from app.services.compliance_posture_service import _cache_posture, compute_posture
 
     stats = {"stale_frias": 0, "overdue_incidents": 0}
 

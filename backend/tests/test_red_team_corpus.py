@@ -13,11 +13,10 @@ import json
 
 import pytest
 
-from app.detection import red_team_corpus
 from app.detection.red_team_corpus import (
+    _KNOWN_DETECTORS,
     CORPUS_DIR,
     CorpusValidationError,
-    _KNOWN_DETECTORS,
     _validate_category,
     category_summary,
     load_corpus,

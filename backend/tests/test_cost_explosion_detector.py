@@ -8,7 +8,6 @@ from app.detection.detectors.cost_explosion import (
     CostExploitVerbosityDetector,
 )
 
-
 # ── CostExploitLoopDetector ────────────────────────────────────
 
 
