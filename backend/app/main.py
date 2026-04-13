@@ -37,7 +37,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         on_prem=on_prem.is_on_prem(),
     )
     yield
-    log.info("parry.shutdown")
+
+    # ── Graceful shutdown: drain connections before exit ──
+    from app.core.redis_pool import close_pools
+    from app.db.session import engine
+
+    log.info("parry.shutdown.draining")
+    await close_pools()
+    await engine.dispose()
+    log.info("parry.shutdown.complete")
 
 
 app = FastAPI(
