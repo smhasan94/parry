@@ -3,10 +3,17 @@
 import pytest
 from httpx import AsyncClient
 
+from app.db.models import Plan
+
 
 @pytest.mark.asyncio
 async def test_compliance_full_flow(admin_client: AsyncClient, seeded_db: dict):
     """Register a high-risk AI system → generate FRIA → check posture."""
+    # Compliance features (FRIA, posture) require Enterprise tier.
+    # The admin_client overrides get_current_org to return this object,
+    # and require_feature reads .plan from the in-memory org.
+    seeded_db["org"].plan = Plan.ENTERPRISE
+
     # 1. Create an AI system
     resp = await admin_client.post(
         "/api/v1/compliance/systems",
