@@ -20,6 +20,13 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # two variables so nginx's own $host/$uri/etc are left alone.
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
+# Run as non-root — nginx:alpine includes an 'nginx' user (uid 101).
+# The entrypoint needs to write envsubst output to /etc/nginx/conf.d/
+# and the worker cache to /var/cache/nginx, /var/run for the pid file.
+RUN chown -R nginx:nginx /etc/nginx/conf.d /var/cache/nginx /var/run && \
+    chmod -R 755 /etc/nginx/conf.d
+USER nginx
+
 ENV BACKEND_URL=http://backend:8000
 ENV PORT=80
 ENV NGINX_ENVSUBST_FILTER="^(PORT|BACKEND_URL)$"

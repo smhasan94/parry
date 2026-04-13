@@ -35,6 +35,12 @@ COPY --from=builder /app /app
 
 RUN chmod +x /app/entrypoint.sh
 
+# Run as non-root user
+RUN groupadd --gid 1000 parry && \
+    useradd --uid 1000 --gid parry --shell /bin/sh parry && \
+    chown -R parry:parry /app
+USER parry
+
 EXPOSE 8000
 
 ENV PATH="/app/.venv/bin:$PATH"
