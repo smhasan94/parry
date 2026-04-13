@@ -7,6 +7,7 @@ on incident messages. Updates incident status and responds inline.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, Form, HTTPException, status
@@ -33,7 +34,7 @@ ACTION_STATUS_MAP = {
 async def slack_interactive(
     payload: str = Form(...),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Handle Slack interactive action payloads."""
     try:
         data = json.loads(payload)

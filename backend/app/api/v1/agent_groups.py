@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends
@@ -135,7 +136,7 @@ async def assign_agent(
     agent_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     org, actor = org_actor
     await agent_group_service.assign_agent_to_group(
         db, org.id, agent_id, group_id,

@@ -60,7 +60,7 @@ def get_cached_health(agent_id: uuid.UUID) -> dict[str, Any] | None:
         raw = r.get(f"{_CACHE_PREFIX}{agent_id}")
         if raw is None:
             return None
-        return json.loads(raw)
+        return json.loads(raw)  # type: ignore[no-any-return]
     except Exception:
         log.debug("health_score.cache_get_failed", exc_info=True)
         return None

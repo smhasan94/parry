@@ -9,6 +9,7 @@ for forensics.
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,7 +31,7 @@ async def get_session_replay(
     session_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(require_role(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     org, actor = org_actor
     # Admins and above unlock full prompt/response content; viewers see
     # previews only so default role exposure can't exfil raw prompts.

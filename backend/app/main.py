@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 import sqlalchemy as sa
 import structlog
@@ -155,7 +156,7 @@ async def scalar_docs() -> HTMLResponse:
 
 
 @app.get("/health")
-async def health() -> dict:
+async def health() -> dict[str, Any]:
     """Health check with dependency status for DB and Redis."""
     from app.db.session import engine
 

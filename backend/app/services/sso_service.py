@@ -64,6 +64,7 @@ class _WorkOSClientProto(Protocol):
     """
 
     sso: Any
+    portal: Any
 
 
 def get_client() -> _WorkOSClientProto | None:
@@ -86,7 +87,7 @@ def get_client() -> _WorkOSClientProto | None:
         log.debug("sso.workos_sdk_missing")
         return None
     try:
-        return WorkOSClient(
+        return WorkOSClient(  # type: ignore[no-any-return]
             api_key=settings.workos_api_key,
             client_id=settings.workos_client_id,
         )
@@ -118,7 +119,7 @@ def get_authorization_url(
         raise SSOError("organization_id is required to start a SAML login")
 
     try:
-        return client.sso.get_authorization_url(
+        return client.sso.get_authorization_url(  # type: ignore[no-any-return]
             organization_id=organization_id,
             redirect_uri=effective_redirect,
             state=state,
@@ -202,7 +203,7 @@ def admin_portal_url(
     if not organization_id:
         raise SSOError("organization_id is required for AdminPortal link")
     try:
-        return client.portal.generate_link(
+        return client.portal.generate_link(  # type: ignore[no-any-return]
             organization=organization_id,
             intent=intent,
             return_url=return_url,

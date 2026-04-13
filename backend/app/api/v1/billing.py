@@ -1,5 +1,7 @@
 """Billing API — Stripe checkout, portal, and webhook endpoints."""
 
+from typing import Any
+
 import stripe
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -20,7 +22,7 @@ router = APIRouter()
 @router.get("/plan", dependencies=[Depends(require_role(Role.VIEWER))])
 async def get_plan(
     org: Org = Depends(get_current_org),
-) -> dict:
+) -> dict[str, Any]:
     """Return the org's current plan and its limit table.
 
     Consumed by the SettingsPage plan card. Returns raw None for
@@ -87,7 +89,7 @@ async def stripe_webhook(request: Request) -> dict[str, str]:
         )
 
     try:
-        event = stripe.Webhook.construct_event(body, sig_header, settings.stripe_webhook_secret)
+        event = stripe.Webhook.construct_event(body, sig_header, settings.stripe_webhook_secret)  # type: ignore[no-untyped-call]
     except stripe.SignatureVerificationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"

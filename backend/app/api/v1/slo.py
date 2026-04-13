@@ -7,6 +7,8 @@ person, not end users.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends
 
 from app.core.rbac import Role, require_role
@@ -17,8 +19,8 @@ router = APIRouter()
 
 @router.get("")
 async def get_slo_status(
-    _: tuple = Depends(require_role(Role.ADMIN)),
-) -> dict:
+    _: tuple[Any, Any] = Depends(require_role(Role.ADMIN)),
+) -> dict[str, Any]:
     """Return the current SLO statuses + a one-line caveat for the UI."""
     return {
         "statuses": slo_service.compute_slo_status(),

@@ -1,13 +1,13 @@
 import structlog
-from celery import Celery, Task
-from celery.schedules import crontab
+from celery import Celery, Task  # type: ignore[import-untyped]
+from celery.schedules import crontab  # type: ignore[import-untyped]
 
 from app.core.config import settings
 
 log = structlog.get_logger()
 
 
-class ParryTask(Task):
+class ParryTask(Task):  # type: ignore[misc]
     """Base task that routes permanently-failed tasks to the dead letter queue."""
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):  # type: ignore[no-untyped-def]

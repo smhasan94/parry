@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -19,12 +20,12 @@ async def ingest_event(
     prompt: str | None = None,
     response: str | None = None,
     model: str | None = None,
-    tool_calls: list | None = None,
+    tool_calls: list[dict[str, Any]] | None = None,
     latency_ms: int | None = None,
     token_count: int | None = None,
     session_id: str | None = None,
     timestamp: datetime | None = None,
-    metadata: dict | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> AgentEvent:
     # Resolve agent by name within org (auto-create if not exists)
     result = await db.execute(select(Agent).where(Agent.org_id == org_id, Agent.name == agent_name))

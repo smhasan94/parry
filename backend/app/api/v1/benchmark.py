@@ -4,6 +4,8 @@ Returns Parry's detection scores against a standardized attack corpus.
 Used on the public leaderboard page.
 """
 
+from typing import Any
+
 import structlog
 from fastapi import APIRouter
 
@@ -15,7 +17,7 @@ router = APIRouter()
 
 
 @router.get("/results")
-async def benchmark_results() -> dict:
+async def benchmark_results() -> dict[str, Any]:
     """Run the benchmark and return scored results.
 
     This is a pure computation — no DB, no external calls. The result

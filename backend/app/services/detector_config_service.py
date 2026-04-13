@@ -31,7 +31,7 @@ MIN_THRESHOLD = 0.0
 MAX_THRESHOLD = 1.0
 
 
-def merged_config(org_config: dict | None) -> dict[str, dict[str, Any]]:
+def merged_config(org_config: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
     """Return defaults merged with org overrides. Always returns all detectors.
 
     Also preserves non-detector-config keys from the org config — in

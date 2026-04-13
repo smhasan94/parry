@@ -1,5 +1,7 @@
 """Stripe billing service — customer management, checkout, and portal."""
 
+from typing import Any
+
 import stripe
 import structlog
 from sqlalchemy import select
@@ -44,7 +46,7 @@ def create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
     )
-    return session.url
+    return session.url or ""
 
 
 def create_portal_session(customer_id: str, return_url: str) -> str:
@@ -53,7 +55,7 @@ def create_portal_session(customer_id: str, return_url: str) -> str:
         customer=customer_id,
         return_url=return_url,
     )
-    return session.url
+    return session.url or ""
 
 
 def _price_to_plan_map() -> dict[str, Plan]:
@@ -70,7 +72,7 @@ def _price_to_plan_map() -> dict[str, Plan]:
     return mapping
 
 
-def resolve_plan_from_subscription(subscription: dict) -> Plan:
+def resolve_plan_from_subscription(subscription: dict[str, Any]) -> Plan:
     """Walk the Stripe subscription object to find the matching plan."""
     items = subscription.get("items") or {}
     data = items.get("data") or []
@@ -81,7 +83,9 @@ def resolve_plan_from_subscription(subscription: dict) -> Plan:
     return _price_to_plan_map().get(price_id, Plan.FREE)
 
 
-async def handle_subscription_event(db: AsyncSession, event_type: str, data: dict) -> None:
+async def handle_subscription_event(
+    db: AsyncSession, event_type: str, data: dict[str, Any],
+) -> None:
     """Handle Stripe subscription lifecycle events.
 
     Sets ``org.plan`` based on the subscription's price id on

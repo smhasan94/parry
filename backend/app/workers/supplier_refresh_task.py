@@ -8,7 +8,7 @@ tuple observed in events from that system's linked agents.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -24,7 +24,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="refresh_supplier_register",
     bind=True,
     autoretry_for=(Exception,),
@@ -34,7 +34,7 @@ log = structlog.get_logger()
     soft_time_limit=300,
     time_limit=600,
 )
-def refresh_supplier_register(self) -> dict:  # type: ignore[no-untyped-def]
+def refresh_supplier_register(self: Any) -> dict[str, Any]:
     """Scan events per AI system and upsert supplier records."""
     try:
         return asyncio.run(_refresh_all())
@@ -47,7 +47,7 @@ def refresh_supplier_register(self) -> dict:  # type: ignore[no-untyped-def]
         raise
 
 
-async def _refresh_all() -> dict:
+async def _refresh_all() -> dict[str, Any]:
     factory = make_task_session_factory()
     task_engine = factory.kw["bind"]
     total_upserted = 0

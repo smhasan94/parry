@@ -20,7 +20,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="report_metered_usage",
     soft_time_limit=600,
     time_limit=660,
@@ -73,7 +73,7 @@ async def _report_metered_usage() -> dict[str, int]:
                         skipped += 1
                         continue
 
-                    subscription_item_id = _find_subscription_item(org.stripe_customer_id)
+                    subscription_item_id = _find_subscription_item(org.stripe_customer_id or "")
                     if subscription_item_id is None:
                         log.warning(
                             "metered.no_subscription_item",
@@ -83,7 +83,7 @@ async def _report_metered_usage() -> dict[str, int]:
                         skipped += 1
                         continue
 
-                    stripe.SubscriptionItem.create_usage_record(
+                    stripe.SubscriptionItem.create_usage_record(  # type: ignore[attr-defined]
                         subscription_item_id,
                         quantity=count,
                         timestamp=int(datetime.now(UTC).timestamp()),
@@ -125,9 +125,9 @@ def _find_subscription_item(customer_id: str) -> str | None:
     try:
         subs = stripe.Subscription.list(customer=customer_id, status="active", limit=1)
         for sub in subs.auto_paging_iter():
-            items = sub.get("items", {}).get("data", [])
+            items = sub.get("items", {}).get("data", [])  # type: ignore[attr-defined]
             if items:
-                return items[0].get("id")
+                return str(items[0].get("id")) if items[0].get("id") else None
     except Exception:
         log.debug("metered.subscription_lookup_failed", exc_info=True)
     return None

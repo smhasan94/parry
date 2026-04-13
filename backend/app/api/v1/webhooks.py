@@ -1,5 +1,7 @@
 """Clerk webhook handler — syncs org lifecycle events to Parry database."""
 
+from typing import Any
+
 import structlog
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from sqlalchemy import select
@@ -15,7 +17,7 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
-def _verify_webhook(payload: bytes, headers: dict[str, str]) -> dict:
+def _verify_webhook(payload: bytes, headers: dict[str, str]) -> dict[str, Any]:
     """Verify Clerk webhook signature using Svix and return parsed event."""
     if not settings.clerk_webhook_secret:
         raise HTTPException(
@@ -25,7 +27,7 @@ def _verify_webhook(payload: bytes, headers: dict[str, str]) -> dict:
 
     wh = Webhook(settings.clerk_webhook_secret)
     try:
-        return wh.verify(payload, headers)
+        return wh.verify(payload, headers)  # type: ignore[no-any-return]
     except WebhookVerificationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -71,7 +73,7 @@ async def clerk_webhook(
     return {"status": "ok"}
 
 
-async def _handle_org_created(db: AsyncSession, data: dict) -> None:
+async def _handle_org_created(db: AsyncSession, data: dict[str, Any]) -> None:
     """Create a new Org when a Clerk organization is created."""
     clerk_org_id = data.get("id", "")
     name = data.get("name", "Unnamed Organization")
@@ -89,7 +91,7 @@ async def _handle_org_created(db: AsyncSession, data: dict) -> None:
     log.info("webhook.org_created", org_id=str(org.id), clerk_org_id=clerk_org_id, name=name)
 
 
-async def _handle_org_updated(db: AsyncSession, data: dict) -> None:
+async def _handle_org_updated(db: AsyncSession, data: dict[str, Any]) -> None:
     """Update Org name when a Clerk organization is updated."""
     clerk_org_id = data.get("id", "")
     name = data.get("name")
@@ -108,7 +110,7 @@ async def _handle_org_updated(db: AsyncSession, data: dict) -> None:
     log.info("webhook.org_updated", org_id=str(org.id), name=name)
 
 
-async def _handle_org_deleted(db: AsyncSession, data: dict) -> None:
+async def _handle_org_deleted(db: AsyncSession, data: dict[str, Any]) -> None:
     """Deactivate Org when a Clerk organization is deleted."""
     clerk_org_id = data.get("id", "")
 
@@ -125,7 +127,7 @@ async def _handle_org_deleted(db: AsyncSession, data: dict) -> None:
     log.info("webhook.org_deleted", org_id=str(org.id), clerk_org_id=clerk_org_id)
 
 
-async def _handle_user_created(db: AsyncSession, data: dict) -> None:
+async def _handle_user_created(db: AsyncSession, data: dict[str, Any]) -> None:
     """Create a personal Org when a new user signs up without an organization."""
     user_id = data.get("id", "")
     first_name = data.get("first_name") or ""

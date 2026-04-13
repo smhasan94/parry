@@ -6,6 +6,7 @@ and sends via SMTP to all recipients.
 
 import asyncio
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -14,7 +15,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="send_due_reports",
     bind=True,
     autoretry_for=(Exception,),
@@ -24,7 +25,7 @@ log = structlog.get_logger()
     soft_time_limit=300,
     time_limit=600,
 )
-def send_due_reports(self) -> dict:  # type: ignore[no-untyped-def]
+def send_due_reports(self: Any) -> dict[str, Any]:
     """Check for due scheduled reports and send them."""
     try:
         return asyncio.run(_send_all())
@@ -37,7 +38,7 @@ def send_due_reports(self) -> dict:  # type: ignore[no-untyped-def]
         raise
 
 
-async def _send_all() -> dict:
+async def _send_all() -> dict[str, Any]:
     from app.db.models import Org
     from app.db.session import make_task_session_factory
     from app.services.scheduled_report_service import compute_next_send, get_due_schedules
@@ -85,7 +86,7 @@ async def _send_all() -> dict:
         await task_engine.dispose()
 
 
-async def _generate_and_send(db, schedule, org) -> None:
+async def _generate_and_send(db: Any, schedule: Any, org: Any) -> None:
     """Generate report PDF and send via email."""
     from datetime import timedelta
 

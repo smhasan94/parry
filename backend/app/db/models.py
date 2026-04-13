@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -67,11 +68,11 @@ class Org(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     clerk_org_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
     # Alert config: {"slack_webhook_url": "...", "min_severity": "high"}
-    alert_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    alert_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     # Detector config: {"prompt_injection": {"trigger_threshold": 0.6, "enabled": true}, ...}
-    detector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    detector_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     # Active blocking mode — when enabled the SDK's sync /proxy/check path
     # will reject HIGH/CRITICAL triggers before the LLM call fires.
     blocking_enabled: Mapped[bool] = mapped_column(
@@ -186,8 +187,8 @@ class Agent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    baseline: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    baseline: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
     group_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("agent_groups.id", ondelete="SET NULL"), nullable=True
     )
@@ -212,7 +213,7 @@ class AgentSession(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
     )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     agent: Mapped["Agent"] = relationship(back_populates="sessions")
     events: Mapped[list["AgentEvent"]] = relationship(back_populates="session", lazy="selectin")
@@ -244,13 +245,13 @@ class AgentEvent(Base, TimestampMixin):
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     response: Mapped[str | None] = mapped_column(Text, nullable=True)
     model: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    tool_calls: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    tool_calls: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     estimated_cost_usd: Mapped[float] = mapped_column(
         Numeric(12, 8), default=0, nullable=False, server_default="0"
     )
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     session: Mapped["AgentSession | None"] = relationship(back_populates="events")
 
@@ -278,7 +279,7 @@ class Detection(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     confidence: Mapped[float] = mapped_column(nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     triggered: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    details: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     incident: Mapped["Incident | None"] = relationship(back_populates="detections")
 
@@ -314,7 +315,7 @@ class Incident(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         nullable=False,
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     detections: Mapped[list["Detection"]] = relationship(back_populates="incident", lazy="selectin")
 
@@ -333,13 +334,13 @@ class Policy(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Policy rules stored as JSONB
-    allowed_tools: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    blocked_tools: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    allowed_domains: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    blocked_domains: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    allowed_tools: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    blocked_tools: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    allowed_domains: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    blocked_domains: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     max_token_budget: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    forbidden_patterns: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    custom_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    forbidden_patterns: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    custom_rules: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     org: Mapped["Org"] = relationship(back_populates="policies")
 
@@ -368,7 +369,7 @@ class AuditLog(Base, UUIDPrimaryKeyMixin):
     resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     # Optional structured payload (before/after diff, IP, user-agent, etc.)
-    details: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
@@ -400,7 +401,7 @@ class RedTeamRun(Base, UUIDPrimaryKeyMixin):
     detected_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     overall_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     grade: Mapped[str | None] = mapped_column(String(1), nullable=True)
-    category_scores: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    category_scores: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -438,7 +439,7 @@ class RedTeamResult(Base, UUIDPrimaryKeyMixin):
     attack_category: Mapped[str] = mapped_column(String(64), nullable=False)
     attack_severity: Mapped[str] = mapped_column(String(16), nullable=False)
     detected: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    detectors_fired: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    detectors_fired: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     max_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     response_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -468,7 +469,7 @@ class MCPServer(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     server_uri: Mapped[str] = mapped_column(Text, nullable=False)
     server_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     manifest_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    manifest: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     tool_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     trust_level: Mapped[str] = mapped_column(
         String(16), nullable=False, default="observed"
@@ -480,7 +481,7 @@ class MCPServer(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     last_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    hash_history: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    hash_history: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
 
     __table_args__ = (
         UniqueConstraint("org_id", "server_uri", name="uq_mcp_servers_org_uri"),
@@ -519,7 +520,7 @@ class AgentBudget(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False, server_default="true"
     )
-    alert_at_pcts: Mapped[list] = mapped_column(
+    alert_at_pcts: Mapped[list[int]] = mapped_column(
         JSONB, nullable=False, server_default="[75, 90, 100]"
     )
 
@@ -565,7 +566,7 @@ class AISystem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
     annex_iii_category: Mapped[str | None] = mapped_column(Text, nullable=True)
     jurisdiction: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     __table_args__ = (
         CheckConstraint(
@@ -607,7 +608,7 @@ class AISystemSupplier(Base, UUIDPrimaryKeyMixin):
     )
     jurisdiction: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_url: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
@@ -636,7 +637,7 @@ class FRIADocument(Base, UUIDPrimaryKeyMixin):
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
-    content: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    content: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     pdf_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -684,7 +685,7 @@ class SeriousIncident(Base, UUIDPrimaryKeyMixin):
     report_version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default="1"
     )
-    report_content: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    report_content: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     pdf_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -732,10 +733,10 @@ class AgentPermission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     default_action: Mapped[str] = mapped_column(
         String(8), nullable=False, default="allow", server_default="allow"
     )
-    allowed_tools: Mapped[list] = mapped_column(
+    allowed_tools: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list, server_default="[]"
     )
-    blocked_tools: Mapped[list] = mapped_column(
+    blocked_tools: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list, server_default="[]"
     )
 
@@ -785,7 +786,7 @@ class ThreatIndicator(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
     score: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     sample_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -850,7 +851,7 @@ class WebhookEndpoint(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     url: Mapped[str] = mapped_column(Text, nullable=False)
     secret: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    event_types: Mapped[list] = mapped_column(
+    event_types: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list, server_default="[]"
     )
     is_active: Mapped[bool] = mapped_column(
@@ -879,7 +880,7 @@ class WebhookDelivery(Base, UUIDPrimaryKeyMixin):
         nullable=False,
     )
     event_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     response_body: Mapped[str | None] = mapped_column(Text, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -910,7 +911,7 @@ class ScheduledReport(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
     schedule: Mapped[str] = mapped_column(String(16), nullable=False)
-    recipients: Mapped[list] = mapped_column(
+    recipients: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list, server_default="[]"
     )
     report_type: Mapped[str] = mapped_column(
@@ -953,7 +954,7 @@ class CommunityRulePack(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
-    rules: Mapped[list] = mapped_column(JSONB, nullable=False)
+    rules: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     install_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")

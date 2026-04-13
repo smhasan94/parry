@@ -19,7 +19,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="refresh_health_scores",
     soft_time_limit=300,
     time_limit=360,

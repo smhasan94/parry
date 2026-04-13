@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -61,7 +62,7 @@ def _mask_secret(value: str | None) -> str | None:
     return "****" + value[-4:]
 
 
-def _config_to_response(config: dict | None) -> AlertConfigResponse:
+def _config_to_response(config: dict[str, Any] | None) -> AlertConfigResponse:
     config = config or {}
     return AlertConfigResponse(
         slack_webhook_url=config.get("slack_webhook_url"),
@@ -102,7 +103,7 @@ def _redact_webhook(url: str | None) -> str | None:
     return url[:30] + "..." + url[-6:]
 
 
-def _audit_safe_config(config: dict | None) -> dict:
+def _audit_safe_config(config: dict[str, Any] | None) -> dict[str, Any]:
     """Return a copy of the alert config safe to write to the audit log."""
     cfg = dict(config or {})
     if "slack_webhook_url" in cfg:

@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -115,7 +116,7 @@ async def get_agent_stats(
     window: str = Query("30d", pattern="^(7d|30d|90d)$"),
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Agent behavioural stats for the charts on AgentDetailPage.
 
     Returns event volume, top tool calls, model usage, anomaly trend,
@@ -140,7 +141,7 @@ async def list_agent_sessions_route(
     limit: int = Query(20, ge=1, le=100),
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Recent sessions for an agent, newest first.
 
     Used by the Sessions tab on AgentDetailPage. Each entry carries
@@ -239,7 +240,7 @@ async def get_agent_spend(
     agent_id: uuid.UUID,
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Current spend counters and configured budgets for an agent."""
     await agent_service.get_agent(db, org.id, agent_id)
     period_spend = {
@@ -272,7 +273,7 @@ async def get_agent_spend(
 async def fleet_overview(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Fleet-wide agent comparison with grade distribution and health scores."""
     agents_raw, _ = await agent_service.list_agents(db, org.id, cursor=None, limit=500)
     agent_dicts = []
@@ -295,7 +296,7 @@ async def fleet_overview(
 async def sdk_health(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """SDK integration health — last event, staleness, status per agent."""
     from datetime import UTC, datetime
 

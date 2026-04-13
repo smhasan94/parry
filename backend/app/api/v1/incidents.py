@@ -1,5 +1,6 @@
 import contextlib
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
@@ -126,7 +127,7 @@ async def get_incident_replay(
     incident_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(require_role(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Forensic attack chain replay for an incident.
 
     Reconstructs the event timeline around the trigger with smart
@@ -182,7 +183,7 @@ async def get_share_token(
     incident_id: uuid.UUID,
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Generate a shareable link token for an incident."""
     incident = await incident_service.get_incident(db, org.id, incident_id)
     token = incident_share_service.generate_share_token(str(incident.id))

@@ -1,5 +1,7 @@
 """Sentry error tracking initialization (no-op when SENTRY_DSN unset)."""
 
+from typing import Any
+
 import structlog
 
 from app.core.config import settings
@@ -38,13 +40,13 @@ def init_sentry() -> bool:
             SqlalchemyIntegration(),
             AsyncioIntegration(),
         ],
-        before_send=_strip_sensitive_fields,
+        before_send=_strip_sensitive_fields,  # type: ignore[arg-type]
     )
     log.info("sentry.initialized", environment=environment)
     return True
 
 
-def _strip_sensitive_fields(event: dict, _hint: dict) -> dict | None:
+def _strip_sensitive_fields(event: dict[str, Any], _hint: dict[str, Any]) -> dict[str, Any] | None:
     """Remove fields that may contain user prompts or API keys before sending."""
     # Strip request body — may contain prompts/responses
     if "request" in event and isinstance(event["request"], dict):

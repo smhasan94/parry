@@ -73,7 +73,7 @@ def set_cached_stats(agent_id: uuid.UUID, window: Window, payload: dict[str, Any
 def _parse_window(window: str) -> Window:
     if window not in _WINDOW_DAYS:
         raise ValueError(f"Invalid window '{window}'. Expected one of 7d, 30d, 90d.")
-    return window  # type: ignore[return-value]
+    return window
 
 
 async def _event_volume(
@@ -89,7 +89,7 @@ async def _event_volume(
         .group_by(day)
         .order_by(day.asc())
     )
-    return [{"date": row.day.date().isoformat(), "count": int(row.count)} for row in result.all()]
+    return [{"date": row.day.date().isoformat(), "count": int(row[1])} for row in result.all()]
 
 
 async def _tool_call_counts(

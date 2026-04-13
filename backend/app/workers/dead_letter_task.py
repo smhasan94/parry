@@ -5,6 +5,8 @@ simply logs the failure with full context so ops can audit and replay.
 No automatic retry — these are permanently failed tasks by definition.
 """
 
+from typing import Any
+
 import structlog
 
 from app.workers.celery_app import celery_app
@@ -12,7 +14,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="dead_letter_sink",
     max_retries=0,
     queue="dead_letter",
@@ -20,11 +22,11 @@ log = structlog.get_logger()
 def dead_letter_sink(
     original_task: str,
     task_id: str,
-    args: list | None = None,
-    kwargs: dict | None = None,
+    args: list[Any] | None = None,
+    kwargs: dict[str, Any] | None = None,
     exception: str = "",
     retries: int = 0,
-) -> dict:
+) -> dict[str, Any]:
     """Persist a dead-lettered task for auditing.
 
     Currently logs at ERROR level. Future: write to a DB table

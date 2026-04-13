@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -194,9 +195,9 @@ async def _get_active_policies(db: AsyncSession, org_id: uuid.UUID) -> list[Poli
     return list(result.scalars().all())
 
 
-def _merge_policies(policies: list[Policy]) -> dict:
+def _merge_policies(policies: list[Policy]) -> dict[str, Any]:
     """Merge all active policies into a single policy dict for the detector."""
-    merged: dict = {
+    merged: dict[str, Any] = {
         "allowed_tools": [],
         "blocked_tools": [],
         "allowed_domains": [],
@@ -244,7 +245,7 @@ async def _create_or_update_incident(
     top_detection = max(detections, key=lambda d: d.confidence)
     title = f"[{severity.value.upper()}] {top_detection.detector}: {top_detection.reason}"
 
-    metadata: dict = {}
+    metadata: dict[str, Any] = {}
     if trigger_session_id is not None:
         metadata["trigger_session_id"] = str(trigger_session_id)
     if trigger_event_id is not None:

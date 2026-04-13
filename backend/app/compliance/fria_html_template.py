@@ -149,7 +149,7 @@ def render_fria_html(doc: FRIADocument) -> str:
 
 def render_fria_pdf(doc: FRIADocument) -> bytes:
     """Render FRIA to PDF via WeasyPrint (lazy import)."""
-    from weasyprint import HTML  # type: ignore[import-not-found]
+    from weasyprint import HTML  # type: ignore[import-untyped]
 
     html = render_fria_html(doc)
-    return HTML(string=html).write_pdf()
+    return HTML(string=html).write_pdf()  # type: ignore[no-any-return]

@@ -36,7 +36,7 @@ class SimulatePolicyResponse(ParrySchema):
     error: str | None = None
 
 
-def _policy_summary(policy) -> dict:
+def _policy_summary(policy: Any) -> dict[str, Any]:
     """Compact view of a policy for audit log details."""
     return {
         "name": policy.name,

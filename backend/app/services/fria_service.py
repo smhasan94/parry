@@ -8,6 +8,7 @@ compliance.fria_html_template.
 import copy
 import uuid
 from datetime import UTC, date, timedelta
+from typing import Any
 
 import structlog
 from sqlalchemy import func, select
@@ -113,7 +114,7 @@ async def update_fria(
     db: AsyncSession,
     org_id: uuid.UUID,
     fria_id: uuid.UUID,
-    content_updates: dict,
+    content_updates: dict[str, Any],
 ) -> FRIADocument:
     """Merge user-provided fields into a draft FRIA."""
     doc = await get_fria(db, org_id, fria_id)
@@ -196,14 +197,14 @@ async def approve_fria(
 
 async def _build_content(
     db: AsyncSession, org_id: uuid.UUID, system: AISystem
-) -> dict:
+) -> dict[str, Any]:
     """Walk the FRIA template and populate auto-filled sections."""
     template = copy.deepcopy(FRIA_TEMPLATE)
-    sections: dict[str, dict] = {}
+    sections: dict[str, dict[str, Any]] = {}
 
     for section_def in template["sections"]:
         section_id = section_def["id"]
-        section_data: dict = {"title": section_def["title"]}
+        section_data: dict[str, Any] = {"title": section_def["title"]}
 
         if section_def.get("auto_populated"):
             section_data["fields"] = await _populate_section(
@@ -225,10 +226,10 @@ async def _populate_section(
     db: AsyncSession,
     org_id: uuid.UUID,
     system: AISystem,
-    section_def: dict,
-) -> dict:
+    section_def: dict[str, Any],
+) -> dict[str, Any]:
     """Auto-populate a section's fields from DB data."""
-    fields: dict = {}
+    fields: dict[str, Any] = {}
 
     for field_def in section_def["fields"]:
         key = field_def["key"]
@@ -296,7 +297,7 @@ async def _populate_section(
 
 async def _compute_field(
     db: AsyncSession, org_id: uuid.UUID, key: str
-) -> str | dict | None:
+) -> str | dict[str, Any] | None:
     """Compute derived fields for auto-populated sections."""
     _field_values: dict[str, str] = {
         "human_oversight_rbac": "RBAC enabled with viewer/admin/owner roles",

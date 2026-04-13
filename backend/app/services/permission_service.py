@@ -12,7 +12,7 @@ Resolution order:
 
 import uuid
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 import structlog
 from sqlalchemy import select
@@ -116,7 +116,8 @@ def _evaluate(
     source: Literal["agent", "org_default"],
 ) -> PermissionResult:
     """Core evaluation logic."""
-    if perm.mode == "disabled":
+    mode = cast(Literal["enforcing", "dry_run", "disabled"], perm.mode)
+    if mode == "disabled":
         return PermissionResult(
             allowed=True,
             mode="disabled",
@@ -138,7 +139,7 @@ def _evaluate(
     if tool_lower in blocked_lower:
         return PermissionResult(
             allowed=False,
-            mode=perm.mode,
+            mode=mode,
             reason=f"Tool '{tool_name}' is explicitly blocked",
             tool_name=tool_name,
             agent_id=agent_id,
@@ -149,7 +150,7 @@ def _evaluate(
     if tool_lower in allowed_lower:
         return PermissionResult(
             allowed=True,
-            mode=perm.mode,
+            mode=mode,
             reason=f"Tool '{tool_name}' is explicitly allowed",
             tool_name=tool_name,
             agent_id=agent_id,
@@ -160,7 +161,7 @@ def _evaluate(
     if perm.default_action == "deny":
         return PermissionResult(
             allowed=False,
-            mode=perm.mode,
+            mode=mode,
             reason=f"Tool '{tool_name}' not in allowlist (deny-by-default)",
             tool_name=tool_name,
             agent_id=agent_id,
@@ -170,7 +171,7 @@ def _evaluate(
     # default_action == "allow"
     return PermissionResult(
         allowed=True,
-        mode=perm.mode,
+        mode=mode,
         reason=f"Tool '{tool_name}' permitted (allow-by-default)",
         tool_name=tool_name,
         agent_id=agent_id,

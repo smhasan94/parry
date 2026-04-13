@@ -24,7 +24,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="export_audit_log_monthly",
     soft_time_limit=1800,
     time_limit=1860,
@@ -71,7 +71,7 @@ async def _export_audit_log_monthly() -> dict[str, int]:
         return {"exported": 0, "skipped": 0, "errored": 0}
 
     try:
-        import boto3  # type: ignore[import-not-found]
+        import boto3  # type: ignore[import-untyped]
     except ImportError:
         log.warning("audit.export_boto3_missing")
         return {"exported": 0, "skipped": 0, "errored": 0}

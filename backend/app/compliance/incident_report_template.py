@@ -111,7 +111,7 @@ relevant authority.
 
 def render_incident_pdf(report: SeriousIncident) -> bytes:
     """Render serious incident report to PDF via WeasyPrint (lazy import)."""
-    from weasyprint import HTML  # type: ignore[import-not-found]
+    from weasyprint import HTML  # type: ignore[import-untyped]
 
     html = render_incident_html(report)
-    return HTML(string=html).write_pdf()
+    return HTML(string=html).write_pdf()  # type: ignore[no-any-return]

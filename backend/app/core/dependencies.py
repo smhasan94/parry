@@ -1,12 +1,12 @@
 import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 import structlog
 from fastapi import Depends, Header, HTTPException, status
-from jose import JWTError, jwt
+from jose import JWTError, jwt  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,10 +35,10 @@ class Actor:
 
 
 # Cache JWKS keys in memory (refreshed on cache miss)
-_jwks_cache: dict | None = None
+_jwks_cache: dict[str, Any] | None = None
 
 
-async def _get_clerk_jwks() -> dict:
+async def _get_clerk_jwks() -> dict[str, Any]:
     """Fetch Clerk's JWKS from their well-known endpoint."""
     global _jwks_cache
 
@@ -98,8 +98,10 @@ async def _resolve_from_api_key(
     if update_last_used:
         api_key.last_used_at = datetime.now(UTC)
 
-    result = await db.execute(select(Org).where(Org.id == api_key.org_id, Org.is_active.is_(True)))
-    org = result.scalar_one_or_none()
+    org_result = await db.execute(
+        select(Org).where(Org.id == api_key.org_id, Org.is_active.is_(True))
+    )
+    org = org_result.scalar_one_or_none()
 
     if org is None:
         raise HTTPException(

@@ -108,13 +108,13 @@ def _validate_pattern(pattern: str) -> None:
         ) from e
 
 
-def _load_rules(org: Org) -> list[dict]:
+def _load_rules(org: Org) -> list[dict[str, Any]]:
     cfg = org.detector_config or {}
     rules = cfg.get("custom_rules") or []
     return list(rules)
 
 
-def _save_rules(org: Org, rules: list[dict]) -> None:
+def _save_rules(org: Org, rules: list[dict[str, Any]]) -> None:
     cfg = dict(org.detector_config or {})
     cfg["custom_rules"] = rules
     org.detector_config = cfg
@@ -169,7 +169,7 @@ async def create_custom_rule(
         actor_id=actor.actor_id,
         actor_label=actor.label,
         resource_type="custom_rule",
-        resource_id=new_rule["id"],
+        resource_id=str(new_rule["id"]),
         details={"name": new_rule["name"], "target": new_rule["target"]},
     )
     await db.commit()

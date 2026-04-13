@@ -3,6 +3,7 @@
 import asyncio
 import json
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -13,7 +14,7 @@ log = structlog.get_logger()
 DELIVERY_TIMEOUT_SECONDS = 10
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="deliver_webhook",
     bind=True,
     autoretry_for=(Exception,),
@@ -24,11 +25,11 @@ DELIVERY_TIMEOUT_SECONDS = 10
     time_limit=30,
 )
 def deliver_webhook(
-    self,
+    self: Any,
     endpoint_id: str,
     event_type: str,
     payload_json: str,
-) -> dict:  # type: ignore[no-untyped-def]
+) -> dict[str, Any]:
     """Deliver a webhook payload to an endpoint with HMAC signing."""
     try:
         return asyncio.run(
@@ -50,7 +51,7 @@ async def _deliver(
     event_type: str,
     payload_json: str,
     attempt: int,
-) -> dict:
+) -> dict[str, Any]:
     import uuid
 
     import httpx

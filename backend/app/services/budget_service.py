@@ -8,6 +8,7 @@ operations fail open — a Redis outage must never block agent calls.
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -25,7 +26,7 @@ _PERIOD_META: dict[str, tuple[str, int]] = {
 }
 
 
-def _get_redis():
+def _get_redis() -> Any:
     """Sync Redis client from shared pool."""
     try:
         from app.core.redis_pool import sync_redis

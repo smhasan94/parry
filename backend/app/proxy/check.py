@@ -8,6 +8,7 @@ so it MUST be fast (<10ms p99) and MUST NOT touch async-only detectors
 from typing import Any
 
 from app.db.models import Severity
+from app.detection.base import BaseDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
 from app.detection.detectors.prompt_injection import PromptInjectionDetector
@@ -17,7 +18,7 @@ from app.detection.detectors.tool_misuse import ToolMisuseDetector
 # once at import time — detectors are stateless per the BaseDetector
 # protocol so sharing instances across requests is safe and avoids
 # re-compiling regex/pattern state on every call.
-BLOCKING_DETECTORS = [
+BLOCKING_DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
     JailbreakDetector(),
     ToolMisuseDetector(),

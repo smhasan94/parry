@@ -5,6 +5,7 @@ digest, and sends HTML emails to org admins.
 """
 
 import asyncio
+from typing import Any
 
 import structlog
 
@@ -13,17 +14,17 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="send_weekly_digest",
     soft_time_limit=600,
     time_limit=660,
 )
-def send_weekly_digest() -> dict:
+def send_weekly_digest() -> dict[str, Any]:
     """Compute and send weekly digest for all active orgs."""
     return asyncio.get_event_loop().run_until_complete(_send_digests())
 
 
-async def _send_digests() -> dict:
+async def _send_digests() -> dict[str, Any]:
     """Async implementation — fetches orgs, builds digests, sends emails."""
     from sqlalchemy import select
 

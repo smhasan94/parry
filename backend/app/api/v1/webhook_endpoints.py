@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -52,7 +53,7 @@ class DeliveryResponse(ParrySchema):
     id: uuid.UUID
     endpoint_id: uuid.UUID
     event_type: str
-    payload: dict
+    payload: dict[str, Any]
     status_code: int | None
     response_body: str | None
     error: str | None
@@ -210,13 +211,13 @@ async def list_deliveries(
 
 @router.post(
     "/{endpoint_id}/test",
-    response_model=dict,
+    response_model=dict[str, Any],
 )
 async def test_endpoint(
     endpoint_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     org, _ = org_actor
     plan_service.require_feature(org, "webhook_subscriptions")
     endpoint = await webhook_dispatch_service.get_endpoint(db, org.id, endpoint_id)

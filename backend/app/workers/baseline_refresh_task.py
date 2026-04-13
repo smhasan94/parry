@@ -23,7 +23,7 @@ STALE_AFTER_DAYS = 7
 GROWTH_FACTOR = 1.5
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="refresh_stale_baselines",
     soft_time_limit=300,
     time_limit=360,

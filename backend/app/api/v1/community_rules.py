@@ -123,7 +123,7 @@ async def publish_pack(
         await audit_service.log_action(
             db,
             org_id=org.id,
-            actor_id=actor.clerk_user_id,
+            actor_id=actor.actor_id,
             action="community_pack.published",
             resource_type="community_rule_pack",
             resource_id=str(pack.id),
@@ -156,7 +156,7 @@ async def update_pack(
         await audit_service.log_action(
             db,
             org_id=org.id,
-            actor_id=actor.clerk_user_id,
+            actor_id=actor.actor_id,
             action="community_pack.updated",
             resource_type="community_rule_pack",
             resource_id=str(pack.id),
@@ -195,7 +195,7 @@ async def install_pack(
     await audit_service.log_action(
         db,
         org_id=org.id,
-        actor_id=actor.clerk_user_id,
+        actor_id=actor.actor_id,
         action="community_pack.installed",
         resource_type="community_rule_pack",
         resource_id=str(pack_id),
@@ -218,7 +218,7 @@ async def uninstall_pack(
     await audit_service.log_action(
         db,
         org_id=org.id,
-        actor_id=actor.clerk_user_id,
+        actor_id=actor.actor_id,
         action="community_pack.uninstalled",
         resource_type="community_rule_pack",
         resource_id=str(pack_id),

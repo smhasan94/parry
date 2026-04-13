@@ -7,6 +7,7 @@ Two tasks:
 
 import asyncio
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import structlog
 
@@ -18,7 +19,7 @@ log = structlog.get_logger()
 # ── Pattern extraction task ────────────────────────────────────
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="extract_threat_pattern",
     bind=True,
     autoretry_for=(Exception,),
@@ -29,14 +30,14 @@ log = structlog.get_logger()
     time_limit=30,
 )
 def extract_threat_pattern(
-    self,
+    self: Any,
     org_id: str,
     detection_id: str,
     detector: str,
     severity: str,
     confidence: float,
     reason: str,
-) -> dict:  # type: ignore[no-untyped-def]
+) -> dict[str, Any]:
     """Extract and record a threat pattern from a detection."""
     try:
         return asyncio.run(
@@ -59,7 +60,7 @@ async def _extract(
     severity: str,
     confidence: float,
     reason: str,
-) -> dict:
+) -> dict[str, Any]:
     import uuid
 
     from app.db.session import make_task_session_factory
@@ -94,7 +95,7 @@ async def _extract(
 # ── Daily decay task ───────────────────────────────────────────
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="threat_intel_decay",
     bind=True,
     autoretry_for=(Exception,),
@@ -104,7 +105,7 @@ async def _extract(
     soft_time_limit=120,
     time_limit=300,
 )
-def threat_intel_decay(self) -> dict:  # type: ignore[no-untyped-def]
+def threat_intel_decay(self: Any) -> dict[str, Any]:
     """Daily: decay scores, promote eligible, archive stale indicators."""
     try:
         return asyncio.run(_decay_all())
@@ -117,7 +118,7 @@ def threat_intel_decay(self) -> dict:  # type: ignore[no-untyped-def]
         raise
 
 
-async def _decay_all() -> dict:
+async def _decay_all() -> dict[str, Any]:
     from sqlalchemy import update
 
     from app.db.models import ThreatIndicator
@@ -168,7 +169,7 @@ async def _decay_all() -> dict:
                 )
                 .values(archived_at=now)
             )
-            archived_count = archived_result.rowcount
+            archived_count = archived_result.rowcount  # type: ignore[attr-defined]
 
             await db.commit()
 

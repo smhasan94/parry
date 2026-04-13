@@ -335,7 +335,7 @@ async def _check_eu_registration(db: AsyncSession, org_id: uuid.UUID) -> Obligat
         select(AISystem).where(
             AISystem.org_id == org_id,
             AISystem.risk_level == "high",
-            AISystem.metadata_.op("->>")(  # type: ignore[union-attr]
+            AISystem.metadata_.op("->>")(
                 "eu_database_registered"
             ).is_(None),
         )

@@ -24,16 +24,16 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="run_red_team",
     soft_time_limit=600,
     time_limit=660,
 )
-def run_red_team(run_id: str) -> dict:
+def run_red_team(run_id: str) -> dict[str, Any]:
     return asyncio.run(_run_red_team(run_id))
 
 
-async def _run_red_team(run_id: str) -> dict:
+async def _run_red_team(run_id: str) -> dict[str, Any]:
     from app.db.models import Agent, Org, RedTeamResult, RedTeamRun
     from app.db.session import make_task_session_factory
     from app.services.red_team_service import score_results
@@ -104,7 +104,7 @@ async def _run_red_team(run_id: str) -> dict:
         await task_engine.dispose()
 
 
-async def _run_sandbox(db: Any, agent: Any, org: Any) -> list[dict]:
+async def _run_sandbox(db: Any, agent: Any, org: Any) -> list[dict[str, Any]]:
     """Replay the corpus through `DetectionPipeline` for one agent.
 
     Builds synthetic ``event_data`` per attack — same shape as the
@@ -124,7 +124,7 @@ async def _run_sandbox(db: Any, agent: Any, org: Any) -> list[dict]:
     merged_policy = _merge_policies(policies)
     pipeline = DetectionPipeline()
 
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     for attack in corpus:
         event_data: dict[str, Any] = {
             "prompt": attack.get("prompt"),

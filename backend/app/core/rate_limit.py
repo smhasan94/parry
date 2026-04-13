@@ -88,7 +88,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: Any) -> None:
         super().__init__(app)
-        self._redis = None
+        self._redis: Any = None
 
     def _get_redis(self) -> Any:
         if self._redis is None:

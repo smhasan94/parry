@@ -6,6 +6,7 @@ reporting deadline, and handles finalization with PDF rendering.
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -107,7 +108,7 @@ async def update_draft(
     db: AsyncSession,
     org_id: uuid.UUID,
     report_id: uuid.UUID,
-    report_content: dict | None = None,
+    report_content: dict[str, Any] | None = None,
     authority_jurisdiction: str | None = None,
     system_id: uuid.UUID | None = None,
 ) -> SeriousIncident:
@@ -166,7 +167,7 @@ async def finalize(
     return report
 
 
-def _build_report_content(incident: Incident) -> dict:
+def _build_report_content(incident: Incident) -> dict[str, Any]:
     """Pre-fill report template from incident data."""
     return {
         "incident_summary": {

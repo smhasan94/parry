@@ -254,7 +254,7 @@ def render_report_pdf(data: dict[str, Any]) -> bytes:
     need PDF output) don't pay for WeasyPrint's native dependencies at
     import time.
     """
-    from weasyprint import HTML  # type: ignore[import-not-found]
+    from weasyprint import HTML  # type: ignore[import-untyped]
 
     html = render_report_html(data)
-    return HTML(string=html).write_pdf()
+    return HTML(string=html).write_pdf()  # type: ignore[no-any-return]

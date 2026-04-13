@@ -7,7 +7,9 @@ data by fria_service; the rest require user input via the dashboard.
 
 from __future__ import annotations
 
-FRIA_TEMPLATE: dict = {
+from typing import Any
+
+FRIA_TEMPLATE: dict[str, Any] = {
     "version": "1.0",
     "based_on": "EU AI Office guidance (2025-Q1) + CoE FRIA template",
     "sections": [

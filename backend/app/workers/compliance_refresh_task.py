@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, date, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="compliance_refresh",
     bind=True,
     autoretry_for=(Exception,),
@@ -30,7 +30,7 @@ log = structlog.get_logger()
     soft_time_limit=300,
     time_limit=600,
 )
-def compliance_refresh(self) -> dict:  # type: ignore[no-untyped-def]
+def compliance_refresh(self: Any) -> dict[str, Any]:
     """Daily compliance posture refresh for all orgs."""
     try:
         return asyncio.run(_refresh_all())
@@ -43,7 +43,7 @@ def compliance_refresh(self) -> dict:  # type: ignore[no-untyped-def]
         raise
 
 
-async def _refresh_all() -> dict:
+async def _refresh_all() -> dict[str, Any]:
     from sqlalchemy import select
 
     from app.db.models import Org
@@ -83,7 +83,7 @@ async def _refresh_all() -> dict:
         await task_engine.dispose()
 
 
-async def _refresh_org(db: AsyncSession, org_id) -> dict:  # type: ignore[no-untyped-def]
+async def _refresh_org(db: AsyncSession, org_id: Any) -> dict[str, Any]:
 
     from sqlalchemy import select
 

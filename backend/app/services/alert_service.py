@@ -4,6 +4,7 @@ import asyncio
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Any
 
 import httpx
 import structlog
@@ -36,13 +37,13 @@ SEVERITY_EMOJI = {
 }
 
 
-def build_webhook_payload(incident: Incident, dashboard_url: str | None = None) -> dict:
+def build_webhook_payload(incident: Incident, dashboard_url: str | None = None) -> dict[str, Any]:
     """Build a generic JSON payload for arbitrary webhook receivers.
 
     Designed to be consumable by PagerDuty, Opsgenie, Teams, Discord, n8n,
     Zapier, custom services, etc. Stable schema versioned via `schema_version`.
     """
-    detections_payload: list[dict] = []
+    detections_payload: list[dict[str, Any]] = []
     if incident.detections:
         for d in sorted(incident.detections, key=lambda x: x.confidence, reverse=True):
             detections_payload.append(
@@ -54,7 +55,7 @@ def build_webhook_payload(incident: Incident, dashboard_url: str | None = None) 
                 }
             )
 
-    payload: dict = {
+    payload: dict[str, Any] = {
         "schema_version": "1.0",
         "event": "incident.created",
         "incident": {
@@ -73,7 +74,7 @@ def build_webhook_payload(incident: Incident, dashboard_url: str | None = None) 
     return payload
 
 
-def _meets_min_severity(config: dict, severity: Severity) -> bool:
+def _meets_min_severity(config: dict[str, Any], severity: Severity) -> bool:
     min_severity_str = config.get("min_severity", "high")
     try:
         min_severity = Severity(min_severity_str)
@@ -100,7 +101,7 @@ def should_alert(org: Org, severity: Severity) -> bool:
     return _meets_min_severity(config, severity)
 
 
-def build_slack_payload(incident: Incident, dashboard_url: str | None = None) -> dict:
+def build_slack_payload(incident: Incident, dashboard_url: str | None = None) -> dict[str, Any]:
     """Build a Slack message payload for an incident."""
     severity = incident.severity
     emoji = SEVERITY_EMOJI[severity]
@@ -120,7 +121,7 @@ def build_slack_payload(incident: Incident, dashboard_url: str | None = None) ->
             }
         )
 
-    attachment: dict = {
+    attachment: dict[str, Any] = {
         "color": color,
         "title": f"{emoji} {incident.title}",
         "fields": fields,
@@ -288,13 +289,13 @@ OPSGENIE_PRIORITY = {
 
 def build_pagerduty_payload(
     incident: Incident, routing_key: str, dashboard_url: str | None = None
-) -> dict:
+) -> dict[str, Any]:
     """Build a PagerDuty Events API v2 payload.
 
     Uses the incident id as the dedup key so PagerDuty collapses
     retriggers into a single open alert (idempotent on our side).
     """
-    custom: dict = {
+    custom: dict[str, Any] = {
         "incident_id": str(incident.id),
         "agent_id": str(incident.agent_id),
         "org_id": str(incident.org_id),
@@ -350,8 +351,8 @@ async def send_pagerduty_alert(
         return False
 
 
-def build_opsgenie_payload(incident: Incident, dashboard_url: str | None = None) -> dict:
-    details: dict = {
+def build_opsgenie_payload(incident: Incident, dashboard_url: str | None = None) -> dict[str, Any]:
+    details: dict[str, Any] = {
         "incident_id": str(incident.id),
         "agent_id": str(incident.agent_id),
         "org_id": str(incident.org_id),

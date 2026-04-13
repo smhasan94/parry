@@ -26,6 +26,8 @@ When the WorkOS SDK isn't installed or credentials are empty,
 """
 from __future__ import annotations
 
+from typing import Any
+
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import HttpUrl
@@ -373,7 +375,7 @@ async def _create_clerk_signin_token(
             user_id = users[0]["id"]
         else:
             # 2. Create user if not found
-            create_payload: dict = {
+            create_payload: dict[str, Any] = {
                 "email_address": [email],
                 "skip_password_requirement": True,
             }
@@ -396,7 +398,7 @@ async def _create_clerk_signin_token(
             headers=headers,
         )
         resp.raise_for_status()
-        return resp.json()["token"]
+        return str(resp.json()["token"])
 
 
 @router.patch(

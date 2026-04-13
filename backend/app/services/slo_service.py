@@ -61,7 +61,7 @@ class SLOStatus:
 # ── Registry walkers ──────────────────────────────────────────────────
 
 
-def _iter_samples(reg: CollectorRegistry, sample_prefix: str) -> list:
+def _iter_samples(reg: CollectorRegistry, sample_prefix: str) -> list[Any]:
     """Flatten every sample whose name starts with ``sample_prefix``.
 
     prometheus_client strips the ``_total`` / ``_bucket`` / ``_count``
@@ -70,7 +70,7 @@ def _iter_samples(reg: CollectorRegistry, sample_prefix: str) -> list:
     level so callers can pass either ``parry_alerts_sent_total`` or
     the bare family name and get consistent results.
     """
-    out: list = []
+    out: list[Any] = []
     for metric in reg.collect():
         for sample in metric.samples:
             if sample.name == sample_prefix or sample.name.startswith(sample_prefix):

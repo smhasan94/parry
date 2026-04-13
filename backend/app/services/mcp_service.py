@@ -109,7 +109,7 @@ async def upsert_server(
     previous_hash = existing.manifest_hash
     previous_trust_level = existing.trust_level
 
-    history = list(existing.hash_history or [])
+    history: list[dict[str, Any]] = list(existing.hash_history or [])  # type: ignore[arg-type]
     history.append(
         {
             "hash": new_hash,
@@ -117,7 +117,7 @@ async def upsert_server(
             "previous_hash": previous_hash,
         }
     )
-    existing.hash_history = history[-_HASH_HISTORY_MAX:]
+    existing.hash_history = history[-_HASH_HISTORY_MAX:]  # type: ignore[assignment]
     existing.manifest = manifest
     existing.manifest_hash = new_hash
     existing.tool_count = count

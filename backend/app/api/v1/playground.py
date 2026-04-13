@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from app.core.dependencies import get_current_org
 from app.core.rbac import Role, require_role
 from app.db.models import Org
-from app.detection.base import DetectionResult
+from app.detection.base import BaseDetector, DetectionResult
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
@@ -28,7 +28,7 @@ router = APIRouter()
 MAX_INPUT_LENGTH = 5_000
 
 # Singleton detectors — stateless, safe to reuse.
-_PLAYGROUND_DETECTORS = [
+_PLAYGROUND_DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
     JailbreakDetector(),
     PrivilegeEscalationDetector(),
@@ -120,6 +120,6 @@ class TuningRequest(BaseModel):
 async def tuning_sandbox(
     body: TuningRequest,
     org: Org = Depends(get_current_org),
-) -> dict:
+) -> dict[str, Any]:
     """Replay events through detectors with custom thresholds."""
     return replay_with_config(body.events, body.config_overrides)

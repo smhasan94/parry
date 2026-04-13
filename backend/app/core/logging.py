@@ -1,6 +1,7 @@
 import logging
 import re
 import sys
+from collections.abc import MutableMapping
 from typing import Any
 
 import structlog
@@ -36,8 +37,8 @@ def _redact_value(value: Any) -> Any:
 
 
 def _redact_event_dict(
-    logger: Any, method: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+    logger: Any, method: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
     """Structlog processor that scrubs sensitive keys and values."""
     for key in list(event_dict.keys()):
         if _SENSITIVE_KEYS.search(key):

@@ -5,6 +5,7 @@ serious incident reporting, and auditor bundle generation.
 """
 
 import uuid
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -352,7 +353,7 @@ async def download_fria_pdf(
     fria_id: uuid.UUID,
     org_actor: tuple[Org, Actor] = Depends(require_role(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
-):
+) -> Any:
     from fastapi.responses import Response
 
     org, _ = org_actor

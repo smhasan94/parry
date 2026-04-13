@@ -7,6 +7,7 @@ a pack copies its rules into the subscriber's detector_config.
 
 import re
 import uuid
+from typing import Any
 
 import structlog
 from sqlalchemy import func, select, update
@@ -36,7 +37,7 @@ def _slugify(name: str) -> str:
     return slug[:100]
 
 
-def _validate_rules(rules: list[dict]) -> None:
+def _validate_rules(rules: list[dict[str, Any]]) -> None:
     """Validate rule list shape and regex patterns."""
     if len(rules) > MAX_RULES_PER_PACK:
         raise ValueError(f"Pack can have at most {MAX_RULES_PER_PACK} rules")
@@ -81,7 +82,7 @@ async def get_pack(db: AsyncSession, pack_id: uuid.UUID) -> CommunityRulePack:
     result = await db.execute(stmt)
     pack = result.scalar_one_or_none()
     if not pack:
-        raise NotFoundError("Rule pack not found")
+        raise NotFoundError("CommunityRulePack", str(pack_id))
     return pack
 
 
@@ -92,7 +93,7 @@ async def publish_pack(
     name: str,
     description: str | None,
     category: str,
-    rules: list[dict],
+    rules: list[dict[str, Any]],
 ) -> CommunityRulePack:
     """Publish a new community rule pack."""
     if category not in VALID_CATEGORIES:
@@ -134,12 +135,12 @@ async def update_pack(
     *,
     pack_id: uuid.UUID,
     org_id: uuid.UUID,
-    rules: list[dict],
+    rules: list[dict[str, Any]],
 ) -> CommunityRulePack:
     """Update a pack's rules (bumps version)."""
     pack = await get_pack(db, pack_id)
     if pack.org_id != org_id:
-        raise NotFoundError("Rule pack not found")
+        raise NotFoundError("CommunityRulePack", str(pack_id))
     _validate_rules(rules)
 
     normalized = []
@@ -166,7 +167,7 @@ async def install_pack(
     """Subscribe an org to a community rule pack."""
     pack = await get_pack(db, pack_id)
     if not pack.is_public:
-        raise NotFoundError("Rule pack not found")
+        raise NotFoundError("CommunityRulePack", str(pack_id))
 
     # Check for existing subscription
     existing = await db.execute(
@@ -210,7 +211,7 @@ async def uninstall_pack(
     )
     sub = result.scalar_one_or_none()
     if not sub:
-        raise NotFoundError("Not subscribed to this pack")
+        raise NotFoundError("CommunityRuleSubscription", str(pack_id))
     await db.delete(sub)
 
     # Decrement install count

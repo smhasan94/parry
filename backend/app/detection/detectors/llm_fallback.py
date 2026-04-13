@@ -159,7 +159,7 @@ Respond with JSON only."""
         )
 
         # Parse response
-        response_text = message.content[0].text if message.content else ""
+        response_text = message.content[0].text if message.content else ""  # type: ignore[union-attr]
         if getattr(message, "usage", None):
             input_tokens = int(getattr(message.usage, "input_tokens", 0) or 0)
             output_tokens = int(getattr(message.usage, "output_tokens", 0) or 0)

@@ -129,7 +129,7 @@ async def upsert_budget(
         actor_label=actor.label,
         resource_type="budget",
         resource_id=str(budget.id),
-        details={"before": before, "after": body.model_dump()},
+        details={"before": before, "after": body.model_dump(mode="json")},
     )
     await db.commit()
     await db.refresh(budget)

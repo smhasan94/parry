@@ -35,7 +35,7 @@ class DetectorConfigResponse(ParrySchema):
     detectors: dict[str, DetectorEntry]
 
 
-def _build_response(org_config: dict | None) -> DetectorConfigResponse:
+def _build_response(org_config: dict[str, Any] | None) -> DetectorConfigResponse:
     overrides = org_config or {}
     merged = merged_config(org_config)
     detectors = {}

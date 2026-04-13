@@ -149,7 +149,7 @@ async def live_stream(
         # __anext__ call raise StopAsyncIteration). Keeping the
         # subscriber on its own task means the SSE loop can emit
         # keepalives forever without tearing the pubsub down.
-        queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=256)
+        queue: asyncio.Queue[dict[str, str]] = asyncio.Queue(maxsize=256)
         stop = asyncio.Event()
 
         async def _pump() -> None:

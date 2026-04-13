@@ -16,6 +16,7 @@ Contract:
 
 import contextlib
 import json
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends
@@ -40,7 +41,7 @@ POLICY_CACHE_PREFIX = "policy:"
 
 # Single shared sync Redis handle, lazily initialized. The proxy check
 # is called synchronously inside a hot path, so we deliberately use the
-def _get_redis():
+def _get_redis() -> Any:
     try:
         from app.core.redis_pool import sync_redis
 
@@ -50,13 +51,13 @@ def _get_redis():
         return None
 
 
-def _merge_policies(policies: list[Policy]) -> dict:
+def _merge_policies(policies: list[Policy]) -> dict[str, Any]:
     """Flatten active policies into a single policy dict for detectors.
 
     Mirrors detection_service._merge_policies so the blocking path
     enforces the same rules as the async ingest path.
     """
-    merged: dict = {
+    merged: dict[str, Any] = {
         "allowed_tools": [],
         "blocked_tools": [],
         "allowed_domains": [],
@@ -83,7 +84,7 @@ def _merge_policies(policies: list[Policy]) -> dict:
     return merged
 
 
-async def _load_policy_for_org(db: AsyncSession, org_id) -> dict:
+async def _load_policy_for_org(db: AsyncSession, org_id: Any) -> dict[str, Any]:
     """Return the merged policy dict, using Redis as a 30s cache."""
     cache_key = f"{POLICY_CACHE_PREFIX}{org_id}"
 
@@ -92,7 +93,7 @@ async def _load_policy_for_org(db: AsyncSession, org_id) -> dict:
         try:
             cached = r.get(cache_key)
             if cached:
-                return json.loads(cached)
+                return json.loads(cached)  # type: ignore[no-any-return]
         except Exception:
             log.debug("proxy.policy_cache_read_failed", exc_info=True)
 
@@ -116,7 +117,7 @@ class ProxyCheckRequest(ParrySchema):
     session_id: str | None = None
     prompt: str | None = None
     model: str | None = None
-    tool_calls: list[dict] | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class ProxyCheckResponse(ParrySchema):
@@ -245,7 +246,7 @@ class ScanResponseRequest(ParrySchema):
 class ScanResponseBody(ParrySchema):
     blocked: bool
     response: str | None  # None when blocked
-    findings: list[dict]
+    findings: list[dict[str, Any]]
     mode: str
 
 

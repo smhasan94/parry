@@ -30,7 +30,7 @@ class CostExploitLoopDetector:
     name = "cost_exploit_loop"
 
     def detect(self, event_data: dict[str, Any]) -> DetectionResult:
-        session_history: list[dict] | None = event_data.get("session_history")
+        session_history: list[dict[str, Any]] | None = event_data.get("session_history")
 
         if not session_history or len(session_history) < 10:
             return self._pass("Insufficient session history")
@@ -77,7 +77,7 @@ class CostExploitLoopDetector:
         return self._pass("No repetitive loop pattern detected")
 
     @staticmethod
-    def _tool_call_signature(tool_calls: list) -> tuple[str, ...]:
+    def _tool_call_signature(tool_calls: list[Any]) -> tuple[str, ...]:
         """Canonical signature: sorted tuple of tool names."""
         names: list[str] = []
         for tc in tool_calls:

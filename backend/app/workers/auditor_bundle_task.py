@@ -5,6 +5,7 @@ Long-running for large orgs — writes result to Redis for polling.
 
 import asyncio
 from datetime import date
+from typing import Any
 
 import structlog
 
@@ -13,7 +14,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="generate_auditor_bundle",
     bind=True,
     autoretry_for=(Exception,),
@@ -24,12 +25,12 @@ log = structlog.get_logger()
     time_limit=600,
 )
 def generate_bundle(
-    self,
+    self: Any,
     job_id: str,
     org_id: str,
     period_start: str | None = None,
     period_end: str | None = None,
-) -> dict:  # type: ignore[no-untyped-def]
+) -> dict[str, Any]:
     """Generate bundle and store result in Redis."""
     try:
         return asyncio.run(
@@ -51,7 +52,7 @@ async def _generate(
     org_id: str,
     period_start: str | None,
     period_end: str | None,
-) -> dict:
+) -> dict[str, Any]:
     import uuid
 
     from app.compliance.auditor_bundle import generate_bundle as build_bundle

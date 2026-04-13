@@ -52,7 +52,7 @@ class ReplayEvent:
     response_preview: str | None
     prompt: str | None  # admin only
     response: str | None  # admin only
-    tool_calls: list[dict] | None
+    tool_calls: list[dict[str, Any]] | None
     token_count: int | None
     is_trigger: bool
     annotations: EventAnnotation

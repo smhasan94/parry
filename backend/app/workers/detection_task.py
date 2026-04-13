@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from typing import Any
 
 import structlog
 
@@ -8,7 +9,7 @@ from app.workers.celery_app import celery_app
 log = structlog.get_logger()
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="run_detection_pipeline",
     bind=True,
     autoretry_for=(Exception,),
@@ -18,7 +19,7 @@ log = structlog.get_logger()
     soft_time_limit=30,
     time_limit=60,
 )
-def run_detection_pipeline(self, event_id: str) -> dict:  # type: ignore[no-untyped-def]
+def run_detection_pipeline(self: Any, event_id: str) -> dict[str, Any]:
     """Run the full detection pipeline on an ingested event.
 
     Called async after event ingestion returns 202 to the SDK.
@@ -40,7 +41,7 @@ def run_detection_pipeline(self, event_id: str) -> dict:  # type: ignore[no-unty
         raise
 
 
-async def _run_pipeline(event_id: str) -> dict:
+async def _run_pipeline(event_id: str) -> dict[str, Any]:
     from sqlalchemy import select
 
     from app.db.models import AgentEvent

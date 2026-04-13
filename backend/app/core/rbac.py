@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 
@@ -77,7 +78,7 @@ def actor_role(actor: Actor) -> Role:
     return ROLE_MAP.get(role_str, Role.VIEWER)
 
 
-def require_role(min_role: Role) -> Callable:
+def require_role(min_role: Role) -> Callable[..., Any]:
     """Dependency factory for FastAPI routes.
 
     Usage:
