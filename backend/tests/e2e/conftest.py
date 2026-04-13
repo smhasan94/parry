@@ -8,7 +8,6 @@ from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.db.base import Base
@@ -46,14 +45,10 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
     """Per-test: create engine, ensure tables, truncate, yield session."""
     test_engine = create_async_engine(TEST_DB_URL, echo=False)
 
-    # Ensure tables exist
+    # Drop and recreate tables to ensure schema matches current models
     async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-
-    # Truncate all tables for isolation
-    async with test_engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f"TRUNCATE TABLE {table.name} CASCADE"))
 
     factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as session:

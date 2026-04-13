@@ -4,7 +4,7 @@ import os
 import socket
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api.v1.webhooks import (
@@ -41,10 +41,8 @@ pytestmark = pytest.mark.skipif(
 async def db():
     engine = create_async_engine(TEST_DB_URL, echo=False)
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f"TRUNCATE TABLE {table.name} CASCADE"))
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as session:
         yield session

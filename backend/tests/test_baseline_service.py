@@ -37,12 +37,8 @@ pytestmark = pytest.mark.skipif(
 async def db():
     engine = create_async_engine(TEST_DB_URL, echo=False)
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    from sqlalchemy import text
-
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f"TRUNCATE TABLE {table.name} CASCADE"))
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as session:
         yield session
