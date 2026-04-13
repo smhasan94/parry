@@ -10,8 +10,9 @@ trip to the Parry backend is stubbed via a MockTransport.
 from __future__ import annotations
 
 import json
-import pytest
+
 import httpx
+import pytest
 
 from parry.mcp import MCPBlockedError, SentinelMCPClient
 from parry.mcp.errors import MCPManifestError
@@ -138,7 +139,12 @@ async def test_blocking_false_suppresses_raise(patch_httpx) -> None:
                 "manifest_changed": False,
                 "new_hash": "abc",
                 "detections": [
-                    {"detector": "mcp_manifest", "severity": "critical", "reason": "x", "confidence": 0.9}
+                    {
+                        "detector": "mcp_manifest",
+                        "severity": "critical",
+                        "reason": "x",
+                        "confidence": 0.9,
+                    }
                 ],
             },
         )

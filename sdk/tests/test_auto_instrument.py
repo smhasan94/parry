@@ -3,8 +3,8 @@
 from unittest.mock import MagicMock, patch
 
 from parry.middleware.auto_instrument import (
-    _send_openai_event,
     _send_anthropic_event,
+    _send_openai_event,
     auto_instrument,
     reset,
 )
@@ -116,7 +116,10 @@ def test_send_anthropic_event_extracts_prompt():
 
 
 def test_send_anthropic_event_extracts_tool_use():
-    kwargs = {"messages": [{"role": "user", "content": "Search for it"}], "model": "claude-sonnet-4-6"}
+    kwargs = {
+        "messages": [{"role": "user", "content": "Search for it"}],
+        "model": "claude-sonnet-4-6",
+    }
 
     tool_block = MagicMock()
     tool_block.type = "tool_use"

@@ -193,7 +193,11 @@ def _send_anthropic_event(
             if isinstance(content, str):
                 prompt = content
             elif isinstance(content, list):
-                texts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"]
+                texts = [
+                    b.get("text", "")
+                    for b in content
+                    if isinstance(b, dict) and b.get("type") == "text"
+                ]
                 prompt = " ".join(texts)
             break
 
