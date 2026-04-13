@@ -51,7 +51,7 @@ async def list_groups(
     groups = await agent_group_service.list_groups(db, org.id)
     return [
         GroupResponse(
-            **GroupResponse.model_validate(g).model_dump(),
+            **GroupResponse.model_validate(g).model_dump(exclude={"agent_count"}),
             agent_count=len(g.agents) if g.agents else 0,
         )
         for g in groups

@@ -226,9 +226,12 @@ async def list_subscriptions(
     org_id: uuid.UUID,
 ) -> list[CommunityRuleSubscription]:
     """List all packs an org is subscribed to."""
+    from sqlalchemy.orm import selectinload
+
     stmt = (
         select(CommunityRuleSubscription)
         .where(CommunityRuleSubscription.org_id == org_id)
+        .options(selectinload(CommunityRuleSubscription.pack))
         .order_by(CommunityRuleSubscription.created_at.desc())
     )
     result = await db.execute(stmt)
