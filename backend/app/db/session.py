@@ -15,6 +15,15 @@ engine = create_async_engine(
     echo=False,
     pool_size=20,
     max_overflow=10,
+    pool_recycle=600,  # recycle connections after 10 min to avoid stale/leaked conns
+    pool_pre_ping=True,  # verify connection is alive before checkout
+    connect_args={
+        "server_settings": {
+            "statement_timeout": "30000",  # 30s — kill runaway queries
+            "lock_timeout": "10000",  # 10s — don't wait forever on locks
+        },
+        "timeout": 10,  # 10s connect timeout
+    },
 )
 
 async_session_factory = async_sessionmaker(
@@ -48,6 +57,15 @@ def make_task_session_factory() -> async_sessionmaker[AsyncSession]:
         echo=False,
         pool_size=1,
         max_overflow=2,
+        pool_recycle=600,
+        pool_pre_ping=True,
+        connect_args={
+            "server_settings": {
+                "statement_timeout": "60000",  # 60s — tasks can run longer queries
+                "lock_timeout": "10000",
+            },
+            "timeout": 10,
+        },
     )
     return async_sessionmaker(
         task_engine,
