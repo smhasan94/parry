@@ -13,6 +13,7 @@ from app.core.logging import setup_logging
 from app.core.metrics import registry as metrics_registry
 from app.core.metrics_middleware import MetricsMiddleware
 from app.core.rate_limit import RateLimitMiddleware
+from app.core.request_size import RequestSizeLimitMiddleware
 from app.core.sentry import init_sentry
 
 log = structlog.get_logger()
@@ -60,6 +61,9 @@ app.add_middleware(
         "X-Request-ID",
     ],
 )
+
+# Request size limit — reject oversized bodies early, before rate limiting
+app.add_middleware(RequestSizeLimitMiddleware)
 
 # Rate limiting (added after CORS so CORS headers are always present)
 app.add_middleware(RateLimitMiddleware)
