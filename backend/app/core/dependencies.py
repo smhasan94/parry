@@ -1,12 +1,14 @@
 import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated
 
 import httpx
+import jwt as pyjwt
 import structlog
 from fastapi import Depends, Header, HTTPException, status
-from jose import JWTError, jwt  # type: ignore[import-untyped]
+from jwt import PyJWK, PyJWKSet
+from jwt.exceptions import PyJWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,29 +36,25 @@ class Actor:
     clerk_role: str | None = None
 
 
-# Cache JWKS keys in memory (refreshed on cache miss)
-_jwks_cache: dict[str, Any] | None = None
+# Cache JWKS keyset in memory (refreshed on cache miss)
+_jwks_cache: PyJWKSet | None = None
 
 
-async def _get_clerk_jwks() -> dict[str, Any]:
+async def _get_clerk_jwks() -> PyJWKSet:
     """Fetch Clerk's JWKS from their well-known endpoint."""
     global _jwks_cache
 
-    # Derive the Clerk Frontend API URL from the publishable key
-    # pk_test_xxx... or pk_live_xxx... -> the domain is encoded in the key
-    # But easier: Clerk JWKS is at https://<clerk-domain>/.well-known/jwks.json
-    # The clerk_publishable_key contains the Clerk Frontend API domain (base64 after pk_test_)
     import base64
 
     from app.core.config import settings
 
     try:
-        # Clerk publishable key format: pk_test_<base64-encoded-frontend-api>
         key_parts = settings.clerk_publishable_key.split("_", 2)
         encoded = key_parts[2] if len(key_parts) > 2 else ""
-        # Add padding
         padded = encoded + "=" * (4 - len(encoded) % 4)
-        frontend_api = base64.b64decode(padded).decode("utf-8").rstrip("$")
+        frontend_api = (
+            base64.b64decode(padded).decode("utf-8").rstrip("$")
+        )
     except Exception:
         frontend_api = ""
 
@@ -71,9 +69,19 @@ async def _get_clerk_jwks() -> dict[str, Any]:
     async with httpx.AsyncClient() as client:
         resp = await client.get(jwks_url, timeout=5.0)
         resp.raise_for_status()
-        _jwks_cache = resp.json()
+        _jwks_cache = PyJWKSet.from_dict(resp.json())
 
     return _jwks_cache
+
+
+def _get_signing_key(token: str, jwks: PyJWKSet) -> PyJWK:
+    """Match the JWT's kid header to the correct key in the JWKS."""
+    header = pyjwt.get_unverified_header(token)
+    kid = header.get("kid")
+    for key in jwks.keys:
+        if key.key_id == kid:
+            return key
+    raise PyJWTError(f"No matching key found for kid={kid}")
 
 
 async def _resolve_from_api_key(
@@ -132,8 +140,12 @@ async def _resolve_from_clerk_jwt(
     # Re-decode payload to extract user info (cached JWKS makes this cheap)
     try:
         jwks = _jwks_cache or await _get_clerk_jwks()
-        payload = jwt.decode(token, jwks, algorithms=["RS256"], options={"verify_aud": False})
-    except (JWTError, httpx.HTTPError):
+        key = _get_signing_key(token, jwks)
+        payload = pyjwt.decode(
+            token, key, algorithms=["RS256"],
+            options={"verify_aud": False},
+        )
+    except (PyJWTError, httpx.HTTPError):
         payload = {}
 
     user_id = payload.get("sub")
@@ -173,22 +185,20 @@ async def _resolve_org_from_clerk_jwt(
         jwks = _jwks_cache or await _get_clerk_jwks()
 
         try:
-            payload = jwt.decode(
-                token,
-                jwks,
-                algorithms=["RS256"],
+            key = _get_signing_key(token, jwks)
+            payload = pyjwt.decode(
+                token, key, algorithms=["RS256"],
                 options={"verify_aud": False},
             )
-        except JWTError:
+        except PyJWTError:
             # JWKS might be stale — refresh and retry once
             jwks = await _get_clerk_jwks()
-            payload = jwt.decode(
-                token,
-                jwks,
-                algorithms=["RS256"],
+            key = _get_signing_key(token, jwks)
+            payload = pyjwt.decode(
+                token, key, algorithms=["RS256"],
                 options={"verify_aud": False},
             )
-    except JWTError as e:
+    except PyJWTError as e:
         log.warning("auth.clerk_jwt_invalid", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
