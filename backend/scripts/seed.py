@@ -10,7 +10,7 @@ Produces a single demo org with comprehensive data across every feature:
   * 5 agents in different health states with baselines
   * ~300 events, detections, and incidents across sessions
   * Agent groups (Production, Staging, Experimental)
-  * Policies with tool allow/block lists + forbidden patterns
+  * Multiple policies (active, strict, permissive, disabled)
   * Custom detection rules (PII, API keys, internal URLs)
   * MCP servers with varied trust levels
   * Red team runs with scores
@@ -18,7 +18,9 @@ Produces a single demo org with comprehensive data across every feature:
   * Permission boundaries (org default + agent override)
   * Threat intelligence indicators + sightings
   * Webhook endpoints with delivery history
-  * AI systems + suppliers (EU AI Act compliance)
+  * AI systems + suppliers at varied risk levels (EU AI Act compliance)
+  * FRIA documents (approved + draft)
+  * Serious incident reports (Art. 73)
   * Community rule packs + subscriptions
   * Scheduled reports
   * Audit log entries spanning all features
@@ -281,6 +283,43 @@ async def seed(reset: bool = False) -> None:
             forbidden_patterns=["ignore previous instructions", "system prompt"],
         )
         db.add(policy)
+
+        # Additional policies for a more realistic policies page
+        strict_policy = Policy(
+            org_id=org.id,
+            name="strict-production",
+            description="Locked-down policy for production agents — no code execution, no external network, response scanning enforced.",
+            is_active=True,
+            allowed_tools=["read_file", "calculate"],
+            blocked_tools=["exec_code", "shell", "delete_file", "send_email", "web_browse", "write_file"],
+            max_token_budget=100_000,
+            forbidden_patterns=["ignore previous instructions", "system prompt", "admin password", "DROP TABLE"],
+        )
+        db.add(strict_policy)
+
+        research_policy = Policy(
+            org_id=org.id,
+            name="research-permissive",
+            description="Relaxed policy for internal research agents — allows web search and code execution in sandboxed environments.",
+            is_active=True,
+            allowed_tools=["web_search", "read_file", "calculate", "web_browse", "exec_code"],
+            blocked_tools=["delete_file", "send_email", "shell"],
+            max_token_budget=1_000_000,
+            forbidden_patterns=["system prompt"],
+        )
+        db.add(research_policy)
+
+        disabled_policy = Policy(
+            org_id=org.id,
+            name="legacy-v1-rules",
+            description="Deprecated v1 policy — kept for audit trail, superseded by default-policy.",
+            is_active=False,
+            allowed_tools=["search"],
+            blocked_tools=["exec_code"],
+            max_token_budget=200_000,
+            forbidden_patterns=[],
+        )
+        db.add(disabled_policy)
 
         # ── Agents ───────────────────────────────────────────────
         # Each profile drives how many events, detections, and
@@ -559,12 +598,47 @@ async def seed(reset: bool = False) -> None:
             db.add(srv)
         print(f"MCP:         {len(mcp_data)} servers")
 
-        # ── Red Team Runs ───────────────────────────────────────
-        from app.db.models import RedTeamRun
+        # ── Red Team Runs + Results ─────────────────────────────
+        from app.db.models import RedTeamResult, RedTeamRun
 
+        # Attack IDs per category matching the actual corpus files
+        _attack_ids_by_cat = {
+            "instruction_override": [f"io_00{i}" for i in range(1, 7)],
+            "jailbreak": [f"jb_00{i}" for i in range(1, 7)],
+            "data_exfil": [f"de_00{i}" for i in range(1, 7)],
+            "tool_hijack": [f"th_00{i}" for i in range(1, 7)],
+            "privilege_escalation": [f"pe_00{i}" for i in range(1, 7)],
+            "content_smuggling": [f"cs_00{i}" for i in range(1, 7)],
+            "indirect": [f"in_00{i}" for i in range(1, 7)],
+            "cost_exploit": [f"ce_00{i}" for i in range(1, 7)],
+        }
+        _cat_severity = {
+            "instruction_override": "high", "jailbreak": "high",
+            "data_exfil": "high", "tool_hijack": "critical",
+            "privilege_escalation": "high", "content_smuggling": "medium",
+            "indirect": "high", "cost_exploit": "medium",
+        }
+        _cat_detectors = {
+            "instruction_override": ["prompt_injection"],
+            "jailbreak": ["jailbreak"],
+            "data_exfil": ["data_exfiltration"],
+            "tool_hijack": ["tool_misuse"],
+            "privilege_escalation": ["privilege_escalation"],
+            "content_smuggling": ["prompt_injection"],
+            "indirect": ["prompt_injection"],
+            "cost_exploit": ["anomaly", "tool_misuse"],
+        }
+
+        rt_result_count = 0
         for i, agent in enumerate(created_agents[:3]):
-            detected = random.randint(38, 46)
-            score = round(detected / 48 * 100)
+            cat_scores: dict[str, dict[str, int]] = {}
+            total_detected = 0
+            for cat, attack_ids in _attack_ids_by_cat.items():
+                detected_in_cat = random.randint(4, 6)
+                cat_scores[cat] = {"total": 6, "detected": detected_in_cat}
+                total_detected += detected_in_cat
+
+            score = round(total_detected / 48 * 100)
             grade = "A" if score >= 90 else "B" if score >= 75 else "C"
             run = RedTeamRun(
                 org_id=org.id,
@@ -572,24 +646,42 @@ async def seed(reset: bool = False) -> None:
                 mode="sandbox",
                 status="completed",
                 total_attacks=48,
-                detected_count=detected,
+                detected_count=total_detected,
                 overall_score=score,
                 grade=grade,
-                category_scores={
-                    "instruction_override": {"total": 6, "detected": random.randint(5, 6)},
-                    "jailbreak": {"total": 6, "detected": random.randint(4, 6)},
-                    "data_exfil": {"total": 6, "detected": random.randint(5, 6)},
-                    "tool_hijack": {"total": 6, "detected": random.randint(4, 6)},
-                    "privilege_escalation": {"total": 6, "detected": random.randint(5, 6)},
-                    "content_smuggling": {"total": 6, "detected": random.randint(4, 6)},
-                    "indirect": {"total": 6, "detected": random.randint(3, 6)},
-                    "cost_exploit": {"total": 6, "detected": random.randint(4, 6)},
-                },
+                category_scores=cat_scores,
                 started_at=_rand_ts(15),
                 completed_at=_rand_ts(14),
             )
             db.add(run)
-        print(f"Red Team:    3 runs")
+            await db.flush()
+
+            # Generate per-attack RedTeamResult rows
+            for cat, attack_ids in _attack_ids_by_cat.items():
+                detected_count = cat_scores[cat]["detected"]
+                # First N attacks are detected, rest are misses
+                shuffled = list(attack_ids)
+                random.shuffle(shuffled)
+                for j, aid in enumerate(shuffled):
+                    was_detected = j < detected_count
+                    result = RedTeamResult(
+                        run_id=run.id,
+                        attack_id=aid,
+                        attack_category=cat,
+                        attack_severity=_cat_severity[cat],
+                        detected=was_detected,
+                        detectors_fired=_cat_detectors[cat] if was_detected else [],
+                        max_confidence=round(random.uniform(0.7, 0.98), 3) if was_detected else None,
+                        response_preview=(
+                            "I can't help with that request."
+                            if was_detected
+                            else "Here is the information you requested..."
+                        ),
+                    )
+                    db.add(result)
+                    rt_result_count += 1
+
+        print(f"Red Team:    3 runs, {rt_result_count} results")
 
         # ── Budgets ─────────────────────────────────────────────
         from app.db.models import AgentBudget
@@ -696,7 +788,7 @@ async def seed(reset: bool = False) -> None:
         print(f"Webhooks:    1 endpoint, 5 deliveries")
 
         # ── AI Systems (Compliance) ─────────────────────────────
-        from app.db.models import AISystem, AISystemSupplier
+        from app.db.models import AISystem, AISystemSupplier, FRIADocument, SeriousIncident
 
         ai_sys = AISystem(
             org_id=org.id,
@@ -707,6 +799,10 @@ async def seed(reset: bool = False) -> None:
             deployer_name="Parry Demo Corp",
             provider_name="OpenAI",
             provider_contact="support@openai.com",
+            fria_status="approved",
+            annex_iii_category="8(a) — Administration of justice",
+            jurisdiction="EU",
+            metadata_={"eu_database_registered": True, "registration_id": "EU-AI-2025-00142"},
         )
         db.add(ai_sys)
         await db.flush()
@@ -720,7 +816,178 @@ async def seed(reset: bool = False) -> None:
             provider_url="https://openai.com",
         )
         db.add(supplier)
-        print(f"Compliance:  1 AI system, 1 supplier")
+
+        # Additional AI systems at different risk levels
+        ai_sys_2 = AISystem(
+            org_id=org.id,
+            name="Internal Knowledge Search",
+            description="RAG-based search over internal documentation and wikis.",
+            risk_level="limited",
+            intended_purpose="Employee productivity — searches and summarizes internal docs.",
+            deployer_name="Parry Demo Corp",
+            provider_name="Anthropic",
+            provider_contact="sales@anthropic.com",
+            fria_status="not_required",
+            jurisdiction="EU",
+            metadata_={"eu_database_registered": False},
+        )
+        db.add(ai_sys_2)
+        await db.flush()
+        supplier_2 = AISystemSupplier(
+            system_id=ai_sys_2.id,
+            supplier_name="Anthropic",
+            model_id="claude-sonnet-4-6",
+            first_used_at=_rand_ts(30),
+            last_used_at=_rand_ts(1),
+            event_count=random.randint(200, 2000),
+            provider_url="https://anthropic.com",
+        )
+        db.add(supplier_2)
+
+        ai_sys_3 = AISystem(
+            org_id=org.id,
+            name="Recruitment Screening Agent",
+            description="Assists HR with initial resume screening and candidate ranking.",
+            risk_level="high",
+            intended_purpose="HR automation — ranks candidates based on job requirements.",
+            deployer_name="Parry Demo Corp",
+            provider_name="OpenAI",
+            provider_contact="support@openai.com",
+            fria_status="draft",
+            annex_iii_category="4(a) — Employment, workers management",
+            jurisdiction="EU",
+            metadata_={"eu_database_registered": False},
+        )
+        db.add(ai_sys_3)
+        await db.flush()
+        supplier_3 = AISystemSupplier(
+            system_id=ai_sys_3.id,
+            supplier_name="OpenAI",
+            model_id="gpt-4o-mini",
+            first_used_at=_rand_ts(45),
+            last_used_at=_rand_ts(3),
+            event_count=random.randint(100, 800),
+            provider_url="https://openai.com",
+        )
+        db.add(supplier_3)
+
+        # ── FRIA Documents ──────────────────────────────────────
+        # Approved FRIA for Customer Support AI (high-risk)
+        fria_approved = FRIADocument(
+            org_id=org.id,
+            system_id=ai_sys.id,
+            version=1,
+            status="approved",
+            content={
+                "system_name": "Customer Support AI",
+                "risk_classification": "High-risk (Annex III, 8(a))",
+                "assessment_scope": "Automated customer support for billing, account, and product queries.",
+                "fundamental_rights_impact": {
+                    "right_to_non_discrimination": {
+                        "risk_level": "medium",
+                        "mitigation": "Regular bias audits on response quality across demographics.",
+                    },
+                    "right_to_privacy": {
+                        "risk_level": "high",
+                        "mitigation": "PII redaction enforced via Parry detection engine. No raw data stored.",
+                    },
+                    "right_to_effective_remedy": {
+                        "risk_level": "low",
+                        "mitigation": "Human escalation path available for all automated decisions.",
+                    },
+                },
+                "human_oversight_measures": [
+                    "Agent responses are logged and auditable.",
+                    "Critical decisions (refunds > $100, account closures) require human approval.",
+                    "Weekly review of flagged interactions by customer success team.",
+                ],
+                "data_governance": "Customer data processed under GDPR Art. 6(1)(b). Retention: 90 days. DPA with OpenAI in place.",
+                "transparency_measures": "Users informed of AI interaction via disclosure banner. Explanations provided on request.",
+                "conclusion": "The system's fundamental rights impact is manageable with the mitigations in place.",
+            },
+            generated_by="compliance-officer@demo.parry.dev",
+            approved_at=datetime.now(UTC) - timedelta(days=45),
+            approved_by="Jane Smith",
+            approver_title="Chief Compliance Officer",
+            next_review_date=(datetime.now(UTC) + timedelta(days=320)).date(),
+        )
+        db.add(fria_approved)
+
+        # Draft FRIA for Recruitment Screening Agent
+        fria_draft = FRIADocument(
+            org_id=org.id,
+            system_id=ai_sys_3.id,
+            version=1,
+            status="draft",
+            content={
+                "system_name": "Recruitment Screening Agent",
+                "risk_classification": "High-risk (Annex III, 4(a))",
+                "assessment_scope": "Initial resume screening and candidate ranking for open positions.",
+                "fundamental_rights_impact": {
+                    "right_to_non_discrimination": {
+                        "risk_level": "high",
+                        "mitigation": "TODO: Define bias testing protocol for gender, age, ethnicity.",
+                    },
+                    "right_to_privacy": {
+                        "risk_level": "medium",
+                        "mitigation": "Candidate PII handled under GDPR Art. 6(1)(b). Consent collected.",
+                    },
+                },
+                "human_oversight_measures": [
+                    "All AI-generated rankings reviewed by hiring manager before action.",
+                    "Candidates can request human-only review process.",
+                ],
+                "conclusion": "DRAFT — additional bias testing required before approval.",
+            },
+            generated_by="hr-lead@demo.parry.dev",
+        )
+        db.add(fria_draft)
+
+        # ── Serious Incidents (Art. 73) ─────────────────────────
+        # Create a serious incident report for the critical incident
+        # we seeded above. Find the critical incident.
+        critical_incidents = [
+            inc for inc in (
+                await db.execute(
+                    select(Incident).where(
+                        Incident.org_id == org.id,
+                        Incident.severity == Severity.CRITICAL,
+                    )
+                )
+            ).scalars().all()
+        ]
+        si_count = 0
+        for ci in critical_incidents[:2]:
+            deadline = ci.created_at + timedelta(days=15) if ci.created_at else datetime.now(UTC) + timedelta(days=10)
+            si = SeriousIncident(
+                org_id=org.id,
+                incident_id=ci.id,
+                system_id=ai_sys.id,
+                deadline_at=deadline,
+                reported_to_authority_at=None,  # Not yet reported — shows in posture as action needed
+                authority_jurisdiction="EU — National AI Authority",
+                report_content={
+                    "incident_summary": ci.title,
+                    "affected_system": "Customer Support AI",
+                    "severity": "critical",
+                    "impact_description": "Potential data exfiltration attempt detected by the detection engine.",
+                    "mitigation_actions": [
+                        "Agent blocked from responding to the triggering prompt.",
+                        "Session terminated and flagged for review.",
+                        "Detection rule confidence threshold lowered to prevent future bypasses.",
+                    ],
+                    "root_cause_analysis": "Adversarial prompt exploited a gap in the jailbreak detector.",
+                    "timeline": {
+                        "detected_at": (datetime.now(UTC) - timedelta(days=5)).isoformat(),
+                        "mitigated_at": (datetime.now(UTC) - timedelta(days=5, hours=-1)).isoformat(),
+                        "report_created": datetime.now(UTC).isoformat(),
+                    },
+                },
+            )
+            db.add(si)
+            si_count += 1
+
+        print(f"Compliance:  3 AI systems, 3 suppliers, 2 FRIAs, {si_count} serious incidents")
 
         # ── Community Rule Packs ────────────────────────────────
         from app.db.models import CommunityRulePack, CommunityRuleSubscription
@@ -804,6 +1071,11 @@ async def seed(reset: bool = False) -> None:
             ("mcp_server.registered", "mcp_server", "filesystem-server"),
             ("blocking.enabled", "org", str(org.id)),
             ("response_scan.mode_changed", "org", str(org.id)),
+            ("fria.approved", "fria_document", str(ai_sys.id)),
+            ("ai_system.created", "ai_system", str(ai_sys.id)),
+            ("policy.created", "policy", "strict-production"),
+            ("policy.created", "policy", "research-permissive"),
+            ("serious_incident.created", "serious_incident", "demo"),
         ]
         for action, rtype, rid in extra_audit:
             entry = AuditLog(
@@ -836,13 +1108,14 @@ async def seed(reset: bool = False) -> None:
         print(f"Agents:      {len(created_agents)} (in {len(groups)} groups)")
         print(f"Events:      ~{total_events}")
         print(f"Incidents:   {total_incidents}")
+        print(f"Policies:    4 (1 default + 2 active + 1 disabled)")
         print(f"MCP:         {len(mcp_data)} servers")
-        print(f"Red Team:    3 completed runs")
+        print(f"Red Team:    3 runs, {rt_result_count} per-attack results")
         print(f"Budgets:     {budget_count}")
         print(f"Permissions: 2 (org default + agent)")
         print(f"Threat:      6 indicators")
         print(f"Webhooks:    1 endpoint, 5 deliveries")
-        print(f"Compliance:  1 AI system")
+        print(f"Compliance:  3 AI systems, 3 suppliers, 2 FRIAs, {si_count} serious incidents")
         print(f"Community:   {len(pack_data)} packs, 2 subscriptions")
         print(f"Reports:     1 scheduled")
         print(f"Audit rows:  {len(audit_actions) + len(extra_audit)}")
