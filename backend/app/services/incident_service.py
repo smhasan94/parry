@@ -15,6 +15,7 @@ async def list_incidents(
     org_id: uuid.UUID,
     severity: Severity | None = None,
     status: IncidentStatus | None = None,
+    session_id: str | None = None,
     cursor: str | None = None,
     limit: int = 50,
 ) -> tuple[list[Incident], str | None]:
@@ -24,6 +25,8 @@ async def list_incidents(
         query = query.where(Incident.severity == severity)
     if status:
         query = query.where(Incident.status == status)
+    if session_id:
+        query = query.where(Incident.metadata_["trigger_session_id"].as_string() == session_id)
     if cursor:
         cursor_id = uuid.UUID(cursor)
         cursor_incident = await db.get(Incident, cursor_id)

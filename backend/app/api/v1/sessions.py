@@ -15,11 +15,12 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import Actor
+from app.core.dependencies import Actor, get_current_org
 from app.core.rbac import Role, actor_role, require_role
 from app.db.models import Org
 from app.db.session import get_db
-from app.services import session_service
+from app.schemas.incident import IncidentListResponse, IncidentResponse
+from app.services import incident_service, session_service
 
 log = structlog.get_logger()
 
@@ -42,3 +43,24 @@ async def get_session_replay(
     if payload is None:
         raise HTTPException(status_code=404, detail="Session not found")
     return payload
+
+
+@router.get(
+    "/{session_id}/incidents",
+    response_model=IncidentListResponse,
+    dependencies=[Depends(require_role(Role.VIEWER))],
+)
+async def list_session_incidents(
+    session_id: uuid.UUID,
+    org: Org = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> IncidentListResponse:
+    """Return all incidents whose trigger_session_id matches this session."""
+    incidents, next_cursor = await incident_service.list_incidents(
+        db, org.id, session_id=str(session_id), limit=100
+    )
+    return IncidentListResponse(
+        incidents=[IncidentResponse.model_validate(i) for i in incidents],
+        next_cursor=next_cursor,
+        has_more=next_cursor is not None,
+    )

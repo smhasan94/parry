@@ -3,14 +3,17 @@ import { Link, useParams } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@/hooks/useSession";
+import { useSession, useSessionIncidents } from "@/hooks/useSession";
 import type { SessionReplayEvent, SessionDetection } from "@/lib/api";
+import type { Incident } from "@/lib/types";
 import {
+  AlertTriangle,
   ArrowLeft,
   ChevronDown,
   ChevronRight,
   Clock,
   Cpu,
+  ExternalLink,
   Radio,
   Zap,
 } from "lucide-react";
@@ -65,6 +68,72 @@ function formatRelative(startIso: string | null, eventIso: string | null): strin
   const at = new Date(eventIso).getTime();
   const delta = Math.max(0, at - start);
   return `+${formatDuration(delta)}`;
+}
+
+const SEV_BANNER_BG: Record<string, string> = {
+  critical: "bg-red-950/40 border-red-700/50",
+  high: "bg-red-950/30 border-red-700/40",
+  medium: "bg-orange-950/30 border-orange-700/40",
+  low: "bg-zinc-800/40 border-zinc-600/40",
+};
+
+const SEV_BADGE: Record<string, string> = {
+  critical: "bg-red-900/60 text-red-300 border-red-700/60",
+  high: "bg-red-900/50 text-red-300 border-red-700/50",
+  medium: "bg-orange-900/50 text-orange-300 border-orange-700/50",
+  low: "bg-zinc-800/60 text-zinc-300 border-zinc-600/60",
+};
+
+function IncidentBanner({ incidents }: { incidents: Incident[] }) {
+  if (incidents.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        <span>Incidents triggered by this session</span>
+      </div>
+      <ul className="space-y-2">
+        {incidents.map((incident) => (
+          <li
+            key={incident.id}
+            className={cn(
+              "flex items-center justify-between gap-4 rounded-md border px-4 py-3",
+              SEV_BANNER_BG[incident.severity] ?? "bg-muted/20 border-border",
+            )}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className={cn(
+                  "shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                  SEV_BADGE[incident.severity] ?? "bg-muted/30 text-muted-foreground border-border",
+                )}
+              >
+                {incident.severity}
+              </span>
+              <span className="truncate text-sm font-medium text-foreground">
+                {incident.title}
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-wide",
+                  "bg-muted/30 text-muted-foreground border-border",
+                )}
+              >
+                {incident.status}
+              </span>
+            </div>
+            <Link to="/incidents">
+              <Button variant="ghost" size="sm" className="shrink-0 gap-1 text-xs">
+                View Incident
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function EventCard({
@@ -190,6 +259,7 @@ function EventCard({
 export function SessionReplayPage() {
   const { sessionId } = useParams({ from: "/sessions/$sessionId" });
   const { data, isLoading, error } = useSession(sessionId);
+  const { data: incidentsData } = useSessionIncidents(sessionId);
 
   const duration = useMemo(() => {
     if (!data) return null;
@@ -304,6 +374,10 @@ export function SessionReplayPage() {
             </dl>
           </CardContent>
         </Card>
+
+        {incidentsData && incidentsData.incidents.length > 0 && (
+          <IncidentBanner incidents={incidentsData.incidents} />
+        )}
 
         <Card>
           <CardHeader className="pb-2">

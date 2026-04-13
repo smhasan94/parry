@@ -33,11 +33,18 @@ async def list_incidents(
     db: AsyncSession = Depends(get_db),
     severity: Severity | None = Query(None),
     status: IncidentStatus | None = Query(None),
+    session_id: str | None = Query(None),
     cursor: str | None = Query(None),
     limit: int = Query(50, ge=1, le=100),
 ) -> IncidentListResponse:
     incidents, next_cursor = await incident_service.list_incidents(
-        db, org.id, severity=severity, status=status, cursor=cursor, limit=limit
+        db,
+        org.id,
+        severity=severity,
+        status=status,
+        session_id=session_id,
+        cursor=cursor,
+        limit=limit,
     )
     return IncidentListResponse(
         incidents=[IncidentResponse.model_validate(i) for i in incidents],

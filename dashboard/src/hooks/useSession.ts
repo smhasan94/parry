@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, type SessionReplay, type SessionSummary } from "@/lib/api";
+import type { Incident } from "@/lib/types";
 
 export function useSession(sessionId: string | undefined) {
   return useQuery<SessionReplay>({
@@ -23,5 +24,14 @@ export function useAgentSessions(agentId: string | undefined, limit = 20) {
     queryKey: ["agent-sessions", agentId, limit],
     queryFn: () => api.listAgentSessions(agentId!, limit),
     enabled: !!agentId,
+  });
+}
+
+export function useSessionIncidents(sessionId: string | undefined) {
+  return useQuery<{ incidents: Incident[]; next_cursor: string | null; has_more: boolean }>({
+    queryKey: ["session-incidents", sessionId],
+    queryFn: () => api.getSessionIncidents(sessionId!),
+    enabled: !!sessionId,
+    staleTime: 30_000,
   });
 }

@@ -443,6 +443,10 @@ class ApiClient {
     return this.request(`/api/v1/agents/${agentId}/spend`);
   }
 
+  async getOrgSpendSummary(): Promise<OrgSpendSummary> {
+    return this.request("/api/v1/spend/summary");
+  }
+
   // Agent behavioural stats (charts on AgentDetailPage)
   async getAgentStats(agentId: string, window: "7d" | "30d" | "90d"): Promise<AgentStats> {
     return this.request(`/api/v1/agents/${agentId}/stats?window=${window}`);
@@ -455,6 +459,12 @@ class ApiClient {
 
   async getSession(sessionId: string): Promise<SessionReplay> {
     return this.request(`/api/v1/sessions/${sessionId}`);
+  }
+
+  async getSessionIncidents(
+    sessionId: string,
+  ): Promise<{ incidents: Incident[]; next_cursor: string | null; has_more: boolean }> {
+    return this.request(`/api/v1/sessions/${sessionId}/incidents`);
   }
 
   // Compliance reports — returns a PDF blob (binary) rather than JSON.
@@ -1022,6 +1032,18 @@ export interface AgentSpendResponse {
     spent_usd: number;
     pct: number;
   }>;
+}
+
+export interface OrgSpendSummary {
+  hour_spend: number;
+  day_spend: number;
+  month_spend: number;
+  top_agents: Array<{
+    agent_id: string;
+    agent_name: string;
+    month_spend: number;
+  }>;
+  total_budget_cap: number | null;
 }
 
 export type MCPTrustLevel = "observed" | "trusted" | "suspicious" | "blocked";
