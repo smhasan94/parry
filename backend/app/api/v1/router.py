@@ -28,6 +28,7 @@ from app.api.v1 import (
     sessions,
     slack,
     slo,
+    spend,
     sso,
     threat_intel,
     webhook_endpoints,
@@ -75,5 +76,6 @@ api_router.include_router(
     community_rules.router, prefix="/community-rules", tags=["community-rules"]
 )
 api_router.include_router(slack.router, prefix="/slack", tags=["slack"])
+api_router.include_router(spend.router, prefix="/spend", tags=["spend"])
 api_router.include_router(badges.router, prefix="/badges", tags=["badges"])
 api_router.include_router(benchmark.router, prefix="/benchmark", tags=["benchmark"])

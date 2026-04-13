@@ -10,6 +10,7 @@ import { Bot, AlertTriangle, Shield, Activity, Sparkles, CheckCircle2 } from "lu
 import { Link } from "@tanstack/react-router";
 import { HealthScoreBadge } from "@/components/HealthScoreBadge";
 import { BlockedEventFeed } from "@/components/BlockedEventFeed";
+import { OrgCostSummaryCard } from "@/components/OrgCostSummaryCard";
 import { ErrorState } from "@/components/ui/states";
 import type { Agent } from "@/lib/types";
 
@@ -108,6 +109,8 @@ export function DashboardPage() {
         </div>
 
         <FleetHealthCard agents={agents} />
+
+        <OrgCostSummaryCard />
 
         <BlockedEventFeed />
 
