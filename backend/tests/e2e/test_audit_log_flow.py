@@ -14,16 +14,16 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_audit_log_records_agent_create(
+async def test_audit_log_records_alert_config_update(
     admin_client: AsyncClient, seeded_db: dict
 ):
-    """Creating an agent generates an audit entry visible in the log."""
-    # Create an agent to generate an audit record
-    resp = await admin_client.post(
-        "/api/v1/agents",
-        json={"name": "audit-test-agent", "description": "For audit e2e"},
+    """Updating alert config generates an audit entry visible in the log."""
+    # PUT /alerts is audit-logged with action=alert_config.updated
+    resp = await admin_client.put(
+        "/api/v1/alerts",
+        json={"min_severity": "medium"},
     )
-    assert resp.status_code == 201, resp.text
+    assert resp.status_code == 200, resp.text
 
     # Audit log should now contain at least one entry
     resp = await admin_client.get("/api/v1/audit-log")
@@ -39,17 +39,18 @@ async def test_audit_log_filter_by_action(
     admin_client: AsyncClient, seeded_db: dict
 ):
     """action= query param returns only entries matching that action."""
-    # Create something to ensure at least one agent.created entry
-    await admin_client.post(
-        "/api/v1/agents",
-        json={"name": "audit-filter-agent"},
+    # Update alert config to generate an auditable action
+    await admin_client.put(
+        "/api/v1/alerts",
+        json={"min_severity": "high"},
     )
 
-    resp = await admin_client.get("/api/v1/audit-log?action=agent.created")
+    resp = await admin_client.get("/api/v1/audit-log?action=alert_config.updated")
     assert resp.status_code == 200
     body = resp.json()
+    # All returned entries must match the filter
     for entry in body["entries"]:
-        assert entry["action"] == "agent.created"
+        assert entry["action"] == "alert_config.updated"
 
 
 @pytest.mark.asyncio
