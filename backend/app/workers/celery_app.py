@@ -1,12 +1,52 @@
-from celery import Celery
+import structlog
+from celery import Celery, Task
 from celery.schedules import crontab
 
 from app.core.config import settings
+
+log = structlog.get_logger()
+
+
+class ParryTask(Task):
+    """Base task that routes permanently-failed tasks to the dead letter queue."""
+
+    def on_failure(self, exc, task_id, args, kwargs, einfo):  # type: ignore[no-untyped-def]
+        # Only send to DLQ after all retries are exhausted
+        if self.request.retries >= self.max_retries:
+            try:
+                self.app.send_task(
+                    "dead_letter_sink",
+                    queue="dead_letter",
+                    kwargs={
+                        "original_task": self.name,
+                        "task_id": task_id,
+                        "args": args,
+                        "kwargs": kwargs,
+                        "exception": str(exc),
+                        "retries": self.request.retries,
+                    },
+                )
+                log.warning(
+                    "task.dead_lettered",
+                    task_name=self.name,
+                    task_id=task_id,
+                    retries=self.request.retries,
+                    exception=str(exc),
+                )
+            except Exception:
+                log.error(
+                    "task.dead_letter_failed",
+                    task_name=self.name,
+                    task_id=task_id,
+                    exc_info=True,
+                )
+        super().on_failure(exc, task_id, args, kwargs, einfo)
 
 celery_app = Celery(
     "parry",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
+    task_cls=ParryTask,
     # Explicit includes — autodiscover_tasks looks for `tasks.py` per
     # package, but our worker modules are named *_task.py so nothing
     # would be registered. Missing any entry here means the task
@@ -27,6 +67,7 @@ celery_app = Celery(
         "app.workers.webhook_delivery_task",
         "app.workers.scheduled_report_task",
         "app.workers.digest_task",
+        "app.workers.dead_letter_task",
     ],
 )
 
@@ -46,6 +87,16 @@ celery_app.conf.update(
     task_time_limit=360,  # 6 minutes (hard kill)
     task_reject_on_worker_lost=True,  # requeue if worker crashes mid-task
     worker_max_tasks_per_child=200,  # restart worker process after 200 tasks (leak prevention)
+    # Result TTL — auto-expire results after 1 hour to prevent unbounded Redis growth
+    result_expires=3600,
+    # Dead letter queue — tasks that exhaust all retries get routed here
+    # instead of silently vanishing. Workers on the default queue ignore
+    # DLQ messages; a separate consumer or periodic audit reads them.
+    task_default_queue="default",
+    task_queues={
+        "default": {"exchange": "default", "routing_key": "default"},
+        "dead_letter": {"exchange": "dead_letter", "routing_key": "dead_letter"},
+    },
     beat_schedule={
         "refresh-stale-baselines": {
             "task": "refresh_stale_baselines",
