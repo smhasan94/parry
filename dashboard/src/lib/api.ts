@@ -8,6 +8,7 @@ import type {
   IncidentStatus,
   Policy,
   Severity,
+  SSOStatusResponse,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -859,7 +860,7 @@ class ApiClient {
 
   async ssoProvision(
     workosOrganizationId: string | null,
-  ): Promise<import("./types").SSOStatusResponse> {
+  ): Promise<SSOStatusResponse> {
     return this.request("/api/v1/sso/provision", {
       method: "PATCH",
       body: JSON.stringify({ workos_organization_id: workosOrganizationId }),
@@ -1184,12 +1185,6 @@ export interface SLOStatus {
 export interface SLOStatusResponse {
   statuses: SLOStatus[];
   note: string;
-}
-
-export interface SSOStatusResponse {
-  enabled: boolean;
-  configured_on_backend: boolean;
-  workos_organization_id: string | null;
 }
 
 export interface PlanResponse {
