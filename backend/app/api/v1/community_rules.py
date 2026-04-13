@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, Literal
 
 import structlog
@@ -52,8 +53,8 @@ class PackResponse(ParrySchema):
     version: int
     install_count: int
     is_public: bool
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class SubscriptionResponse(ParrySchema):
@@ -61,7 +62,7 @@ class SubscriptionResponse(ParrySchema):
     org_id: uuid.UUID
     pack_id: uuid.UUID
     installed_version: int
-    created_at: str
+    created_at: datetime
     pack: PackResponse | None = None
 
 

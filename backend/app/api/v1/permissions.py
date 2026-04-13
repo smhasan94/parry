@@ -4,6 +4,7 @@ Manage per-agent and org-wide default tool permissions.
 """
 
 import uuid
+from datetime import datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -38,8 +39,8 @@ class PermissionResponse(ParrySchema):
     default_action: str
     allowed_tools: list[str]
     blocked_tools: list[str]
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
 
 # ── Per-agent permissions ───────────────────────────────────────

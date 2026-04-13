@@ -1,6 +1,7 @@
 """Scheduled security report CRUD routes."""
 
 import uuid
+from datetime import datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -37,10 +38,10 @@ class ScheduleResponse(ParrySchema):
     recipients: list[str]
     report_type: str
     is_active: bool
-    last_sent_at: str | None
-    next_send_at: str
-    created_at: str
-    updated_at: str
+    last_sent_at: datetime | None
+    next_send_at: datetime
+    created_at: datetime
+    updated_at: datetime
 
 
 @router.get("", response_model=list[ScheduleResponse])

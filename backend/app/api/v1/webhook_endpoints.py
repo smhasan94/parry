@@ -1,6 +1,7 @@
 """Customer-managed webhook endpoint CRUD + delivery history + test."""
 
 import uuid
+from datetime import datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -42,9 +43,9 @@ class EndpointResponse(ParrySchema):
     event_types: list[str]
     is_active: bool
     failure_count: int
-    last_triggered_at: str | None
-    created_at: str
-    updated_at: str
+    last_triggered_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
 
 
 class DeliveryResponse(ParrySchema):
@@ -56,7 +57,7 @@ class DeliveryResponse(ParrySchema):
     response_body: str | None
     error: str | None
     attempt: int
-    delivered_at: str
+    delivered_at: datetime
 
 
 # ── Endpoint CRUD ───────────────────────────────────────────────

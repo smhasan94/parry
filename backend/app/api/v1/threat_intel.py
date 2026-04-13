@@ -1,6 +1,7 @@
 """Cross-org threat intelligence feed routes."""
 
 import uuid
+from datetime import datetime
 from typing import Any
 
 import structlog
@@ -30,9 +31,9 @@ class IndicatorResponse(ParrySchema):
     confidence_avg: float
     sighting_count: int
     org_count: int
-    first_seen_at: str
-    last_seen_at: str
-    promoted_at: str | None
+    first_seen_at: datetime
+    last_seen_at: datetime
+    promoted_at: datetime | None
     score: float
     sample_reason: str | None
 

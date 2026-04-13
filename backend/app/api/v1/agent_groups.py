@@ -1,6 +1,7 @@
 """Agent group CRUD + assignment routes."""
 
 import uuid
+from datetime import datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -32,8 +33,8 @@ class GroupResponse(ParrySchema):
     org_id: uuid.UUID
     name: str
     description: str | None
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
     agent_count: int = 0
 
 

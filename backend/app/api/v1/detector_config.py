@@ -41,6 +41,10 @@ def _build_response(org_config: dict | None) -> DetectorConfigResponse:
     detectors = {}
     for name in DETECTOR_NAMES:
         merged_entry = merged[name]
+        # custom_rules is stored as a list of rule dicts, not a
+        # per-detector config dict — skip it in the response.
+        if isinstance(merged_entry, list):
+            continue
         detectors[name] = DetectorEntry(
             trigger_threshold=merged_entry["trigger_threshold"],
             enabled=merged_entry["enabled"],
