@@ -107,11 +107,24 @@ export function parryOpenAI<T extends OpenAILike>(
 
     // Extract response content
     const choice = response.choices?.[0];
-    const responseText = choice?.message?.content ?? undefined;
+    let responseText = choice?.message?.content ?? undefined;
     const toolCalls = choice?.message?.tool_calls?.map((tc) => ({
       name: tc.function.name,
       arguments: tc.function.arguments,
     }));
+
+    // Post-call response scan — may throw ParryBlockedError or redact in place.
+    if (responseText) {
+      const scanned = await parry.scanResponse({
+        response: responseText,
+        agentId,
+        sessionId,
+      });
+      if (scanned !== responseText) {
+        responseText = scanned;
+        if (choice?.message) choice.message.content = scanned;
+      }
+    }
 
     // Post-call event ingest (fire-and-forget)
     parry.ingestEvent({

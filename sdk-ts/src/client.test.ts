@@ -101,6 +101,66 @@ describe("ParryClient", () => {
     });
   });
 
+  describe("scanResponse", () => {
+    it("returns original text when not blocked and not redacted", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ blocked: false, response: "hello world", findings: [] })
+      );
+      const out = await client.scanResponse({ response: "hello world" });
+      expect(out).toBe("hello world");
+    });
+
+    it("returns redacted text when backend redacts in place", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ blocked: false, response: "hello [REDACTED]", findings: [] })
+      );
+      const out = await client.scanResponse({ response: "hello 123-45-6789" });
+      expect(out).toBe("hello [REDACTED]");
+    });
+
+    it("throws ParryBlockedError when blocked", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          blocked: true,
+          response: null,
+          findings: [{ pattern: "ssn" }],
+        })
+      );
+      await expect(
+        client.scanResponse({ response: "leak: 123-45-6789" })
+      ).rejects.toThrow(ParryBlockedError);
+    });
+
+    it("fails open on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      const out = await client.scanResponse({ response: "hello" });
+      expect(out).toBe("hello");
+    });
+
+    it("fails open on non-200 status", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}, 500));
+      const out = await client.scanResponse({ response: "hello" });
+      expect(out).toBe("hello");
+    });
+
+    it("short-circuits on empty response", async () => {
+      const out = await client.scanResponse({ response: "" });
+      expect(out).toBe("");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("posts to scan-response endpoint", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ blocked: false, response: "hi", findings: [] })
+      );
+      await client.scanResponse({ response: "hi" });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://localhost:8000/api/v1/proxy/scan-response",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+  });
+
   describe("ingestEvent", () => {
     it("sends event without throwing", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ event_id: "123", status: "accepted" }));

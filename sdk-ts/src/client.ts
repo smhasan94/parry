@@ -32,6 +32,18 @@ export interface ProxyCheckResult {
   confidence: number;
 }
 
+export interface ScanResponseRequest {
+  response: string;
+  agentId?: string;
+  sessionId?: string;
+}
+
+export interface ScanResponseResult {
+  blocked: boolean;
+  response: string | null;
+  findings: Array<Record<string, unknown>>;
+}
+
 export interface EventIngestRequest {
   agentId?: string;
   sessionId?: string;
@@ -45,6 +57,7 @@ export interface EventIngestRequest {
 }
 
 const DEFAULT_TIMEOUT = 2000;
+const SCAN_TIMEOUT = 2000;
 const DEFAULT_BASE_URL = "https://api.parry.dev";
 
 export class ParryClient {
@@ -102,6 +115,48 @@ export class ParryClient {
   }
 
   /**
+   * Post-LLM response scan. Returns the (possibly redacted) response text.
+   *
+   * Throws ParryBlockedError only when the backend sets `blocked=true`
+   * (mode=block + finding triggered). All other failures fail open and
+   * return the original text unchanged — a scan error must never corrupt
+   * the caller's output.
+   */
+  async scanResponse(req: ScanResponseRequest): Promise<string> {
+    if (!req.response) return req.response;
+
+    const body = {
+      agent_id: req.agentId ?? this.defaultAgentId,
+      session_id: req.sessionId,
+      response: req.response,
+    };
+
+    let data: ScanResponseResult;
+    try {
+      data = await this.post<ScanResponseResult>(
+        "/api/v1/proxy/scan-response",
+        body,
+        SCAN_TIMEOUT
+      );
+    } catch {
+      return req.response;
+    }
+
+    if (data.blocked) {
+      const findings = data.findings ?? [];
+      const top = (findings[0]?.pattern as string | undefined) ?? "sensitive data";
+      throw new ParryBlockedError({
+        reason: `Sensitive data in response: ${top}`,
+        detector: "data_exfiltration",
+        severity: "high",
+        confidence: 0.85,
+      });
+    }
+
+    return data.response ?? req.response;
+  }
+
+  /**
    * Ingest an event (fire-and-forget). Never throws.
    */
   async ingestEvent(req: EventIngestRequest): Promise<void> {
@@ -124,9 +179,9 @@ export class ParryClient {
     }
   }
 
-  private async post<T>(path: string, body: unknown): Promise<T> {
+  private async post<T>(path: string, body: unknown, timeoutMs?: number): Promise<T> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeout);
+    const timer = setTimeout(() => controller.abort(), timeoutMs ?? this.timeout);
 
     try {
       const res = await fetch(`${this.baseUrl}${path}`, {
