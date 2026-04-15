@@ -14,8 +14,15 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/parry-dev/parry.git",
+    "directory": "sdk-ts"
+  },
+  "homepage": "https://github.com/parry-dev/parry/tree/main/sdk-ts#readme",
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "test": "vitest run",
