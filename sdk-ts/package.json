@@ -13,22 +13,31 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["parry", "ai-security", "llm", "agent", "runtime-security"],
+  "keywords": [
+    "parry",
+    "ai-security",
+    "llm",
+    "agent",
+    "runtime-security"
+  ],
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
     "vitest": "^3.0.0"
   },
   "peerDependencies": {
-    "openai": ">=4.0.0",
-    "@anthropic-ai/sdk": ">=0.27.0"
+    "@anthropic-ai/sdk": ">=0.27.0",
+    "openai": ">=4.0.0"
   },
   "peerDependenciesMeta": {
     "openai": {
