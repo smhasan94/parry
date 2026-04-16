@@ -1,0 +1,74 @@
+name: Publish SDK (TypeScript)
+
+# Tag-driven release: push an annotated tag like `sdk-ts/v0.1.0` to
+# trigger a build + publish to npm. Mirrors the Python SDK workflow
+# with a separate tag namespace.
+
+on:
+  push:
+    tags:
+      - "sdk-ts/v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build only, do not publish"
+        required: false
+        default: "true"
+
+jobs:
+  publish:
+    name: Build and publish to npm
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Verify tag matches package.json version
+        working-directory: sdk-ts
+        env:
+          TAG_REF: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          pkg_version=$(node -p "require('./package.json').version")
+          tag_version="${TAG_REF#sdk-ts/v}"
+          echo "package.json: $pkg_version"
+          echo "tag:          $tag_version"
+          if [ "$EVENT_NAME" = "push" ] && [ "$pkg_version" != "$tag_version" ]; then
+            echo "FAIL: tag $tag_version does not match sdk-ts/package.json version $pkg_version"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: sdk-ts
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: sdk-ts
+        run: npm run typecheck
+
+      - name: Run tests
+        working-directory: sdk-ts
+        run: npx vitest run
+
+      - name: Build
+        working-directory: sdk-ts
+        run: npm run build
+
+      - name: Show built artifacts
+        working-directory: sdk-ts
+        run: ls -lh dist/
+
+      - name: Publish to npm
+        if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}
+        working-directory: sdk-ts
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
