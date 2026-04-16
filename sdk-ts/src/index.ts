@@ -12,6 +12,8 @@ export { parryOpenAI } from "./openai.js";
 export { parryAnthropic } from "./anthropic.js";
 export { parryWrap, createParryWrapper } from "./vercel-ai.js";
 export type { ParryWrapOptions } from "./vercel-ai.js";
+export { ParryCallbackHandler } from "./langchain.js";
+export type { ParryCallbackHandlerOptions } from "./langchain.js";
 export { SentinelMCPClient } from "./mcp/client.js";
 export type {
   SentinelMCPClientOptions,
