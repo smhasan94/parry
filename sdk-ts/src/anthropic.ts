@@ -56,12 +56,23 @@ interface AnthropicMessageResponse {
   [key: string]: unknown;
 }
 
+interface AnthropicStreamEvent {
+  type: string;
+  delta?: { type?: string; text?: string };
+  message?: AnthropicMessageResponse;
+  [key: string]: unknown;
+}
+
+interface AnthropicStream extends AsyncIterable<AnthropicStreamEvent> {
+  [Symbol.asyncIterator](): AsyncIterator<AnthropicStreamEvent>;
+}
+
 interface AnthropicLike {
   messages: {
     create(
-      body: AnthropicMessageRequest,
+      body: AnthropicMessageRequest & { stream?: boolean },
       options?: unknown
-    ): Promise<AnthropicMessageResponse>;
+    ): Promise<AnthropicMessageResponse> | AnthropicStream;
   };
 }
 
@@ -120,12 +131,8 @@ export function parryAnthropic<T extends AnthropicLike>(
 
   const originalCreate = anthropic.messages.create.bind(anthropic.messages);
 
-  const wrappedCreate = async (
-    body: AnthropicMessageRequest,
-    opts?: unknown
-  ): Promise<AnthropicMessageResponse> => {
+  async function preCheck(body: AnthropicMessageRequest) {
     const prompt = extractPromptFromMessages(body.messages);
-
     await parry.checkBeforeCall({
       agentId,
       sessionId,
@@ -136,9 +143,29 @@ export function parryAnthropic<T extends AnthropicLike>(
           name: (t as Record<string, unknown>).name,
         })) ?? [],
     });
+    return prompt;
+  }
+
+  const wrappedCreate = async (
+    body: AnthropicMessageRequest & { stream?: boolean },
+    opts?: unknown
+  ): Promise<AnthropicMessageResponse | AnthropicStream> => {
+    const prompt = await preCheck(body);
+
+    if (body.stream) {
+      const start = Date.now();
+      const stream = originalCreate(body, opts) as unknown as AnthropicStream;
+      return wrapAnthropicStream(stream, parry, {
+        agentId,
+        sessionId,
+        prompt,
+        model: body.model,
+        start,
+      });
+    }
 
     const start = Date.now();
-    const response = await originalCreate(body, opts);
+    const response = await (originalCreate(body, opts) as Promise<AnthropicMessageResponse>);
     const latencyMs = Date.now() - start;
 
     let responseText = extractResponseText(response.content);
@@ -152,8 +179,6 @@ export function parryAnthropic<T extends AnthropicLike>(
       });
       if (scanned !== responseText) {
         responseText = scanned;
-        // Replace the first text block with the redacted text so callers
-        // that read response.content see the scrubbed version.
         const firstText = response.content?.find(
           (b) => b.type === "text"
         ) as AnthropicTextBlock | undefined;
@@ -191,4 +216,49 @@ export function parryAnthropic<T extends AnthropicLike>(
       return (target as Record<string | symbol, unknown>)[prop];
     },
   }) as T;
+}
+
+interface StreamIngestContext {
+  agentId?: string;
+  sessionId?: string;
+  prompt?: string;
+  model: string;
+  start: number;
+}
+
+function wrapAnthropicStream(
+  stream: AnthropicStream,
+  parry: ParryClient,
+  ctx: StreamIngestContext,
+): AnthropicStream {
+  const chunks: string[] = [];
+
+  async function* iterate(): AsyncGenerator<AnthropicStreamEvent> {
+    try {
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta?.text) {
+          chunks.push(event.delta.text);
+        }
+        yield event;
+      }
+    } finally {
+      const latencyMs = Date.now() - ctx.start;
+      const responseText = chunks.length > 0 ? chunks.join("") : undefined;
+      parry.ingestEvent({
+        agentId: ctx.agentId,
+        sessionId: ctx.sessionId,
+        prompt: ctx.prompt,
+        response: responseText,
+        model: ctx.model,
+        latencyMs,
+      });
+    }
+  }
+
+  const gen = iterate();
+  return {
+    [Symbol.asyncIterator]() {
+      return gen;
+    },
+  };
 }

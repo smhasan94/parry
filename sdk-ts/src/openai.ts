@@ -53,10 +53,36 @@ interface ChatCompletionResponse {
   [key: string]: unknown;
 }
 
+interface ChatCompletionChunk {
+  id: string;
+  choices: Array<{
+    delta: {
+      role?: string;
+      content?: string | null;
+      tool_calls?: Array<{
+        index: number;
+        id?: string;
+        type?: string;
+        function?: { name?: string; arguments?: string };
+      }>;
+    };
+    [key: string]: unknown;
+  }>;
+  model: string;
+  [key: string]: unknown;
+}
+
+interface OpenAIStream extends AsyncIterable<ChatCompletionChunk> {
+  [Symbol.asyncIterator](): AsyncIterator<ChatCompletionChunk>;
+}
+
 interface OpenAILike {
   chat: {
     completions: {
-      create(body: ChatCompletionRequest, options?: unknown): Promise<ChatCompletionResponse>;
+      create(
+        body: ChatCompletionRequest & { stream?: boolean },
+        options?: unknown,
+      ): Promise<ChatCompletionResponse> | OpenAIStream;
     };
   };
 }
@@ -82,30 +108,51 @@ export function parryOpenAI<T extends OpenAILike>(
     openai.chat.completions
   );
 
-  const wrappedCreate = async (
-    body: ChatCompletionRequest,
-    opts?: unknown
-  ): Promise<ChatCompletionResponse> => {
-    const lastUserMessage = body.messages
-      .filter((m) => m.role === "user")
-      .pop();
-    const prompt = lastUserMessage?.content ?? undefined;
+  function extractPrompt(body: ChatCompletionRequest): string | undefined {
+    const lastUserMessage = body.messages.filter((m) => m.role === "user").pop();
+    return lastUserMessage?.content ?? undefined;
+  }
 
-    // Pre-call check — throws ParryBlockedError if blocked
+  function extractToolDefs(body: ChatCompletionRequest) {
+    return (
+      body.tools?.map((t) => ({
+        name: (t as Record<string, unknown>).function
+          ? ((t as Record<string, unknown>).function as Record<string, unknown>).name
+          : t.name,
+      })) ?? []
+    );
+  }
+
+  const wrappedCreate = async (
+    body: ChatCompletionRequest & { stream?: boolean },
+    opts?: unknown
+  ): Promise<ChatCompletionResponse | OpenAIStream> => {
+    const prompt = extractPrompt(body);
+
     await parry.checkBeforeCall({
       agentId,
       sessionId,
       prompt,
       model: body.model,
-      toolCalls: body.tools?.map((t) => ({ name: (t as Record<string, unknown>).function ? ((t as Record<string, unknown>).function as Record<string, unknown>).name : t.name })) ?? [],
+      toolCalls: extractToolDefs(body),
     });
 
-    // Execute the actual LLM call
+    if (body.stream) {
+      const start = Date.now();
+      const stream = originalCreate(body, opts) as unknown as OpenAIStream;
+      return wrapOpenAIStream(stream, parry, {
+        agentId,
+        sessionId,
+        prompt,
+        model: body.model,
+        start,
+      });
+    }
+
     const start = Date.now();
-    const response = await originalCreate(body, opts);
+    const response = await (originalCreate(body, opts) as Promise<ChatCompletionResponse>);
     const latencyMs = Date.now() - start;
 
-    // Extract response content
     const choice = response.choices?.[0];
     let responseText = choice?.message?.content ?? undefined;
     const toolCalls = choice?.message?.tool_calls?.map((tc) => ({
@@ -113,7 +160,6 @@ export function parryOpenAI<T extends OpenAILike>(
       arguments: tc.function.arguments,
     }));
 
-    // Post-call response scan — may throw ParryBlockedError or redact in place.
     if (responseText) {
       const scanned = await parry.scanResponse({
         response: responseText,
@@ -126,7 +172,6 @@ export function parryOpenAI<T extends OpenAILike>(
       }
     }
 
-    // Post-call event ingest (fire-and-forget)
     parry.ingestEvent({
       agentId,
       sessionId,
@@ -141,7 +186,6 @@ export function parryOpenAI<T extends OpenAILike>(
     return response;
   };
 
-  // Return a proxy that intercepts chat.completions.create
   return new Proxy(openai, {
     get(target, prop) {
       if (prop === "chat") {
@@ -164,4 +208,50 @@ export function parryOpenAI<T extends OpenAILike>(
       return (target as Record<string | symbol, unknown>)[prop];
     },
   }) as T;
+}
+
+interface StreamIngestContext {
+  agentId?: string;
+  sessionId?: string;
+  prompt?: string;
+  model: string;
+  start: number;
+}
+
+function wrapOpenAIStream(
+  stream: OpenAIStream,
+  parry: ParryClient,
+  ctx: StreamIngestContext,
+): OpenAIStream {
+  const chunks: string[] = [];
+
+  async function* iterate(): AsyncGenerator<ChatCompletionChunk> {
+    try {
+      for await (const chunk of stream) {
+        const delta = chunk.choices?.[0]?.delta;
+        if (delta?.content) {
+          chunks.push(delta.content);
+        }
+        yield chunk;
+      }
+    } finally {
+      const latencyMs = Date.now() - ctx.start;
+      const responseText = chunks.length > 0 ? chunks.join("") : undefined;
+      parry.ingestEvent({
+        agentId: ctx.agentId,
+        sessionId: ctx.sessionId,
+        prompt: ctx.prompt,
+        response: responseText,
+        model: ctx.model,
+        latencyMs,
+      });
+    }
+  }
+
+  const gen = iterate();
+  return {
+    [Symbol.asyncIterator]() {
+      return gen;
+    },
+  };
 }

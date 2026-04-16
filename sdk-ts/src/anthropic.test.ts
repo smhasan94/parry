@@ -193,4 +193,108 @@ describe("parryAnthropic", () => {
     const wrapped = parryAnthropic(client, parry);
     expect((wrapped as unknown as { foo: string }).foo).toBe("bar");
   });
+
+  describe("streaming", () => {
+    function makeStreamingMock(events: Array<{ type: string; delta?: { text?: string }; [k: string]: unknown }>) {
+      async function* generate() {
+        for (const e of events) yield e;
+      }
+
+      const stream = { [Symbol.asyncIterator]: () => generate() };
+      const create = vi.fn().mockReturnValue(stream);
+      return { client: { messages: { create } }, create };
+    }
+
+    it("yields all chunks and ingests assembled text after stream completes", async () => {
+      mockFetch
+        .mockReturnValueOnce(allowedCheck())
+        .mockReturnValueOnce(jsonResponse({}));
+
+      const events = [
+        { type: "content_block_delta", delta: { text: "Hello" } },
+        { type: "content_block_delta", delta: { text: " world" } },
+        { type: "message_stop" },
+      ];
+
+      const { client } = makeStreamingMock(events);
+      const wrapped = parryAnthropic(client, parry);
+      const result = await wrapped.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 256,
+        messages: [{ role: "user", content: "hi" }],
+        stream: true,
+      });
+
+      const collected: unknown[] = [];
+      for await (const event of result as AsyncIterable<unknown>) {
+        collected.push(event);
+      }
+      expect(collected).toHaveLength(3);
+
+      const ingestCall = mockFetch.mock.calls.find((c) =>
+        (c[0] as string).endsWith("/events/ingest")
+      );
+      expect(ingestCall).toBeDefined();
+      const body = JSON.parse((ingestCall as [string, { body: string }])[1].body);
+      expect(body.response).toBe("Hello world");
+      expect(body.model).toBe("claude-sonnet-4-6");
+    });
+
+    it("runs pre-call check before streaming begins", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          allowed: false,
+          reason: "Injection",
+          detector: "prompt_injection",
+          severity: "high",
+          confidence: 0.9,
+        })
+      );
+
+      const { client, create } = makeStreamingMock([]);
+      const wrapped = parryAnthropic(client, parry);
+
+      await expect(
+        wrapped.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 256,
+          messages: [{ role: "user", content: "bad" }],
+          stream: true,
+        })
+      ).rejects.toThrow(ParryBlockedError);
+
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("ingests event even when stream has no text deltas", async () => {
+      mockFetch
+        .mockReturnValueOnce(allowedCheck())
+        .mockReturnValueOnce(jsonResponse({}));
+
+      const { client } = makeStreamingMock([
+        { type: "message_start", message: { id: "m1" } },
+        { type: "message_stop" },
+      ]);
+      const wrapped = parryAnthropic(client, parry);
+
+      const result = await wrapped.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 256,
+        messages: [{ role: "user", content: "hi" }],
+        stream: true,
+      });
+
+      const collected: unknown[] = [];
+      for await (const event of result as AsyncIterable<unknown>) {
+        collected.push(event);
+      }
+
+      const ingestCall = mockFetch.mock.calls.find((c) =>
+        (c[0] as string).endsWith("/events/ingest")
+      );
+      expect(ingestCall).toBeDefined();
+      const body = JSON.parse((ingestCall as [string, { body: string }])[1].body);
+      expect(body.response).toBeUndefined();
+    });
+  });
 });
