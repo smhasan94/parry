@@ -46,12 +46,13 @@ errors are swallowed — Parry **fails open** so it can never break your app.
 
 ```ts
 import OpenAI from "openai";
-import { parryOpenAI } from "@parry/sdk";
+import { ParryClient, parryOpenAI } from "@parry/sdk";
 
-const openai = parryOpenAI(new OpenAI(), {
+const parry = new ParryClient({
   apiKey: process.env.PARRY_API_KEY!,
   agentId: "agent_123",
 });
+const openai = parryOpenAI(new OpenAI(), parry);
 
 const res = await openai.chat.completions.create({
   model: "gpt-4o",
@@ -63,12 +64,13 @@ const res = await openai.chat.completions.create({
 
 ```ts
 import Anthropic from "@anthropic-ai/sdk";
-import { parryAnthropic } from "@parry/sdk";
+import { ParryClient, parryAnthropic } from "@parry/sdk";
 
-const anthropic = parryAnthropic(new Anthropic(), {
+const parry = new ParryClient({
   apiKey: process.env.PARRY_API_KEY!,
   agentId: "agent_123",
 });
+const anthropic = parryAnthropic(new Anthropic(), parry);
 
 const msg = await anthropic.messages.create({
   model: "claude-sonnet-4-6",
@@ -84,11 +86,17 @@ and `ingestEvent` in the background. Text and `tool_use` blocks are both scanned
 
 ```ts
 import { generateText } from "ai";
-import { parryWrap } from "@parry/sdk";
+import { ParryClient, parryWrap } from "@parry/sdk";
+
+const parry = new ParryClient({
+  apiKey: process.env.PARRY_API_KEY!,
+  agentId: "agent_123",
+});
 
 const result = await parryWrap(
+  parry,
   () => generateText({ model, prompt: userInput }),
-  { apiKey: process.env.PARRY_API_KEY!, agentId: "agent_123", prompt: userInput },
+  { prompt: userInput },
 );
 ```
 
