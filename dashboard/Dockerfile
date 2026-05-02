@@ -21,9 +21,11 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # Run as non-root — nginx:alpine includes an 'nginx' user (uid 101).
-# The entrypoint needs to write envsubst output to /etc/nginx/conf.d/
-# and the worker cache to /var/cache/nginx, /var/run for the pid file.
-RUN chown -R nginx:nginx /etc/nginx/conf.d /var/cache/nginx /var/run && \
+# The entrypoint needs to write envsubst output to /etc/nginx/conf.d/,
+# the worker cache to /var/cache/nginx, and the pid file to /run
+# (alpine's /var/run is a symlink to /run, and chown -R on the symlink
+# does not propagate to the target — chown /run directly).
+RUN chown -R nginx:nginx /etc/nginx/conf.d /var/cache/nginx /run && \
     chmod -R 755 /etc/nginx/conf.d
 USER nginx
 
