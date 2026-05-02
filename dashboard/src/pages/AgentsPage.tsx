@@ -118,9 +118,9 @@ export function AgentsPage() {
               </p>
               <div className="mt-2 w-full max-w-md overflow-hidden rounded-md border border-border bg-background/60 text-left">
                 <pre className="overflow-x-auto px-3 py-2 text-[11px] leading-relaxed text-foreground/90">
-                  <code>{`from parry.wrappers.openai import SentinelOpenAI
+                  <code>{`from parry.wrappers.openai import ParryOpenAI
 
-client = SentinelOpenAI(
+client = ParryOpenAI(
     agent_id="support-bot",
     api_key="sk-parry-...",
 )`}</code>

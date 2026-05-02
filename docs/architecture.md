@@ -7,7 +7,7 @@
 │  Customer's AI Agent (Python)        │
 │                                      │
 │  from parry.wrappers.openai    │
-│    import SentinelOpenAI             │
+│    import ParryOpenAI                │
 └───────────────┬─────────────────────┘
                 │ Every LLM call intercepted
                 ▼

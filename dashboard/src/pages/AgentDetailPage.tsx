@@ -647,7 +647,7 @@ export function AgentDetailPage() {
                     <p className="max-w-sm text-xs text-muted-foreground">
                       Events show up here as soon as the SDK makes its first
                       LLM call for this agent. Any call wrapped with
-                      SentinelOpenAI / SentinelAnthropic / etc. is enough.
+                      ParryOpenAI / ParryAnthropic / etc. is enough.
                     </p>
                   </>
                 )}

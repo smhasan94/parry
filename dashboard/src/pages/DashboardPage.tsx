@@ -196,8 +196,8 @@ export function DashboardPage() {
 function FirstRunCard() {
   const installSnippet = `pip install parry
 
-from parry.wrappers.openai import SentinelOpenAI
-client = SentinelOpenAI(
+from parry.wrappers.openai import ParryOpenAI
+client = ParryOpenAI(
     agent_id="support-bot",
     api_key="sk-parry-...",
 )`;

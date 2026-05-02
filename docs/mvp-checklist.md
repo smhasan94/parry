@@ -41,8 +41,8 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 ### SDK
 - [x] `sdk/` package structure with `pyproject.toml`
 - [x] `parry.init(api_key, agent_id)` entrypoint
-- [x] `SentinelOpenAI` wrapper (wraps `openai.OpenAI`)
-- [x] `SentinelAnthropic` wrapper (wraps `anthropic.Anthropic`)
+- [x] `ParryOpenAI` wrapper (wraps `openai.OpenAI`)
+- [x] `ParryAnthropic` wrapper (wraps `anthropic.Anthropic`)
 - [x] `interceptor.py` — core interception + event construction
 - [x] PII stripping (credit card, SSN, email patterns)
 - [x] Async fire-and-forget event send to backend
