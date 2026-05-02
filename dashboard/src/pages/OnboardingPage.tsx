@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateApiKey } from "@/hooks/useApiKeys";
-import { Key, Copy, Check, ArrowRight, Terminal, Rocket } from "lucide-react";
+import { useBlockingSettings, useUpdateBlockingSettings } from "@/hooks/useBlockingSettings";
+import { Key, Copy, Check, ArrowRight, Terminal, Rocket, Shield } from "lucide-react";
 
 const STEPS = [
   { label: "Create API Key", icon: Key },
   { label: "Install SDK", icon: Terminal },
+  { label: "Enable Blocking", icon: Shield },
   { label: "All Set", icon: Rocket },
 ] as const;
 
@@ -191,6 +193,67 @@ function StepInstallSDK({ onNext }: { onNext: () => void }) {
   );
 }
 
+function StepEnableBlocking({ onNext }: { onNext: () => void }) {
+  const { data, isLoading } = useBlockingSettings();
+  const updateBlocking = useUpdateBlockingSettings();
+  const alreadyEnabled = data?.blocking_enabled ?? false;
+
+  const handleEnable = () => {
+    if (alreadyEnabled) {
+      onNext();
+      return;
+    }
+    updateBlocking.mutate(true, { onSuccess: () => onNext() });
+  };
+
+  return (
+    <Card className="mx-auto w-full max-w-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Block attacks in real time?
+        </CardTitle>
+        <CardDescription>
+          With blocking enabled, Parry rejects prompt injections, tool misuse,
+          and policy violations <em>before</em> they hit your LLM. Observe-only
+          just logs them. You can change this anytime in Settings.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {alreadyEnabled && (
+          <div className="rounded-md border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
+            Blocking mode is already enabled for this org.
+          </div>
+        )}
+        <div className="space-y-2">
+          <Button
+            onClick={handleEnable}
+            disabled={isLoading || updateBlocking.isPending}
+            className="w-full"
+          >
+            {updateBlocking.isPending
+              ? "Enabling..."
+              : alreadyEnabled
+                ? "Continue"
+                : "Enable blocking — recommended"}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+          {!alreadyEnabled && (
+            <Button
+              variant="ghost"
+              onClick={onNext}
+              disabled={updateBlocking.isPending}
+              className="w-full"
+            >
+              Skip — log only
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StepComplete() {
   const navigate = useNavigate();
 
@@ -230,7 +293,8 @@ export function OnboardingPage() {
       <div className="flex flex-1 items-center justify-center p-6">
         {currentStep === 0 && <StepCreateKey onNext={() => setCurrentStep(1)} />}
         {currentStep === 1 && <StepInstallSDK onNext={() => setCurrentStep(2)} />}
-        {currentStep === 2 && <StepComplete />}
+        {currentStep === 2 && <StepEnableBlocking onNext={() => setCurrentStep(3)} />}
+        {currentStep === 3 && <StepComplete />}
       </div>
     </div>
   );
