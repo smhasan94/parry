@@ -46,9 +46,14 @@ jobs:
         working-directory: backend
         run: uv run ruff check app/
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: backend
-        run: uv run pytest tests/ -v --ignore=tests/e2e --tb=short -q
+        # Threshold is the unit-test floor; e2e adds material coverage on
+        # routes / workers and runs in a separate job. Bump together once
+        # both jobs flow into a combined report.
+        run: >
+          uv run pytest tests/ --ignore=tests/e2e --tb=short -q
+          --cov=app --cov-report=term --cov-fail-under=50
 
   backend-e2e:
     name: Backend E2E tests
