@@ -173,11 +173,16 @@ async def test_fire_threshold_alerts_different_thresholds_fire_independently() -
     db = AsyncMock()
 
     mock_redis = MagicMock()
-    # 50% and 80% already fired; 90% is new
+    # 50% and 80% already fired; 90% is new. Match on the trailing
+    # ":<pct>" segment exactly — the budget UUID and epoch-day bucket
+    # in the key can incidentally contain "50" or "80" as substrings,
+    # which used to make this test flaky depending on random UUIDs.
     fired_keys: set[str] = set()
+    already_fired_pcts = {50, 80}
 
     def nx_set(key: str, value: str, nx: bool, ex: int) -> bool | None:
-        if "50" in key or "80" in key:
+        trailing_pct = int(key.rsplit(":", 1)[-1])
+        if trailing_pct in already_fired_pcts:
             return None  # already set
         fired_keys.add(key)
         return True  # new
