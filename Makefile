@@ -31,14 +31,13 @@ dev-clean: ## Stop the dev stack AND wipe all volumes (destructive)
 	docker compose -f $(DEV_COMPOSE) down -v
 
 .PHONY: demo
-demo: ## One-command demo bootstrap: start stack, migrate, seed demo org, print API key
-	docker compose -f $(DEV_COMPOSE) up -d --wait
-	docker compose -f $(DEV_COMPOSE) exec -T backend uv run alembic upgrade head
-	docker compose -f $(DEV_COMPOSE) exec -T backend uv run python scripts/seed.py --reset
+demo: ## One-command demo bootstrap: build, start stack, seed demo org, print API key
+	docker compose -f $(DEV_COMPOSE) up -d --build --wait
+	docker compose -f $(DEV_COMPOSE) exec -T backend python scripts/seed.py --reset
 
 .PHONY: seed
 seed: ## Reseed the demo org against an already-running stack (wipes existing demo data)
-	docker compose -f $(DEV_COMPOSE) exec -T backend uv run python scripts/seed.py --reset
+	docker compose -f $(DEV_COMPOSE) exec -T backend python scripts/seed.py --reset
 
 .PHONY: logs
 logs: ## Tail logs from all dev services
