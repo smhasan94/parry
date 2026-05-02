@@ -81,8 +81,8 @@ describe("useBlockedEventStream", () => {
     });
 
     expect(result.current.messages).toHaveLength(1);
-    expect(result.current.messages[0].type).toBe("blocked");
-    expect(result.current.messages[0].detector).toBe("prompt-injection");
+    expect(result.current.messages[0]!.type).toBe("blocked");
+    expect(result.current.messages[0]!.detector).toBe("prompt-injection");
   });
 
   it("ignores keepalive messages", async () => {

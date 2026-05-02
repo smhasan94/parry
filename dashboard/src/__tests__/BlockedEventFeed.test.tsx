@@ -125,7 +125,7 @@ describe("BlockedEventFeed", () => {
     // Find by lucide icon container - get all buttons and click the ghost one
     const buttons = screen.getAllByRole("button");
     // The trash button is the last button (after Pause)
-    fireEvent.click(buttons[buttons.length - 1]);
+    fireEvent.click(buttons[buttons.length - 1]!);
     expect(mockClear).toHaveBeenCalledOnce();
   });
 
