@@ -38,7 +38,13 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev; font-src 'self'; frame-ancestors 'none'"
+		# Clerk-specific allowances:
+		#   script-src — Clerk loads clerk-js@5 from <instance>.clerk.accounts.dev at runtime
+		#   frame-src — Clerk uses Cloudflare Turnstile challenges to fight bot signups
+		#   worker-src 'self' blob: — Clerk spawns web workers for crypto / session work
+		# The connect-src already covers Clerk API calls. We don't allowlist
+		# img.clerk.com explicitly because the existing img-src https: already covers it.
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://*.clerk.accounts.dev https://*.clerk.dev https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev; font-src 'self'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; frame-ancestors 'none'"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		-Server
 	}
