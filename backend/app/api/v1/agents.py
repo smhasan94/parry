@@ -241,7 +241,14 @@ async def get_agent_spend(
     org: Org = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Current spend counters and configured budgets for an agent."""
+    """Current spend counters and configured budgets for an agent.
+
+    Each budget entry carries the matching period's spent_usd and pct
+    so the dashboard's CostCard can render the utilisation bar without
+    cross-referencing period_spend client-side. period_spend is also
+    returned so callers that don't have a budget configured still get
+    the raw period totals.
+    """
     await agent_service.get_agent(db, org.id, agent_id)
     period_spend = {
         "hour": budget_service.get_spend(agent_id, "hour"),
@@ -253,16 +260,22 @@ async def get_agent_spend(
         (AgentBudget.agent_id == agent_id) | AgentBudget.agent_id.is_(None),
     )
     result = await db.execute(budget_query)
-    budgets = [
-        {
-            "id": str(b.id),
-            "agent_id": str(b.agent_id) if b.agent_id else None,
-            "period": b.period,
-            "cap_usd": float(b.cap_usd),
-            "enabled": b.enabled,
-        }
-        for b in result.scalars().all()
-    ]
+    budgets = []
+    for b in result.scalars().all():
+        cap = float(b.cap_usd)
+        spent = float(period_spend.get(b.period, 0.0))
+        pct = (spent / cap * 100.0) if cap > 0 else 0.0
+        budgets.append(
+            {
+                "id": str(b.id),
+                "agent_id": str(b.agent_id) if b.agent_id else None,
+                "period": b.period,
+                "cap_usd": cap,
+                "spent_usd": spent,
+                "pct": pct,
+                "enabled": b.enabled,
+            }
+        )
     return {"period_spend": period_spend, "budgets": budgets}
 
 
