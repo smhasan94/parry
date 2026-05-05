@@ -3,6 +3,19 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# Vite inlines VITE_* env vars at build time, so they must be present
+# during `npm run build`. We accept them as build args so docker-compose
+# can plumb them through from the deployer's root .env without needing a
+# dashboard/.env file (which is gitignored and a common deployment trap).
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_API_URL=""
+ARG VITE_SENTRY_DSN=""
+ARG VITE_STRIPE_PRICE_GROWTH=""
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY \
+    VITE_API_URL=$VITE_API_URL \
+    VITE_SENTRY_DSN=$VITE_SENTRY_DSN \
+    VITE_STRIPE_PRICE_GROWTH=$VITE_STRIPE_PRICE_GROWTH
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

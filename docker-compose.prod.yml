@@ -106,6 +106,14 @@ services:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
+      # VITE_* env vars are inlined into the JS bundle at build time. We
+      # forward them as build args so the repo-root .env is the single
+      # source of truth — no dashboard/.env file required.
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:?Set VITE_CLERK_PUBLISHABLE_KEY in .env}
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_STRIPE_PRICE_GROWTH: ${VITE_STRIPE_PRICE_GROWTH:-}
     environment:
       BACKEND_URL: http://backend:8000
     depends_on:

@@ -130,6 +130,17 @@ SMTP_PASSWORD=SG....
 SMTP_FROM=alerts@yourdomain.com
 ```
 
+> **About `VITE_*` vars:** the dashboard is a static SPA built by Vite,
+> which inlines `VITE_*` env vars into the JS bundle **at build time**.
+> Those values must be present when `docker compose ... build` runs, not
+> just when it starts. The prod compose file plumbs them as build args
+> from this `.env`, so setting `VITE_CLERK_PUBLISHABLE_KEY` here is
+> sufficient — you do **not** need a separate `dashboard/.env` file
+> (it's gitignored anyway). If you ever change a `VITE_*` value, you
+> must `docker compose -f docker-compose.prod.yml build --no-cache
+> dashboard` and recreate the container; restarting alone won't pick up
+> the change.
+
 ### 6. Start everything
 
 ```bash
