@@ -2,8 +2,9 @@
 
 Usage:
     cd backend
-    uv run python scripts/seed.py              # populate an empty DB
-    uv run python scripts/seed.py --reset      # drop everything first
+    uv run python scripts/seed.py                              # populate an empty DB
+    uv run python scripts/seed.py --reset                      # drop everything first
+    uv run python scripts/seed.py --clerk-org-id org_abc123    # populate an existing org (e.g. one provisioned via Clerk webhook) instead of creating "demo_org_local"
 
 Produces a single demo org with comprehensive data across every feature:
 
@@ -155,7 +156,7 @@ async def _reset(db) -> None:
     await db.commit()
 
 
-async def seed(reset: bool = False) -> None:
+async def seed(reset: bool = False, clerk_org_id: str | None = None) -> None:
     from app.db.models import (
         Agent,
         AgentEvent,
@@ -172,12 +173,38 @@ async def seed(reset: bool = False) -> None:
     )
     from app.db.session import async_session_factory
 
+    target_clerk_org_id = clerk_org_id or "demo_org_local"
+
     async with async_session_factory() as db:
+        # When targeting a webhook-provisioned org with --reset, capture its
+        # name first so we can recreate the row after _reset() wipes it. This
+        # lets the demo data hang off the user's real Clerk org id without
+        # forcing them to re-trigger the webhook.
+        preserved_name: str | None = None
+        if reset and clerk_org_id is not None:
+            existing = (
+                await db.execute(select(Org).where(Org.clerk_org_id == clerk_org_id))
+            ).scalar_one_or_none()
+            if existing is None:
+                print(
+                    f"ERROR: --clerk-org-id={clerk_org_id} given but no Org row exists with that "
+                    "clerk_org_id. Provision the org first (sign in / Clerk webhook) and retry."
+                )
+                return
+            preserved_name = existing.name
+
         if reset:
             await _reset(db)
 
-        result = await db.execute(select(Org).where(Org.clerk_org_id == "demo_org_local"))
+        result = await db.execute(select(Org).where(Org.clerk_org_id == target_clerk_org_id))
         org = result.scalar_one_or_none()
+
+        if clerk_org_id is not None and org is None and not reset:
+            print(
+                f"ERROR: --clerk-org-id={clerk_org_id} given but no Org row exists with that "
+                "clerk_org_id. Provision the org first (sign in / Clerk webhook) and retry."
+            )
+            return
 
         if org is not None and not reset:
             agent_count = (
@@ -185,7 +212,7 @@ async def seed(reset: bool = False) -> None:
             ).scalars().all()
             if len(agent_count) >= 3:
                 print(
-                    f"Demo org already has {len(agent_count)} agents. "
+                    f"Org '{org.name}' already has {len(agent_count)} agents. "
                     "Pass --reset to rebuild."
                 )
                 return
@@ -193,8 +220,8 @@ async def seed(reset: bool = False) -> None:
         # ── Org ──────────────────────────────────────────────────
         if org is None:
             org = Org(
-                name="Parry Demo",
-                clerk_org_id="demo_org_local",
+                name=preserved_name or "Parry Demo",
+                clerk_org_id=target_clerk_org_id,
                 is_active=True,
                 blocking_enabled=True,
                 plan=Plan.PRO,
@@ -1135,8 +1162,17 @@ async def seed(reset: bool = False) -> None:
 def _main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reset", action="store_true", help="Wipe demo data first")
+    parser.add_argument(
+        "--clerk-org-id",
+        default=None,
+        help=(
+            "Populate demo data on the Org row with this clerk_org_id (e.g. one "
+            "provisioned by the Clerk webhook) instead of creating 'demo_org_local'. "
+            "The org row must already exist unless combined with --reset."
+        ),
+    )
     args = parser.parse_args()
-    asyncio.run(seed(reset=args.reset))
+    asyncio.run(seed(reset=args.reset, clerk_org_id=args.clerk_org_id))
     return 0
 
 
