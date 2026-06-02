@@ -143,8 +143,8 @@ export function CommunityRulesPage() {
               <p className="text-sm font-medium">No rule packs found</p>
               <p className="max-w-sm text-xs text-muted-foreground">
                 {search
-                  ? "Try a different search term or category."
-                  : "Be the first to publish a community rule pack!"}
+                  ? "No packs match that search. Try a different term or clear the filter."
+                  : "No community packs published yet. Check back as the Parry network grows."}
               </p>
             </CardContent>
           </Card>

@@ -326,7 +326,10 @@ function SupplierList({ system }: { system: AISystem }) {
         {isLoading ? (
           <p className="text-xs text-muted-foreground">Loading...</p>
         ) : suppliers.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No supplier data yet</p>
+          <p className="text-xs text-muted-foreground">
+            No supplier records yet. Parry populates suppliers automatically from
+            agent event data — run your agent at least once to seed this.
+          </p>
         ) : (
           <table className="w-full text-xs">
             <thead>
@@ -411,7 +414,8 @@ function FRIASystemCard({ system }: { system: AISystem }) {
           <p className="text-xs text-muted-foreground">Loading...</p>
         ) : frias.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            No FRIA generated yet for this system
+            No impact assessment yet. Click "New FRIA Draft" to generate
+            a pre-filled Fundamental Rights Impact Assessment for this system.
           </p>
         ) : (
           <div className="space-y-2">

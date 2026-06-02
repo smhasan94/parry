@@ -290,6 +290,15 @@ async def get_current_org_sse(
         raw = authorization.removeprefix("Bearer ").strip()
     elif token:
         raw = token.strip()
+        # Long-lived API keys must never travel via query param — they land
+        # in access logs, browser history, and referrer headers. Reject here
+        # so the client is forced to use the Authorization header instead.
+        if raw.startswith("sk-parry-"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API keys must be sent as 'Authorization: Bearer <key>', not as a query parameter",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     if not raw:
         raise HTTPException(

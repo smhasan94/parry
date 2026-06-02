@@ -64,7 +64,14 @@ export function SDKHealthPage() {
               </CardHeader>
               <CardContent>
                 {data.agents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No agents found.</p>
+                  <div className="flex flex-col items-center gap-2 py-8 text-center">
+                    <p className="text-sm font-medium">No agents reporting</p>
+                    <p className="max-w-sm text-xs text-muted-foreground">
+                      Agents appear here once they send their first SDK event.
+                      Wrap your LLM client with the Parry SDK and call your agent
+                      once to register it.
+                    </p>
+                  </div>
                 ) : (
                   <div className="divide-y divide-border">
                     {data.agents.map((agent) => {

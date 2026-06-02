@@ -148,10 +148,11 @@ export function ThreatIntelPage() {
             ) : feed.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-12 text-center">
                 <AlertTriangle className="h-12 w-12 text-muted-foreground" />
-                <p className="text-sm font-medium">No active indicators</p>
+                <p className="text-sm font-medium">No confirmed threats — feed is clean</p>
                 <p className="max-w-sm text-xs text-muted-foreground">
-                  Threat indicators appear here when attack patterns are
-                  confirmed across 3+ organizations in the Parry network.
+                  Indicators appear when an attack pattern is confirmed across
+                  3+ organizations in the Parry network. A clean feed means no
+                  network-wide campaigns are currently active.
                 </p>
               </div>
             ) : (
