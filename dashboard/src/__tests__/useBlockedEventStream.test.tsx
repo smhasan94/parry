@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useBlockedEventStream } from "@/hooks/useBlockedEventStream";
+import { api } from "@/lib/api";
+
+vi.mock("@/lib/api", () => ({
+  api: { getToken: vi.fn().mockResolvedValue(null) },
+}));
 
 // Mock EventSource
 class MockEventSource {

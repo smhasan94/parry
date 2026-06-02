@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
 
 export interface LiveStreamMessage {
   type: "blocked" | "event" | "keepalive";
@@ -35,25 +36,40 @@ export function useBlockedEventStream(paused: boolean) {
 
   useEffect(() => {
     const baseUrl = import.meta.env.VITE_API_URL || "";
-    const es = new EventSource(`${baseUrl}/api/v1/events/live-stream`);
-    esRef.current = es;
+    let cancelled = false;
 
-    es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false);
-    es.onmessage = (e) => {
-      if (pausedRef.current) return;
-      try {
-        const msg = JSON.parse(e.data) as LiveStreamMessage;
-        if (msg.type === "keepalive") return;
-        msg._id = `${msg.ts ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        setMessages((prev) => [msg, ...prev].slice(0, MAX_BUFFERED));
-      } catch {
-        // ignore malformed
-      }
-    };
+    async function connect() {
+      const token = await api.getToken();
+      if (cancelled) return;
+
+      const path = `/api/v1/events/live-stream`;
+      const url = token
+        ? `${baseUrl}${path}?token=${encodeURIComponent(token)}`
+        : `${baseUrl}${path}`;
+
+      const es = new EventSource(url);
+      esRef.current = es;
+
+      es.onopen = () => setConnected(true);
+      es.onerror = () => setConnected(false);
+      es.onmessage = (e) => {
+        if (pausedRef.current) return;
+        try {
+          const msg = JSON.parse(e.data) as LiveStreamMessage;
+          if (msg.type === "keepalive") return;
+          msg._id = `${msg.ts ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          setMessages((prev) => [msg, ...prev].slice(0, MAX_BUFFERED));
+        } catch {
+          // ignore malformed
+        }
+      };
+    }
+
+    connect();
 
     return () => {
-      es.close();
+      cancelled = true;
+      esRef.current?.close();
       esRef.current = null;
       setConnected(false);
     };

@@ -6,7 +6,7 @@ from typing import Annotated
 import httpx
 import jwt as pyjwt
 import structlog
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Query, status
 from jwt import PyJWK, PyJWKSet
 from jwt.exceptions import PyJWTError
 from sqlalchemy import select
@@ -270,6 +270,37 @@ async def get_current_org(
 
     # Otherwise treat as a Clerk JWT
     return await _resolve_org_from_clerk_jwt(token, db)
+
+
+async def get_current_org_sse(
+    db: AsyncSession = Depends(get_db),
+    authorization: Annotated[str | None, Header()] = None,
+    token: Annotated[str | None, Query()] = None,
+) -> Org:
+    """Auth for SSE endpoints.
+
+    Browser EventSource cannot send custom headers, so we accept the
+    Clerk JWT or Parry API key via a ``?token=`` query parameter as a
+    fallback. The ``Authorization: Bearer`` header takes precedence when
+    present. Callers must pass ``token`` via FastAPI Query injection on
+    the route — this function reads whichever is set.
+    """
+    raw: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        raw = authorization.removeprefix("Bearer ").strip()
+    elif token:
+        raw = token.strip()
+
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required — provide Authorization header or ?token= query parameter",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if raw.startswith("sk-parry-"):
+        return await _resolve_org_from_api_key(raw, db)
+    return await _resolve_org_from_clerk_jwt(raw, db)
 
 
 async def get_org_from_sdk_key(

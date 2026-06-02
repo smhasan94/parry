@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
-from app.core.dependencies import get_current_org, get_org_from_sdk_key
+from app.core.dependencies import get_current_org, get_current_org_sse, get_org_from_sdk_key
 from app.core.event_bus import subscribe as subscribe_event_bus
 from app.core.metrics import record_event_ingested
 from app.db.models import AgentEvent, Org
@@ -83,7 +83,7 @@ async def list_events(
 @router.get("/stream")
 async def stream_events(
     agent_id: uuid.UUID = Query(...),
-    org: Org = Depends(get_current_org),
+    org: Org = Depends(get_current_org_sse),
     db: AsyncSession = Depends(get_db),
 ) -> EventSourceResponse:
     """SSE endpoint for real-time event streaming. Scoped to org's agents."""
@@ -121,7 +121,7 @@ async def stream_events(
 
 @router.get("/live-stream")
 async def live_stream(
-    org: Org = Depends(get_current_org),
+    org: Org = Depends(get_current_org_sse),
 ) -> EventSourceResponse:
     """Org-wide SSE stream fed from the Redis pubsub event bus.
 
