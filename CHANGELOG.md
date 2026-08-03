@@ -10,6 +10,14 @@ version bump — read the entries.
 
 ### Added
 
+- **Normalized SSO matching** — a renamed app now matches its catalog
+  entry ("Anthropic Claude" to "Claude", "Perplexity AI" to
+  "Perplexity"), recovering vendors exact matching lost. The rule is
+  asymmetric: extra words in the label are fine, extra words in the
+  catalog name are not, so a grant to "Figma" never claims "Figma AI".
+  Verified against the full catalog at 0 false positives over 32
+  ordinary enterprise apps and 0 ambiguous labels; a label matching two
+  entries is refused rather than guessed.
 - **Scheduled discovery** — probe credentials are stored encrypted
   (Fernet, authenticated and randomly IV'd) and re-synced by a daily
   worker at 02:00 UTC, ahead of the compliance refresh so an overnight
@@ -181,12 +189,11 @@ Recorded so a reader can tell what is finished from what merely exists.
 
 - ~~**Discovery runs once, by hand.**~~ Addressed in Unreleased: stored
   credentials plus a daily worker.
-- **SSO matching is exact-match only.** OAuth client id or exact service
-  name, and only 13 of 200 catalog entries carry an OAuth id — so a
-  renamed app ("Figma" against a catalog entry named "Figma AI") is
-  missed. On a realistic tenant this caps match rate well below 100%.
-  Alias or normalized matching is the fix, and it needs care: a wrong
-  row in a compliance register is worse than a missing one.
+- ~~**SSO matching is exact-match only.**~~ Addressed in Unreleased by
+  normalized matching. A narrower gap remains by design: a grant naming
+  only a vendor ("Figma", "Intercom") is never matched to that vendor's
+  AI product, because the grant is not evidence the AI feature is in
+  use. Those stay unmatched probe events for a human to triage.
 - **Cross-org threat intelligence needs scale to fire.** A pattern must
   be confirmed across 3+ organizations before `ThreatIntelDetector`
   triggers, so the feed is inert at low customer counts.
