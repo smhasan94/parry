@@ -23,3 +23,15 @@ class ConflictError(ParryError):
 class PolicyViolationError(ParryError):
     def __init__(self, message: str) -> None:
         super().__init__(message=message, code="POLICY_VIOLATION")
+
+
+class ConfigurationError(ParryError):
+    """A required setting is missing or malformed.
+
+    Raised in preference to degrading to an insecure fallback — e.g. we
+    refuse to store a credential rather than store it unencrypted
+    because no key was configured.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message=message, code="CONFIGURATION_ERROR")

@@ -18,6 +18,9 @@ dependencies = [
     "structlog>=24.4.0",
     "anthropic>=0.40.0",
     "pyjwt[crypto]>=2.9.0",
+    # Direct dependency: Fernet, for probe credential encryption at rest.
+    # Present transitively via pyjwt[crypto], but relied on directly here.
+    "cryptography>=44.0.0",
     "stripe>=11.0.0",
     "spacy>=3.8.0",
     "scikit-learn>=1.6.0",

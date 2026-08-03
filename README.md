@@ -8,6 +8,8 @@ AI agents are powerful but dangerous. They execute tool calls, handle sensitive 
 
 Parry is a security layer that monitors every LLM call your agents make. Lightweight SDKs for **Python**, **TypeScript**, and **Go** wrap your existing LLM clients. Every prompt and response flows through a detection pipeline of 12 specialized detectors, policy enforcers, permission boundaries, a cross-org threat intelligence feed, and an LLM-powered fallback classifier. When something looks wrong, Parry creates an incident, alerts your team, optionally blocks the call in real time, and provides forensic replay for investigation.
 
+Parry also finds the AI you *haven't* instrumented. A read-only SSO connection surfaces the AI systems your people already authorized — no code, no install — and files them into your EU AI Act register. See [Shadow AI Discovery](#shadow-ai-discovery).
+
 The SDKs add zero latency to your agent's calls. Events are sent asynchronously in the background. If Parry's backend goes down, your agent keeps running. Fail-open by design.
 
 **Python — two lines to integrate:**
@@ -41,6 +43,26 @@ resp, err := wrapped(ctx, req)
 ---
 
 ## Features
+
+### Shadow AI Discovery
+
+Find the AI systems already running in your environment that nothing is monitoring — **without installing anything or changing a line of your agent code**.
+
+Connect a read-only Okta token and Parry reads the app grants your org has already issued, matches them against a 200-vendor catalog, and returns the AI systems present in your environment with no Parry agent attached:
+
+```
+Shadow AI — 10 systems nothing is monitoring, 3 of them high risk:
+  high*      Eightfold AI       Eightfold AI, Inc.    2026-01-19
+  high*      HireVue            HireVue, Inc.         2025-11-03
+  high*      Beamery            Beamery, Inc.         2025-01-23
+  limited*   GitHub Copilot     Microsoft             2025-03-08
+  ...
+* proposed from the vendor catalog, pending human review
+```
+
+Discovered systems land in the EU AI Act Article 26 register as `origin='discovered'`. The catalog's suggested risk tier arrives as a **proposal, never an approved classification** — a machine's guess at an Annex III tier is a draft for a human, not a compliance fact. Approving one promotes it to the system's tier of record and raises the Article 27 FRIA obligation, so discovery feeds the compliance workflow directly.
+
+Unrecognized apps are kept as probe events for triage but never enter the register: if we can't say what something is, it doesn't get a compliance record.
 
 ### Detection Engine
 
@@ -253,6 +275,16 @@ docker compose up -d
 docker compose exec backend uv run python scripts/seed.py
 
 curl http://localhost:8000/health
+```
+
+To see Shadow AI Discovery without wiring up a real Okta tenant, seed the
+demo tenant — 18 apps and 410 grants driven through the live pipeline,
+nothing stubbed:
+
+```bash
+docker compose exec backend uv run python scripts/seed_catalog.py
+docker compose exec backend uv run python scripts/seed_shadow_ai_demo.py
+# then open the dashboard at /shadow-ai
 ```
 
 | Service | URL |

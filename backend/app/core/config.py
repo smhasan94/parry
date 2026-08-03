@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     # Internal auth
     parry_internal_secret: str = "change-me"
 
+    # Fernet key for encrypting third-party probe credentials at rest.
+    # Empty disables credential storage entirely — the code refuses to
+    # store a token rather than persist it in plaintext.
+    probe_encryption_key: str = ""
+
     # CORS
     allowed_origins: str = "http://localhost:5173,http://localhost:3000"
 
