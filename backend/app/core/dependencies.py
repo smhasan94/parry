@@ -296,14 +296,20 @@ async def get_current_org_sse(
         if raw.startswith("sk-parry-"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="API keys must be sent as 'Authorization: Bearer <key>', not as a query parameter",
+                detail=(
+                    "API keys must be sent as 'Authorization: Bearer <key>', "
+                    "not as a query parameter"
+                ),
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
     if not raw:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required — provide Authorization header or ?token= query parameter",
+            detail=(
+                "Authentication required — provide Authorization header "
+                "or ?token= query parameter"
+            ),
             headers={"WWW-Authenticate": "Bearer"},
         )
 
