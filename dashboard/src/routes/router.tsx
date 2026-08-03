@@ -16,6 +16,7 @@ import { SLOPage } from "@/pages/SLOPage";
 import { RedTeamPage } from "@/pages/RedTeamPage";
 import { RedTeamRunDetailPage } from "@/pages/RedTeamRunDetailPage";
 import { MCPServersPage } from "@/pages/MCPServersPage";
+import { ShadowAIPage } from "@/pages/ShadowAIPage";
 import { MCPServerDetailPage } from "@/pages/MCPServerDetailPage";
 import { CompliancePage } from "@/pages/CompliancePage";
 import { AgentGroupsPage } from "@/pages/AgentGroupsPage";
@@ -137,6 +138,12 @@ const mcpServerRoute = createRoute({
   component: MCPServerDetailPage,
 });
 
+const shadowAIRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/shadow-ai",
+  component: ShadowAIPage,
+});
+
 const complianceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/compliance",
@@ -212,6 +219,7 @@ const routeTree = rootRoute.addChildren([
   redTeamRunRoute,
   mcpRoute,
   mcpServerRoute,
+  shadowAIRoute,
   complianceRoute,
   agentGroupsRoute,
   threatIntelRoute,

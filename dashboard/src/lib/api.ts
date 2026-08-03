@@ -516,6 +516,22 @@ class ApiClient {
     return this.request("/api/v1/compliance/posture");
   }
 
+  // ── Shadow AI discovery ───────────────────────────────────────
+
+  async listShadowAI(limit = 100): Promise<import("./types").ShadowAIResponse> {
+    return this.request(`/api/v1/discovery/shadow?limit=${limit}`);
+  }
+
+  async syncOkta(
+    oktaDomain: string,
+    apiToken: string,
+  ): Promise<import("./types").SSOSyncResponse> {
+    return this.request("/api/v1/discovery/sso/sync", {
+      method: "POST",
+      body: JSON.stringify({ okta_domain: oktaDomain, api_token: apiToken }),
+    });
+  }
+
   async listAISystems(riskLevel?: string): Promise<import("./types").AISystem[]> {
     const params = new URLSearchParams();
     if (riskLevel) params.set("risk_level", riskLevel);
