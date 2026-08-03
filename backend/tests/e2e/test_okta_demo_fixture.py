@@ -127,34 +127,46 @@ async def test_demo_surfaces_a_substantial_shadow_footprint(db: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_known_gap_okta_labels_that_drift_from_catalog_names_are_missed(
-    db: AsyncSession,
-):
-    """Documents a real limitation, deliberately not papered over.
+async def test_renamed_apps_are_now_matched(db: AsyncSession):
+    """Labels that drift from the catalog name are recovered.
 
-    SSOAppMatcher matches on exact OAuth client id or exact service name.
-    Only 13 of 200 catalog entries carry an OAuth id, so in practice the
-    name is the only lever — and admins rename apps. The fixture keeps
-    realistic labels ("Figma", "Anthropic Claude") rather than tuning
-    them to the catalog, so this gap shows up here instead of on a sales
-    call.
-
-    Fixing it means alias support on catalog entries, or normalized
-    matching that tolerates an "AI"/vendor-prefix delta. Both risk false
-    positives, which in a compliance register are worse than misses —
-    hence a deliberate decision rather than a quick heuristic.
-
-    When that lands, this test should start failing. That is the signal
-    to delete it.
+    Replaces a test that documented these as a known gap. The fixture
+    still carries realistic Okta labels rather than ones tuned to match,
+    so this is evidence against real-shaped data.
     """
     org = await _run(db)
 
     systems = (await db.execute(select(AISystem).where(AISystem.org_id == org.id))).scalars().all()
     names = {s.name for s in systems}
 
-    # Present in the tenant under a drifted label, absent from the register.
+    # "OpenAI ChatGPT Enterprise", "Anthropic Claude", "Perplexity AI"
+    # in the tenant; "ChatGPT", "Claude", "Perplexity" in the catalog.
+    assert {"ChatGPT", "Claude", "Perplexity"} <= names
+
+
+@pytest.mark.asyncio
+async def test_a_bare_vendor_grant_still_does_not_claim_its_ai_product(
+    db: AsyncSession,
+):
+    """The half of the gap that stays closed on purpose.
+
+    The tenant grants "Figma", "Intercom" and "Greenhouse". The catalog
+    calls the corresponding AI products "Figma AI", "Intercom Fin" and
+    "Greenhouse AI". Matching those would assert the org uses each
+    vendor's AI features on the evidence of a grant that says only that
+    they use the vendor — and the assertion would land in a compliance
+    register, where a wrong row is worse than a missing one.
+
+    They remain probe events for a human to triage.
+    """
+    org = await _run(db)
+
+    systems = (await db.execute(select(AISystem).where(AISystem.org_id == org.id))).scalars().all()
+    names = {s.name for s in systems}
+
     assert "Figma AI" not in names
-    assert "Claude" not in names
+    assert "Intercom Fin" not in names
+    assert "Greenhouse AI" not in names
 
 
 @pytest.mark.asyncio
