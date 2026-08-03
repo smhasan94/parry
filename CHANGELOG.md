@@ -8,7 +8,26 @@ version bump — read the entries.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Scheduled discovery** — probe credentials are stored encrypted
+  (Fernet, authenticated and randomly IV'd) and re-synced by a daily
+  worker at 02:00 UTC, ahead of the compliance refresh so an overnight
+  discovery is registered before posture is recomputed. Discovery is now
+  a monitor rather than a snapshot.
+- `POST/GET/DELETE /api/v1/discovery/credentials` plus a rotate
+  endpoint. The secret is write-only: no response schema has a field for
+  it or its ciphertext.
+
+### Security
+
+- Credential encryption fails closed. With no `PROBE_ENCRYPTION_KEY`
+  set, storage is refused rather than falling back to plaintext.
+- A stored Okta host is validated against the allowlist at write time,
+  so a bad row cannot become an SSRF when the unattended worker later
+  fetches it.
+- Sync errors redact the token before being persisted to
+  `last_sync_error`.
 
 ---
 
@@ -160,9 +179,8 @@ to be relative to.
 
 Recorded so a reader can tell what is finished from what merely exists.
 
-- **Discovery runs once, by hand.** `probe_credentials` is modelled but
-  unused and there is no scheduled worker, so the register is a snapshot
-  rather than a monitor and goes stale the day after a scan.
+- ~~**Discovery runs once, by hand.**~~ Addressed in Unreleased: stored
+  credentials plus a daily worker.
 - **SSO matching is exact-match only.** OAuth client id or exact service
   name, and only 13 of 200 catalog entries carry an OAuth id — so a
   renamed app ("Figma" against a catalog entry named "Figma AI") is
