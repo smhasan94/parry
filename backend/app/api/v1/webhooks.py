@@ -11,6 +11,7 @@ from svix.webhooks import Webhook, WebhookVerificationError
 from app.core.config import settings
 from app.db.models import Org
 from app.db.session import async_session_factory
+from app.services import onboarding_service
 
 log = structlog.get_logger()
 
@@ -88,6 +89,10 @@ async def _handle_org_created(db: AsyncSession, data: dict[str, Any]) -> None:
     db.add(org)
     await db.flush()
 
+    # Starting configuration, so the first dashboard view has something
+    # to act on. Idempotent, so a Clerk retry cannot duplicate it.
+    await onboarding_service.provision_new_org(db, org)
+
     log.info("webhook.org_created", org_id=str(org.id), clerk_org_id=clerk_org_id, name=name)
 
 
@@ -143,5 +148,9 @@ async def _handle_user_created(db: AsyncSession, data: dict[str, Any]) -> None:
     org = Org(name=f"{name}'s Workspace", clerk_org_id=user_id, is_active=True)
     db.add(org)
     await db.flush()
+
+    # A personal workspace is an org like any other and needs the same
+    # starting configuration.
+    await onboarding_service.provision_new_org(db, org)
 
     log.info("webhook.user_created.org_created", org_id=str(org.id), user_id=user_id)

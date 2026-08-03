@@ -165,3 +165,67 @@ async def test_user_created_no_name(db: AsyncSession):
     result = await db.execute(select(Org).where(Org.clerk_org_id == "user_noname"))
     org = result.scalar_one()
     assert org.name == "Personal's Workspace"
+
+
+@pytest.mark.asyncio
+async def test_org_created_provisions_starting_config(db: AsyncSession):
+    """A customer signing up gets somewhere to start, not a blank slate."""
+    from app.db.models import AgentPermission, Policy
+
+    await _handle_org_created(db, {"id": "org_clerk_prov", "name": "Provisioned Co"})
+    await db.commit()
+
+    org = (await db.execute(select(Org).where(Org.clerk_org_id == "org_clerk_prov"))).scalar_one()
+
+    perms = (
+        (await db.execute(select(AgentPermission).where(AgentPermission.org_id == org.id)))
+        .scalars()
+        .all()
+    )
+    policies = (await db.execute(select(Policy).where(Policy.org_id == org.id))).scalars().all()
+
+    assert len(perms) == 1
+    assert perms[0].mode == "dry_run"
+    assert len(policies) == 1
+    assert policies[0].is_active is False
+
+
+@pytest.mark.asyncio
+async def test_a_personal_workspace_is_provisioned_too(db: AsyncSession):
+    """The user.created path creates an org as well, and was missed."""
+    from app.db.models import AgentPermission
+
+    await _handle_user_created(
+        db,
+        {
+            "id": "user_clerk_prov",
+            "first_name": "Ada",
+            "email_addresses": [{"email_address": "ada@corp.com"}],
+        },
+    )
+    await db.commit()
+
+    org = (await db.execute(select(Org).where(Org.clerk_org_id == "user_clerk_prov"))).scalar_one()
+    perms = (
+        (await db.execute(select(AgentPermission).where(AgentPermission.org_id == org.id)))
+        .scalars()
+        .all()
+    )
+
+    assert len(perms) == 1
+
+
+@pytest.mark.asyncio
+async def test_a_replayed_org_webhook_does_not_duplicate_config(db: AsyncSession):
+    from app.db.models import Policy
+
+    payload = {"id": "org_clerk_replay", "name": "Replay Co"}
+    await _handle_org_created(db, payload)
+    await _handle_org_created(db, payload)
+    await db.commit()
+
+    org = (await db.execute(select(Org).where(Org.clerk_org_id == "org_clerk_replay"))).scalar_one()
+    policies = (await db.execute(select(Policy).where(Policy.org_id == org.id))).scalars().all()
+
+    # Clerk retries deliveries; a retry must not double the config.
+    assert len(policies) == 1
