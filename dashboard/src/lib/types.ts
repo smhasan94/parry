@@ -353,3 +353,29 @@ export interface SSOStatusResponse {
   configured_on_backend: boolean;
   workos_organization_id: string | null;
 }
+
+// ── Shadow AI Discovery ─────────────────────────────────────────
+
+export interface ShadowSystem {
+  id: string;
+  name: string;
+  provider_name: string | null;
+  risk_level: string;
+  discovery_source: string | null;
+  first_seen_at: string | null;
+  last_seen_at: string | null;
+}
+
+export interface ShadowAIResponse {
+  total: number;
+  by_risk_level: Record<string, number>;
+  systems: ShadowSystem[];
+}
+
+export interface SSOSyncResponse {
+  processed: number;
+  created: number;
+  deduplicated: number;
+  matched: number;
+  unmatched: number;
+}

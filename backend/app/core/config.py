@@ -1,14 +1,27 @@
+from pathlib import Path
+
 import structlog
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 log = structlog.get_logger()
 
+# Anchored to the repo, not the process cwd. Commands run from backend/
+# (alembic, uvicorn, scripts) would otherwise miss the root .env and fall
+# back to these defaults — which fails confusingly against whatever else
+# happens to be listening on the default port.
+_REPO_ENV = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
+    # Later entries win, so a backend/.env still overrides the repo root.
+    # extra="ignore" because the root .env is shared with the dashboard and
+    # carries VITE_* keys that are none of the backend's business. Tradeoff:
+    # a misspelled backend var is now silently ignored rather than fatal.
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(_REPO_ENV, ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # App

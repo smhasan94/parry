@@ -10,6 +10,8 @@ to actor_type='api_key' → ADMIN, so the API-key-is-admin case is
 tested via the seeded API key fixture.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from httpx import AsyncClient
 
@@ -115,26 +117,76 @@ async def test_admin_cannot_access_billing_checkout(client: AsyncClient, seeded_
 
 @pytest.mark.asyncio
 async def test_owner_can_reach_billing_checkout(client: AsyncClient, seeded_db: dict):
-    """Owners pass the RBAC gate; actual checkout still 503s without
-    Stripe keys, which proves the gate opened."""
+    """Owners pass the RBAC gate on checkout.
+
+    Stripe is stubbed out entirely. This test is about the gate, and it
+    previously accepted ``in (200, 503)`` — which passes both when the
+    gate opens and when billing is simply unconfigured, so it proved
+    nothing on its own. Worse, it read stripe_secret_key from the ambient
+    environment: with a key present the route called the live Stripe API
+    and failed on the credentials rather than on anything about RBAC.
+    """
+    from app.api.v1 import billing
     from app.main import app
 
     _install_actor_override(app, seeded_db, "org:owner")
     try:
-        resp = await client.post(
-            "/api/v1/billing/checkout",
-            params={
-                "price_id": "price_test",
-                "success_url": "https://ok",
-                "cancel_url": "https://cancel",
-            },
-            headers={"Authorization": "Bearer dummy-jwt"},
-        )
+        with (
+            patch.object(billing.settings, "stripe_secret_key", "sk_test_stub"),
+            patch.object(
+                billing.billing_service,
+                "ensure_stripe_customer",
+                new=AsyncMock(return_value="cus_stub"),
+            ),
+            patch.object(
+                billing.billing_service,
+                "create_checkout_session",
+                return_value="https://checkout.stripe.test/session",
+            ) as create_session,
+        ):
+            resp = await client.post(
+                "/api/v1/billing/checkout",
+                params={
+                    "price_id": "price_test",
+                    "success_url": "https://ok",
+                    "cancel_url": "https://cancel",
+                },
+                headers={"Authorization": "Bearer dummy-jwt"},
+            )
     finally:
         _clear_actor_override(app)
-    # 503 because stripe_secret_key is not set in the test env — but we
-    # got past the RBAC gate which is what this test is actually proving
-    assert resp.status_code in (200, 503)
+
+    assert resp.status_code == 200
+    assert resp.json()["url"] == "https://checkout.stripe.test/session"
+    # The gate opened *and* the handler ran with the caller's arguments.
+    assert create_session.call_args.args[1] == "price_test"
+
+
+@pytest.mark.asyncio
+async def test_checkout_reports_unconfigured_billing_rather_than_failing_open(
+    client: AsyncClient, seeded_db: dict
+):
+    """With no Stripe key, an owner gets 503 — not a crash, and not a
+    silent success."""
+    from app.api.v1 import billing
+    from app.main import app
+
+    _install_actor_override(app, seeded_db, "org:owner")
+    try:
+        with patch.object(billing.settings, "stripe_secret_key", ""):
+            resp = await client.post(
+                "/api/v1/billing/checkout",
+                params={
+                    "price_id": "price_test",
+                    "success_url": "https://ok",
+                    "cancel_url": "https://cancel",
+                },
+                headers={"Authorization": "Bearer dummy-jwt"},
+            )
+    finally:
+        _clear_actor_override(app)
+
+    assert resp.status_code == 503
 
 
 @pytest.mark.asyncio

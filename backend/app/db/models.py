@@ -537,8 +537,12 @@ class AgentBudget(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 class AISystem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """An AI system in the Article 26 deployer register.
 
-    Maps to one or more Parry agents via ``agent_ids``. Carries risk
-    classification per Annex III and tracks FRIA obligation status.
+    Arrives three ways, distinguished by ``origin``: declared by a human,
+    discovered by a probe, or observed via SDK traffic. Maps to zero or
+    more Parry agents via ``agent_ids`` — a discovered system with an
+    empty ``agent_ids`` is shadow AI, present but unmonitored.
+
+    Carries risk classification per Annex III and tracks FRIA status.
     """
 
     __tablename__ = "ai_systems"
@@ -548,8 +552,26 @@ class AISystem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    risk_level: Mapped[str] = mapped_column(String(16), nullable=False)
-    intended_purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    # 'unclassified' is the arrival state for discovered systems — a probe
+    # cannot infer an Annex III tier from an OAuth grant.
+    risk_level: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="unclassified", server_default="unclassified"
+    )
+    # Nullable for the same reason: probes cannot infer intended purpose.
+    intended_purpose: Mapped[str | None] = mapped_column(Text, nullable=True)
+    origin: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="declared", server_default="declared"
+    )
+    discovery_source: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    catalog_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_catalog_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    first_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="active", server_default="active"
+    )
+    deployment_context: Mapped[str | None] = mapped_column(Text, nullable=True)
     deployer_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_contact: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -570,12 +592,20 @@ class AISystem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     __table_args__ = (
         CheckConstraint(
-            "risk_level IN ('minimal', 'limited', 'high', 'unacceptable')",
+            "risk_level IN ('unclassified', 'minimal', 'limited', 'high', 'unacceptable')",
             name="ck_ai_systems_risk_level",
         ),
         CheckConstraint(
             "fria_status IN ('not_required', 'missing', 'draft', 'approved', 'stale')",
             name="ck_ai_systems_fria_status",
+        ),
+        CheckConstraint(
+            "origin IN ('declared', 'discovered', 'instrumented')",
+            name="ck_ai_systems_origin",
+        ),
+        CheckConstraint(
+            "status IN ('active', 'inactive', 'blocked', 'retired')",
+            name="ck_ai_systems_status",
         ),
     )
 
@@ -585,6 +615,10 @@ class AISystem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     fria_documents: Mapped[list["FRIADocument"]] = relationship(
         back_populates="system", cascade="all, delete-orphan", lazy="selectin"
     )
+    classifications: Mapped[list["RiskClassification"]] = relationship(
+        back_populates="system", cascade="all, delete-orphan"
+    )
+    catalog_entry: Mapped["AICatalogEntry | None"] = relationship()
 
 
 class AISystemSupplier(Base, UUIDPrimaryKeyMixin):
@@ -598,11 +632,16 @@ class AISystemSupplier(Base, UUIDPrimaryKeyMixin):
     system_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ai_systems.id", ondelete="CASCADE"), nullable=False
     )
+    # 'observed' rows come from agent_events; 'declared' rows come from the
+    # vendor catalog and have no usage timestamps until traffic confirms them.
+    source: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="observed", server_default="observed"
+    )
     supplier_name: Mapped[str] = mapped_column(Text, nullable=False)
     model_id: Mapped[str] = mapped_column(Text, nullable=False)
     model_version: Mapped[str | None] = mapped_column(Text, nullable=True)
-    first_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    first_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     event_count: Mapped[int] = mapped_column(
         BigInteger, nullable=False, default=0, server_default="0"
     )
@@ -612,12 +651,233 @@ class AISystemSupplier(Base, UUIDPrimaryKeyMixin):
 
     __table_args__ = (
         UniqueConstraint(
-            "system_id", "supplier_name", "model_id",
-            name="uq_ai_system_suppliers_system_supplier_model",
+            "system_id", "supplier_name", "model_id", "source",
+            name="uq_ai_system_suppliers_system_supplier_model_source",
+        ),
+        CheckConstraint(
+            "source IN ('observed', 'declared')", name="ck_ai_system_suppliers_source"
         ),
     )
 
     system: Mapped["AISystem"] = relationship(back_populates="suppliers")
+
+
+# ── Discovery: vendor catalog ────────────────────────────────────
+
+
+class AICatalogEntry(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """A known third-party AI service.
+
+    Global, NOT org-scoped — "what is Notion AI, which foundation models
+    does it use, does it train on customer data" is the same answer for
+    every tenant. Seeded from ``catalog/services.json``.
+    """
+
+    __tablename__ = "ai_catalog_entries"
+
+    service_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    vendor: Mapped[str] = mapped_column(String(255), nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    foundation_models: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default="{}"
+    )
+    oauth_app_ids: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default="{}"
+    )
+    trains_on_user_data: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    data_retention_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    has_enterprise_dpa: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    soc2_certified: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    default_risk_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    risk_tier_rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    privacy_policy_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    tos_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    last_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    verified_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("vendor", "service_name", name="uq_catalog_vendor_service"),
+        CheckConstraint(
+            "default_risk_tier IS NULL OR default_risk_tier IN "
+            "('minimal', 'limited', 'high', 'unacceptable')",
+            name="ck_catalog_default_risk_tier",
+        ),
+    )
+
+    domains: Mapped[list["CatalogDomain"]] = relationship(
+        back_populates="catalog_entry", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class CatalogDomain(Base, UUIDPrimaryKeyMixin):
+    """A domain owned by a catalog entry. Globally unique — one domain
+    cannot belong to two vendors, which is what makes domain → vendor
+    resolution a single indexed lookup for the network probe."""
+
+    __tablename__ = "catalog_domains"
+
+    catalog_entry_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ai_catalog_entries.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    domain: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    __table_args__ = (UniqueConstraint("domain", name="uq_catalog_domains_domain"),)
+
+    catalog_entry: Mapped["AICatalogEntry"] = relationship(back_populates="domains")
+
+
+# ── Discovery: probes ────────────────────────────────────────────
+
+
+class ProbeEvent(Base, UUIDPrimaryKeyMixin):
+    """One raw discovery signal, deduplicated by ``dedup_key``.
+
+    SSO grants are persistent, so their dedup key has no time component —
+    re-syncing Okta bumps ``hit_count`` rather than inserting duplicates.
+    """
+
+    __tablename__ = "probe_events"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    system_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_systems.id", ondelete="SET NULL"), nullable=True
+    )
+    probe_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    raw_payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    matched_catalog_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_catalog_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    dedup_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    hit_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "dedup_key", name="uq_probe_events_org_dedup"),
+        CheckConstraint(
+            "probe_type IN ('network', 'sso', 'browser')", name="ck_probe_events_type"
+        ),
+    )
+
+
+class ProbeCredential(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Connection config for one discovery probe.
+
+    ``encrypted_secret`` is ciphertext at rest — never expose it in a
+    response schema.
+    """
+
+    __tablename__ = "probe_credentials"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    probe_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")
+    encrypted_secret: Mapped[str] = mapped_column(String(2048), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_sync_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    last_sync_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "probe_type IN ('network', 'sso', 'browser')", name="ck_probe_credentials_type"
+        ),
+    )
+
+
+# ── Discovery: classification ────────────────────────────────────
+
+
+class RiskClassification(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Classification history behind ``ai_systems.risk_level``.
+
+    The system row holds the current effective tier; this table holds how
+    it was reached — catalog default, LLM draft, or human override — with
+    the reasoning and evidence that justify it to an auditor.
+    """
+
+    __tablename__ = "risk_classifications"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    system_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_systems.id", ondelete="CASCADE"), nullable=False
+    )
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    risk_tier: Mapped[str] = mapped_column(String(16), nullable=False)
+    confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reasoning: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_urls: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default="{}"
+    )
+    prompt_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Clerk user id, not an FK — Parry has no users table.
+    reviewed_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending_review", server_default="pending_review"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "source IN ('catalog', 'llm_draft', 'human_override')",
+            name="ck_risk_classifications_source",
+        ),
+        CheckConstraint(
+            "risk_tier IN ('minimal', 'limited', 'high', 'unacceptable')",
+            name="ck_risk_classifications_tier",
+        ),
+        CheckConstraint(
+            "status IN ('pending_review', 'approved', 'rejected')",
+            name="ck_risk_classifications_status",
+        ),
+    )
+
+    system: Mapped["AISystem"] = relationship(back_populates="classifications")
+
+
+class ConformityAssessment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Article 43 conformity assessment. Distinct obligation from the
+    Article 27 FRIA in ``fria_documents`` — both apply."""
+
+    __tablename__ = "conformity_assessments"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    system_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_systems.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="not_started", server_default="not_started"
+    )
+    template_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('not_started', 'in_review', 'compliant', 'non_compliant')",
+            name="ck_conformity_assessments_status",
+        ),
+    )
 
 
 class FRIADocument(Base, UUIDPrimaryKeyMixin):

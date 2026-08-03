@@ -14,6 +14,7 @@ from app.api.v1 import (
     compliance,
     custom_rules,
     detector_config,
+    discovery,
     events,
     incidents,
     mcp,
@@ -51,6 +52,7 @@ api_router.include_router(
     detector_config.router, prefix="/detector-config", tags=["detector-config"]
 )
 api_router.include_router(custom_rules.router, prefix="/custom-rules", tags=["custom-rules"])
+api_router.include_router(discovery.router, prefix="/discovery", tags=["discovery"])
 api_router.include_router(metrics_query.router, prefix="/metrics", tags=["metrics"])
 api_router.include_router(proxy.router, prefix="/proxy", tags=["proxy"])
 api_router.include_router(red_team.router, prefix="/red-team", tags=["red-team"])
