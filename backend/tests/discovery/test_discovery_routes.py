@@ -42,6 +42,7 @@ def _shadow_system(name: str = "Notion AI", risk: str = "limited") -> ShadowSyst
         risk_level="unclassified",
         proposed_risk_level=risk,
         proposed_reasoning="Default tier from the AI catalog.",
+        pending_classification_id=uuid.uuid4(),
         discovery_source="sso",
         first_seen_at=datetime(2026, 1, 5, tzinfo=UTC),
         last_seen_at=datetime(2026, 3, 1, tzinfo=UTC),

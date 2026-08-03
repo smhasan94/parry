@@ -126,6 +126,9 @@ class ShadowSystem:
     risk_level: str
     proposed_risk_level: str | None
     proposed_reasoning: str | None
+    # Identifies the row to approve or reject. Without it the UI would
+    # have to guess which proposal a system's tier came from.
+    pending_classification_id: uuid.UUID | None
     discovery_source: str | None
     first_seen_at: datetime | None
     last_seen_at: datetime | None
@@ -188,6 +191,7 @@ async def list_shadow_systems(
             AISystem,
             _latest_pending(RiskClassification.risk_tier).label("proposed_risk_level"),
             _latest_pending(RiskClassification.reasoning).label("proposed_reasoning"),
+            _latest_pending(RiskClassification.id).label("pending_classification_id"),
         )
         .where(*_shadow_filter(org_id))
         .order_by(AISystem.last_seen_at.desc().nullslast())
@@ -201,11 +205,12 @@ async def list_shadow_systems(
             risk_level=system.risk_level,
             proposed_risk_level=tier,
             proposed_reasoning=reasoning,
+            pending_classification_id=classification_id,
             discovery_source=system.discovery_source,
             first_seen_at=system.first_seen_at,
             last_seen_at=system.last_seen_at,
         )
-        for system, tier, reasoning in result.all()
+        for system, tier, reasoning, classification_id in result.all()
     ]
 
 

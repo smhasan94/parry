@@ -21,12 +21,14 @@ from app.schemas.compliance import (
     AISystemUpdate,
     AuditorBundleRequest,
     AuditorBundleStatusResponse,
+    ClassificationRejectRequest,
     FRIAApproveRequest,
     FRIACreateRequest,
     FRIAResponse,
     FRIAUpdateRequest,
     ObligationResponse,
     PostureResponse,
+    RiskClassificationResponse,
     SeriousIncidentCreateRequest,
     SeriousIncidentResponse,
     SeriousIncidentUpdateRequest,
@@ -35,6 +37,7 @@ from app.schemas.compliance import (
 from app.services import (
     ai_system_service,
     audit_service,
+    classification_service,
     fria_service,
     plan_service,
     serious_incident_service,
@@ -113,9 +116,7 @@ async def create_system(
 ) -> AISystemResponse:
     org, actor = org_actor
     plan_service.require_feature(org, "ai_system_register")
-    system = await ai_system_service.create_system(
-        db, org.id, **body.model_dump()
-    )
+    system = await ai_system_service.create_system(db, org.id, **body.model_dump())
     await audit_service.log_action(
         db,
         org_id=org.id,
@@ -565,3 +566,70 @@ async def generate_auditor_bundle(
         job_id=job_id,
         status="queued",
     )
+
+
+# ── Risk Classification Review ──────────────────────────────────
+
+
+@router.get(
+    "/classifications",
+    response_model=list[RiskClassificationResponse],
+)
+async def list_pending_classifications(
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.VIEWER)),
+    db: AsyncSession = Depends(get_db),
+    limit: int = Query(100, ge=1, le=500),
+) -> list[RiskClassificationResponse]:
+    """The review queue — proposed tiers nobody has ruled on yet."""
+    org, _ = org_actor
+    pending = await classification_service.list_pending(db, org_id=org.id, limit=limit)
+    return [RiskClassificationResponse.model_validate(c) for c in pending]
+
+
+@router.post(
+    "/classifications/{classification_id}/approve",
+    response_model=RiskClassificationResponse,
+)
+async def approve_classification(
+    classification_id: uuid.UUID,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> RiskClassificationResponse:
+    """Ratify a proposed tier, making it the system's tier of record.
+
+    Promotes the tier onto the AI system and re-derives the Article 27
+    FRIA obligation, so a high-risk approval immediately shows up as an
+    outstanding FRIA in the compliance posture.
+    """
+    org, actor = org_actor
+    approved = await classification_service.approve(
+        db,
+        org_id=org.id,
+        classification_id=classification_id,
+        reviewed_by=actor.actor_id or "unknown",
+    )
+    await db.commit()
+    return RiskClassificationResponse.model_validate(approved)
+
+
+@router.post(
+    "/classifications/{classification_id}/reject",
+    response_model=RiskClassificationResponse,
+)
+async def reject_classification(
+    classification_id: uuid.UUID,
+    body: ClassificationRejectRequest | None = None,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> RiskClassificationResponse:
+    """Decline a proposed tier. The system keeps whatever tier it had."""
+    org, actor = org_actor
+    rejected = await classification_service.reject(
+        db,
+        org_id=org.id,
+        classification_id=classification_id,
+        reviewed_by=actor.actor_id or "unknown",
+        reason=body.reason if body else None,
+    )
+    await db.commit()
+    return RiskClassificationResponse.model_validate(rejected)

@@ -56,6 +56,8 @@ class ShadowSystemResponse(BaseModel):
     # suggestion as an approved Annex III classification.
     proposed_risk_level: str | None = None
     proposed_reasoning: str | None = None
+    # The classification to approve or reject, when one is pending.
+    pending_classification_id: uuid.UUID | None = None
     # What to render, and whether to mark it as unreviewed.
     effective_risk_level: str
     is_proposed: bool
