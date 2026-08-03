@@ -7,12 +7,15 @@ in the agent path.
 
 from __future__ import annotations
 
+import uuid
+
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor
+from app.core.exceptions import ConfigurationError
 from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.db.session import get_db
@@ -23,13 +26,16 @@ from app.discovery.okta import (
 )
 from app.discovery.sso_probe import ProcessingResult, SSOProbeProcessor
 from app.schemas.discovery import (
+    ProbeCredentialCreate,
+    ProbeCredentialResponse,
+    ProbeCredentialRotate,
     ShadowAIResponse,
     ShadowSystemResponse,
     SSOIngestRequest,
     SSOSyncRequest,
     SSOSyncResponse,
 )
-from app.services import audit_service, discovery_service
+from app.services import audit_service, discovery_service, probe_credential_service
 
 log = structlog.get_logger()
 router = APIRouter()
@@ -138,3 +144,114 @@ async def _log_sync(
         },
         obligation_ids=["art_26_1_deployer_register"],
     )
+
+
+# ── Probe Credentials ───────────────────────────────────────────
+
+
+@router.post("/credentials", response_model=ProbeCredentialResponse, status_code=201)
+async def create_credential(
+    payload: ProbeCredentialCreate,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> ProbeCredentialResponse:
+    """Store a credential so discovery can run on a schedule.
+
+    The secret is encrypted before it reaches the database and is never
+    returned by any endpoint.
+    """
+    org, actor = org_actor
+    try:
+        credential = await probe_credential_service.create(
+            db,
+            org_id=org.id,
+            probe_type=payload.probe_type,
+            provider=payload.provider,
+            label=payload.label,
+            secret=payload.secret,
+            config=payload.config,
+        )
+    except ConfigurationError as exc:
+        # The deployment is missing a key — an operator problem, not the
+        # caller's, and not something to answer with a 500.
+        log.error("probe_credential.unconfigured", org_id=str(org.id))
+        raise HTTPException(
+            status_code=503,
+            detail={"detail": str(exc), "code": "CREDENTIAL_STORAGE_UNAVAILABLE"},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail={"detail": str(exc), "code": "INVALID_CREDENTIAL"}
+        ) from exc
+
+    await audit_service.log_action(
+        db,
+        org.id,
+        "probe_credential.created",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="probe_credential",
+        resource_id=str(credential.id),
+        details={"provider": payload.provider, "label": payload.label},
+    )
+    await db.commit()
+    return ProbeCredentialResponse.model_validate(credential)
+
+
+@router.get("/credentials", response_model=list[ProbeCredentialResponse])
+async def list_credentials(
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.VIEWER)),
+    db: AsyncSession = Depends(get_db),
+) -> list[ProbeCredentialResponse]:
+    """Registered credentials, with their last sync outcome."""
+    org, _ = org_actor
+    credentials = await probe_credential_service.list_for_org(db, org_id=org.id)
+    return [ProbeCredentialResponse.model_validate(c) for c in credentials]
+
+
+@router.post("/credentials/{credential_id}/rotate", response_model=ProbeCredentialResponse)
+async def rotate_credential(
+    credential_id: uuid.UUID,
+    payload: ProbeCredentialRotate,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> ProbeCredentialResponse:
+    """Replace the stored token, e.g. after rotating it in Okta."""
+    org, actor = org_actor
+    credential = await probe_credential_service.rotate_secret(
+        db, org_id=org.id, credential_id=credential_id, secret=payload.secret
+    )
+    await audit_service.log_action(
+        db,
+        org.id,
+        "probe_credential.rotated",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="probe_credential",
+        resource_id=str(credential_id),
+    )
+    await db.commit()
+    return ProbeCredentialResponse.model_validate(credential)
+
+
+@router.delete("/credentials/{credential_id}", status_code=204)
+async def delete_credential(
+    credential_id: uuid.UUID,
+    org_actor: tuple[Org, Actor] = Depends(require_role(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    org, actor = org_actor
+    await probe_credential_service.delete(db, org_id=org.id, credential_id=credential_id)
+    await audit_service.log_action(
+        db,
+        org.id,
+        "probe_credential.deleted",
+        actor_type=actor.actor_type,
+        actor_id=actor.actor_id,
+        actor_label=actor.label,
+        resource_type="probe_credential",
+        resource_id=str(credential_id),
+    )
+    await db.commit()

@@ -70,3 +70,45 @@ class ShadowAIResponse(BaseModel):
     total: int
     by_risk_level: dict[str, int]
     systems: list[ShadowSystemResponse]
+
+
+# ── Probe Credentials ───────────────────────────────────────────
+
+
+class ProbeCredentialCreate(BaseModel):
+    """Register a stored credential for scheduled discovery.
+
+    ``secret`` is write-only — it is encrypted on arrival and never
+    appears in any response.
+    """
+
+    probe_type: str = Field(pattern=r"^(network|sso|browser)$", examples=["sso"])
+    provider: str = Field(min_length=1, max_length=50, examples=["okta"])
+    label: str = Field(min_length=1, max_length=255, examples=["Acme Okta"])
+    secret: str = Field(min_length=1, repr=False)
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProbeCredentialRotate(BaseModel):
+    secret: str = Field(min_length=1, repr=False)
+
+
+class ProbeCredentialResponse(BaseModel):
+    """Everything about a credential except the credential.
+
+    Deliberately has no field for the secret or its ciphertext — the
+    absence is the safeguard, so adding one is a visible change.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    probe_type: str
+    provider: str
+    label: str
+    config: dict[str, Any]
+    is_active: bool
+    last_sync_at: datetime | None
+    last_sync_status: str | None
+    last_sync_error: str | None
+    created_at: datetime
