@@ -522,6 +522,19 @@ class ApiClient {
     return this.request(`/api/v1/discovery/shadow?limit=${limit}`);
   }
 
+  async approveClassification(id: string): Promise<unknown> {
+    return this.request(`/api/v1/compliance/classifications/${id}/approve`, {
+      method: "POST",
+    });
+  }
+
+  async rejectClassification(id: string, reason?: string): Promise<unknown> {
+    return this.request(`/api/v1/compliance/classifications/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason ?? null }),
+    });
+  }
+
   async syncOkta(
     oktaDomain: string,
     apiToken: string,
