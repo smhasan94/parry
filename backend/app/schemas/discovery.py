@@ -49,7 +49,16 @@ class ShadowSystemResponse(BaseModel):
     id: uuid.UUID
     name: str
     provider_name: str | None
+    # The approved tier. Stays 'unclassified' until a human signs off.
     risk_level: str
+    # What the catalog suggested, still awaiting review. Surfaced so the
+    # UI can show what is already known without presenting a machine's
+    # suggestion as an approved Annex III classification.
+    proposed_risk_level: str | None = None
+    proposed_reasoning: str | None = None
+    # What to render, and whether to mark it as unreviewed.
+    effective_risk_level: str
+    is_proposed: bool
     discovery_source: str | None
     first_seen_at: datetime | None
     last_seen_at: datetime | None

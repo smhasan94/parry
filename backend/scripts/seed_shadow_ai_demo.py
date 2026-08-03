@@ -78,11 +78,20 @@ async def main(clerk_org_id: str) -> int:
             shadow = await discovery_service.list_shadow_systems(db, org_id=org.id)
             summary = await discovery_service.shadow_summary(db, org_id=org.id)
 
-            print(f"\nShadow AI — {summary['total']} systems nothing is monitoring:")
+            high = summary["by_risk_level"].get("high", 0)
+            headline = f"\nShadow AI — {summary['total']} systems nothing is monitoring"
+            if high:
+                headline += f", {high} of them high risk"
+            print(headline + ":")
+
             for s in shadow:
                 seen = s.last_seen_at.date().isoformat() if s.last_seen_at else "never"
-                print(f"  {s.risk_level:<14} {s.name:<26} {s.provider_name or '—':<28} {seen}")
+                tier = s.effective_risk_level + ("*" if s.is_proposed else "")
+                print(f"  {tier:<14} {s.name:<26} {s.provider_name or '—':<28} {seen}")
+
             print(f"\nby risk tier: {summary['by_risk_level']}")
+            if any(s.is_proposed for s in shadow):
+                print("* proposed from the vendor catalog, pending human review")
             print("\nDashboard: /shadow-ai")
     finally:
         await engine.dispose()

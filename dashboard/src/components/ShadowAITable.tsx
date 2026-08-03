@@ -16,15 +16,33 @@ const RISK_STYLES: Record<string, string> = {
   unacceptable: "bg-red-600 text-white dark:bg-red-700",
 };
 
-function RiskBadge({ level }: { level: string }) {
+function RiskBadge({
+  level,
+  proposed = false,
+  reasoning,
+}: {
+  level: string;
+  proposed?: boolean;
+  reasoning?: string | null;
+}) {
   return (
-    <span
-      data-risk={level}
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-        RISK_STYLES[level] ?? RISK_STYLES.unclassified
-      }`}
-    >
-      {RISK_LABELS[level] ?? level}
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        data-risk={level}
+        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+          RISK_STYLES[level] ?? RISK_STYLES.unclassified
+        } ${proposed ? "ring-1 ring-inset ring-current/30" : ""}`}
+        title={reasoning ?? undefined}
+      >
+        {RISK_LABELS[level] ?? level}
+      </span>
+      {/* A catalog suggestion is not an approved Annex III classification.
+          Show what is known, but never let it read as a decision. */}
+      {proposed && (
+        <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+          pending review
+        </span>
+      )}
     </span>
   );
 }
@@ -60,7 +78,11 @@ export function ShadowAITable({ systems }: { systems: ShadowSystem[] }) {
                 {s.provider_name ?? "—"}
               </td>
               <td className="py-2 pr-4">
-                <RiskBadge level={s.risk_level} />
+                <RiskBadge
+                  level={s.effective_risk_level}
+                  proposed={s.is_proposed}
+                  reasoning={s.proposed_reasoning}
+                />
               </td>
               <td className="py-2 pr-4 text-zinc-600 dark:text-zinc-400">
                 {s.discovery_source ?? "—"}

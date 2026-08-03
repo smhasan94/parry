@@ -85,12 +85,33 @@ async def test_every_discovered_system_is_unmonitored(db: AsyncSession):
     org = await _run(db)
 
     shadow = await discovery_service.list_shadow_systems(db, org_id=org.id)
-
     assert shadow
-    for system in shadow:
+    assert {s.discovery_source for s in shadow} == {"sso"}
+
+    # origin and agent_ids are register invariants rather than display
+    # fields, so check them on the rows themselves.
+    listed = {s.id for s in shadow}
+    systems = (await db.execute(select(AISystem).where(AISystem.id.in_(listed)))).scalars().all()
+    assert len(systems) == len(listed)
+    for system in systems:
         assert system.origin == "discovered"
         assert system.agent_ids == []
-        assert system.discovery_source == "sso"
+
+
+@pytest.mark.asyncio
+async def test_demo_flags_high_risk_hiring_tools_without_a_human_review(db: AsyncSession):
+    org = await _run(db)
+
+    shadow = await discovery_service.list_shadow_systems(db, org_id=org.id)
+    high = {s.name for s in shadow if s.effective_risk_level == "high"}
+
+    # The demo's opening line: Annex III employment screening, flagged
+    # from the catalog, awaiting review, monitored by nothing.
+    assert {"HireVue", "Eightfold AI"} <= high
+    for row in shadow:
+        if row.name in high:
+            assert row.is_proposed is True
+            assert row.risk_level == "unclassified"
 
 
 @pytest.mark.asyncio

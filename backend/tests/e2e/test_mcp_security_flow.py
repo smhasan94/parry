@@ -150,9 +150,7 @@ async def test_mcp_patch_trust_level(
 
 
 @pytest.mark.asyncio
-async def test_mcp_manifest_drift_detected(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_mcp_manifest_drift_detected(client: AsyncClient, seeded_db: dict):
     """Re-registering the same server URI with a changed manifest sets manifest_changed=True."""
     seeded_db["org"].plan = Plan.GROWTH
 

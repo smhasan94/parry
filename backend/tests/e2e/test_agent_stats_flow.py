@@ -12,9 +12,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_agent_stats_returns_expected_keys(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_agent_stats_returns_expected_keys(admin_client: AsyncClient, seeded_db: dict):
     """Stats endpoint returns all required top-level keys."""
     agent_id = str(seeded_db["agent"].id)
 
@@ -31,9 +29,7 @@ async def test_agent_stats_returns_expected_keys(
 
 
 @pytest.mark.asyncio
-async def test_agent_stats_7d_and_90d_windows(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_agent_stats_7d_and_90d_windows(admin_client: AsyncClient, seeded_db: dict):
     """All three time-windows succeed and return the same shape."""
     agent_id = str(seeded_db["agent"].id)
 
@@ -45,9 +41,7 @@ async def test_agent_stats_7d_and_90d_windows(
 
 
 @pytest.mark.asyncio
-async def test_agent_stats_invalid_window(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_agent_stats_invalid_window(admin_client: AsyncClient, seeded_db: dict):
     """A bad window value should be rejected (422 or 400)."""
     agent_id = str(seeded_db["agent"].id)
     resp = await admin_client.get(f"/api/v1/agents/{agent_id}/stats?window=1y")
@@ -55,9 +49,7 @@ async def test_agent_stats_invalid_window(
 
 
 @pytest.mark.asyncio
-async def test_agent_stats_wrong_org_404(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_agent_stats_wrong_org_404(admin_client: AsyncClient, seeded_db: dict):
     """Requesting stats for a non-existent agent returns 404."""
     import uuid
 
@@ -66,9 +58,7 @@ async def test_agent_stats_wrong_org_404(
 
 
 @pytest.mark.asyncio
-async def test_get_agent_includes_health_score(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_get_agent_includes_health_score(admin_client: AsyncClient, seeded_db: dict):
     """GET /agents/{id} response carries health_score and health_grade."""
     agent_id = str(seeded_db["agent"].id)
 
@@ -83,9 +73,7 @@ async def test_get_agent_includes_health_score(
 
 
 @pytest.mark.asyncio
-async def test_list_agents_includes_health_fields(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_list_agents_includes_health_fields(admin_client: AsyncClient, seeded_db: dict):
     """GET /agents list returns health_score / health_grade on each item."""
     resp = await admin_client.get("/api/v1/agents")
     assert resp.status_code == 200, resp.text

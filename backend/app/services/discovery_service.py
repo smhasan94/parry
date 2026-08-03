@@ -10,6 +10,7 @@ human to approve, not a compliance fact.
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
@@ -107,42 +108,123 @@ async def reconcile_ai_system(
     return system
 
 
+@dataclass(frozen=True)
+class ShadowSystem:
+    """A discovered, unmonitored system plus the tier the catalog proposed.
+
+    ``risk_level`` is what a human approved; ``proposed_risk_level`` is
+    what the catalog suggested and nobody has ruled on yet. Keeping them
+    apart matters — the register must never present a machine's guess as
+    an approved Annex III classification — but hiding the proposal made
+    every discovered system render as "unclassified" when the catalog had
+    already flagged some of them as high risk.
+    """
+
+    id: uuid.UUID
+    name: str
+    provider_name: str | None
+    risk_level: str
+    proposed_risk_level: str | None
+    proposed_reasoning: str | None
+    discovery_source: str | None
+    first_seen_at: datetime | None
+    last_seen_at: datetime | None
+
+    @property
+    def effective_risk_level(self) -> str:
+        """The tier to display: an approved one if it exists, else the
+        proposal, else nothing known."""
+        if self.risk_level != "unclassified":
+            return self.risk_level
+        return self.proposed_risk_level or "unclassified"
+
+    @property
+    def is_proposed(self) -> bool:
+        """True when the displayed tier is awaiting human review."""
+        return self.risk_level == "unclassified" and self.proposed_risk_level is not None
+
+
+def _latest_pending(column: Any) -> Any:
+    """Correlated lookup of the newest pending classification for a system.
+
+    Rejected and approved rows are excluded: a rejected proposal is one a
+    human already declined, and re-suggesting it would be noise.
+    """
+    return (
+        select(column)
+        .where(
+            RiskClassification.system_id == AISystem.id,
+            RiskClassification.status == "pending_review",
+        )
+        .order_by(RiskClassification.created_at.desc())
+        .limit(1)
+        .correlate(AISystem)
+        .scalar_subquery()
+    )
+
+
+def _shadow_filter(org_id: uuid.UUID) -> list[Any]:
+    return [
+        AISystem.org_id == org_id,
+        AISystem.origin == "discovered",
+        func.cardinality(AISystem.agent_ids) == 0,
+        AISystem.status == "active",
+    ]
+
+
 async def list_shadow_systems(
     db: AsyncSession,
     *,
     org_id: uuid.UUID,
     limit: int = 100,
-) -> list[AISystem]:
+) -> list[ShadowSystem]:
     """Systems a probe found that no Parry agent covers.
 
     The whole point of the discovery layer: present in the environment,
     invisible to runtime monitoring.
     """
     result = await db.execute(
-        select(AISystem)
-        .where(
-            AISystem.org_id == org_id,
-            AISystem.origin == "discovered",
-            func.cardinality(AISystem.agent_ids) == 0,
-            AISystem.status == "active",
+        select(
+            AISystem,
+            _latest_pending(RiskClassification.risk_tier).label("proposed_risk_level"),
+            _latest_pending(RiskClassification.reasoning).label("proposed_reasoning"),
         )
+        .where(*_shadow_filter(org_id))
         .order_by(AISystem.last_seen_at.desc().nullslast())
         .limit(limit)
     )
-    return list(result.scalars().all())
+    return [
+        ShadowSystem(
+            id=system.id,
+            name=system.name,
+            provider_name=system.provider_name,
+            risk_level=system.risk_level,
+            proposed_risk_level=tier,
+            proposed_reasoning=reasoning,
+            discovery_source=system.discovery_source,
+            first_seen_at=system.first_seen_at,
+            last_seen_at=system.last_seen_at,
+        )
+        for system, tier, reasoning in result.all()
+    ]
 
 
 async def shadow_summary(db: AsyncSession, *, org_id: uuid.UUID) -> dict[str, Any]:
-    """Counts for the dashboard header, by risk tier."""
+    """Counts for the dashboard header, by the tier that gets displayed.
+
+    Grouped on the effective tier rather than the stored one. Grouping on
+    the stored column put every discovered system in a single
+    'unclassified' bucket, which told the viewer nothing.
+    """
+    effective = func.coalesce(
+        func.nullif(AISystem.risk_level, "unclassified"),
+        _latest_pending(RiskClassification.risk_tier),
+        "unclassified",
+    )
     result = await db.execute(
-        select(AISystem.risk_level, func.count())
-        .where(
-            AISystem.org_id == org_id,
-            AISystem.origin == "discovered",
-            func.cardinality(AISystem.agent_ids) == 0,
-            AISystem.status == "active",
-        )
-        .group_by(AISystem.risk_level)
+        select(effective.label("tier"), func.count())
+        .where(*_shadow_filter(org_id))
+        .group_by(effective)
     )
     by_tier = {tier: count for tier, count in result.all()}
     return {"total": sum(by_tier.values()), "by_risk_level": by_tier}

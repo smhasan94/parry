@@ -39,9 +39,7 @@ async def test_webhook_endpoint_lifecycle(admin_client: AsyncClient, seeded_db: 
     assert resp.json()["description"] == "Updated description"
 
     # 4. Check delivery history (empty)
-    resp = await admin_client.get(
-        f"/api/v1/webhooks/endpoints/{endpoint_id}/deliveries"
-    )
+    resp = await admin_client.get(f"/api/v1/webhooks/endpoints/{endpoint_id}/deliveries")
     assert resp.status_code == 200
     assert resp.json() == []
 
