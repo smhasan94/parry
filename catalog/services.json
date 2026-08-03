@@ -1,0 +1,3964 @@
+[
+  {
+    "service_name": "15Five AI",
+    "vendor": "15Five",
+    "domains": [
+      "15five.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered performance management and employee feedback analytics platform. Used for internal engagement insights — NOT candidate screening or hiring decisions. No direct interaction with natural persons as an AI system, no autonomous high-stakes employment decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ABBYY Vantage",
+    "vendor": "ABBYY",
+    "domains": [
+      "abbyy.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "document_processing",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered intelligent document processing platform for OCR, classification, and data extraction. Operates as a backend document automation tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Abnormal Security",
+    "vendor": "Abnormal Security",
+    "domains": [
+      "abnormalsecurity.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_security",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-based email security platform that detects and blocks advanced email threats. Operates as a backend filtering service with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Ada AI",
+    "vendor": "Ada Support",
+    "domains": [
+      "ada.cx",
+      "www.ada.cx"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "customer_service_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered customer service automation platform. Classified as limited risk under EU AI Act Article 50 — customers interacting with Ada's AI agents must be informed they are engaging with an AI system. The platform automates customer conversations across channels, requiring consistent transparency disclosure across all touchpoints.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Adobe Firefly",
+    "vendor": "Adobe",
+    "domains": [
+      "firefly.adobe.com",
+      "adobe.com"
+    ],
+    "oauth_app_ids": [
+      "adobe-firefly"
+    ],
+    "foundation_models": [
+      "Firefly Image Model 3"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI image and content generation integrated into Adobe Creative Cloud. Limited risk under Article 50 — AI-generated content requires disclosure. Adobe applies Content Credentials (C2PA) metadata to AI-generated images. Trained on licensed and public domain content.",
+    "privacy_policy_url": "https://www.adobe.com/privacy/policy.html",
+    "tos_url": "https://www.adobe.com/legal/terms.html"
+  },
+  {
+    "service_name": "Aidoc",
+    "vendor": "Aidoc Medical Ltd.",
+    "domains": [
+      "aidoc.com",
+      "app.aidoc.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Aidoc provides FDA-cleared AI radiology solutions that flag acute abnormalities in medical imaging for prioritization. As an AI system intended to be used as a medical device for clinical decision support, it is classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Algolia AI",
+    "vendor": "Algolia",
+    "domains": [
+      "algolia.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "recommendation_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered recommendation engine for e-commerce and content platforms. Provides backend product and content recommendations without direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Algolia NeuralSearch",
+    "vendor": "Algolia",
+    "domains": [
+      "neuralsearch.algolia.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "search_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered neural search engine for enterprise and e-commerce search indexing. Operates as a backend search infrastructure service with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Amazon CodeWhisperer",
+    "vendor": "Amazon Web Services",
+    "domains": [
+      "aws.amazon.com",
+      "codewhisperer.aws"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Amazon CodeWhisperer proprietary"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered code generation and suggestion tool integrated into AWS developer tools. Classified as limited risk under EU AI Act Article 50 — AI-generated code must be transparently identified to developers. Professional tier does not use customer code for model training. Risk may increase if used in safety-critical software development.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Anyword",
+    "vendor": "Anyword",
+    "domains": [
+      "anyword.com",
+      "app.anyword.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "content_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI copywriting and performance prediction platform for marketing teams. Classified as limited risk under EU AI Act Article 50 — AI generates marketing copy and predicts performance, requiring transparency that content is AI-produced. AI-generated ad copy and landing page text must be disclosed.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Applitools",
+    "vendor": "Applitools",
+    "domains": [
+      "applitools.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "testing_qa",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered visual testing and monitoring platform for UI validation. Operates as a backend QA infrastructure tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Asana AI",
+    "vendor": "Asana",
+    "domains": [
+      "asana.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "productivity_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered task and project management features within Asana. Internal productivity tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Avoma",
+    "vendor": "Avoma",
+    "domains": [
+      "avoma.com",
+      "app.avoma.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "meeting_transcription",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI meeting assistant with transcription, summarization, and conversation intelligence. Classified as limited risk under EU AI Act Article 50 — participants must be informed that AI is recording and analyzing their conversations. AI-generated meeting insights and coaching recommendations require transparency about automated processing.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "AWS CodeGuru",
+    "vendor": "Amazon Web Services",
+    "domains": [
+      "codeguru.aws.amazon.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "cloud_optimization",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered code review and application performance profiling service. Operates as a backend developer tool analyzing code quality and runtime performance. No direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Axon AI",
+    "vendor": "Axon Enterprise, Inc.",
+    "domains": [
+      "axon.com",
+      "my.axon.com",
+      "evidence.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "law_enforcement_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 6(a) and 6(d). Axon AI provides AI-powered tools for law enforcement including automated report drafting from body camera footage, evidence analysis, and real-time operational intelligence. AI systems used by law enforcement authorities for evidence evaluation and profiling of natural persons in criminal investigations are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Azure Advisor AI",
+    "vendor": "Microsoft",
+    "domains": [
+      "azure.microsoft.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "cloud_optimization",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven cloud resource optimization and best practice recommendations within Azure. Operates as a backend infrastructure advisory tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "BambooHR AI",
+    "vendor": "BambooHR",
+    "domains": [
+      "bamboohr.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI features within BambooHR for internal HR data analytics, reporting, and employee lifecycle management. Used for aggregate HR operations — NOT candidate screening or hiring decisions. No direct interaction with natural persons as an AI system, no autonomous high-stakes employment decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Barracuda AI",
+    "vendor": "Barracuda Networks",
+    "domains": [
+      "barracuda.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_security",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered email spam and threat filtering operating as a backend security service. No direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Beamery",
+    "vendor": "Beamery, Inc.",
+    "domains": [
+      "beamery.com",
+      "app.beamery.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a). Beamery provides an AI-powered talent lifecycle management platform used for candidate sourcing, screening, and workforce planning. AI systems intended for screening or filtering applications in recruitment are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Beautiful.ai",
+    "vendor": "Beautiful.ai",
+    "domains": [
+      "beautiful.ai",
+      "www.beautiful.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Beautiful.ai proprietary"
+    ],
+    "category": "presentation_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered presentation design tool with smart templates and layout suggestions. Minimal risk — AI features assist with visual layout and design choices without autonomous decision-making or interaction with external parties.",
+    "privacy_policy_url": "https://www.beautiful.ai/privacy-policy",
+    "tos_url": "https://www.beautiful.ai/terms-of-service"
+  },
+  {
+    "service_name": "Bloomreach",
+    "vendor": "Bloomreach",
+    "domains": [
+      "bloomreach.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "recommendation_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered commerce search and merchandising recommendation engine. Provides backend product discovery and recommendations without direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "BriefCam",
+    "vendor": "BriefCam Ltd. (Canon Group)",
+    "domains": [
+      "briefcam.com",
+      "app.briefcam.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "law_enforcement_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 1(a) and Section 6(a). BriefCam provides AI-powered video analytics with facial recognition, appearance search, and behavioural analysis for surveillance and law enforcement. AI systems intended for biometric identification of natural persons and those used by law enforcement for surveillance and investigation are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Butterfly Network AI",
+    "vendor": "Butterfly Network, Inc.",
+    "domains": [
+      "butterflynetwork.com",
+      "app.butterflynetwork.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Butterfly Network provides AI-powered handheld ultrasound imaging with automated image interpretation and clinical guidance. As an AI system integrated into a medical device used for diagnostic imaging, it is classified as high-risk per Regulation (EU) 2017/745.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Calendly AI",
+    "vendor": "Calendly",
+    "domains": [
+      "calendly.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "scheduling",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-enhanced meeting scheduling and availability management platform. Operates as a backend scheduling coordination tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Canva AI",
+    "vendor": "Canva",
+    "domains": [
+      "canva.com",
+      "www.canva.com"
+    ],
+    "oauth_app_ids": [
+      "canva"
+    ],
+    "foundation_models": [
+      "Stable Diffusion",
+      "Canva proprietary"
+    ],
+    "category": "design_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-assisted design tool with image generation, text suggestions, and layout recommendations. Minimal risk — AI features are supplementary to a design platform and do not make autonomous decisions or interact with third parties.",
+    "privacy_policy_url": "https://www.canva.com/policies/privacy-policy/",
+    "tos_url": "https://www.canva.com/policies/terms-of-use/"
+  },
+  {
+    "service_name": "Casetext CoCounsel",
+    "vendor": "Thomson Reuters (Casetext Inc.)",
+    "domains": [
+      "casetext.com",
+      "app.casetext.com",
+      "cocounsel.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "legal_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI legal research assistant powered by LLMs for case law analysis, document review, and legal drafting. Subject to EU AI Act Article 50 transparency obligations as an AI system interacting with legal professionals. Users must be informed outputs are AI-generated. Reclassification to high-risk may apply if used in judicial decision-making per Annex III.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Cerner AI",
+    "vendor": "Oracle Health (Cerner)",
+    "domains": [
+      "cerner.com",
+      "oracle.com/health",
+      "code.cerner.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Cerner (now Oracle Health) integrates AI for clinical decision support, predictive analytics for patient deterioration, and automated care pathway recommendations within EHR systems. AI systems used in clinical decision-making are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Character.ai",
+    "vendor": "Character Technologies",
+    "domains": [
+      "character.ai",
+      "beta.character.ai",
+      "old.character.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Character.ai proprietary"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI character roleplay and conversational platform. Classified as limited risk under EU AI Act Article 50 — users interact with AI-generated personas and must be clearly informed they are interacting with AI, not real individuals. The immersive persona design heightens the need for transparency disclosures to prevent user deception.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ChatGPT",
+    "vendor": "OpenAI",
+    "domains": [
+      "chat.openai.com",
+      "chatgpt.com",
+      "api.openai.com"
+    ],
+    "oauth_app_ids": [
+      "openai-chatgpt"
+    ],
+    "foundation_models": [
+      "GPT-4",
+      "GPT-4o",
+      "GPT-4o-mini",
+      "GPT-3.5-turbo"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose LLM chatbot. Classified as limited risk under EU AI Act Article 50 (transparency obligations for systems that interact with natural persons). May be reclassified as high-risk if used in a high-risk use case context (e.g., HR screening, medical advice).",
+    "privacy_policy_url": "https://openai.com/policies/privacy-policy",
+    "tos_url": "https://openai.com/policies/terms-of-use"
+  },
+  {
+    "service_name": "Claude",
+    "vendor": "Anthropic",
+    "domains": [
+      "claude.ai",
+      "api.anthropic.com"
+    ],
+    "oauth_app_ids": [
+      "anthropic-claude"
+    ],
+    "foundation_models": [
+      "Claude 3.5 Sonnet",
+      "Claude 3.5 Haiku",
+      "Claude 3 Opus"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose LLM chatbot with transparency obligations under EU AI Act Article 50. Users must be informed they are interacting with an AI system. Risk tier may increase depending on deployment context.",
+    "privacy_policy_url": "https://www.anthropic.com/privacy",
+    "tos_url": "https://www.anthropic.com/terms"
+  },
+  {
+    "service_name": "Clearview AI",
+    "vendor": "Clearview AI, Inc.",
+    "domains": [
+      "clearview.ai",
+      "app.clearview.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "biometric",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "unacceptable",
+    "risk_tier_rationale": "Prohibited under EU AI Act Article 5(1)(e). Clearview AI performs untargeted scraping of facial images from the internet to build a facial recognition database used for identification purposes. This constitutes the creation of facial recognition databases through untargeted scraping, which is explicitly banned.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ClickUp AI",
+    "vendor": "ClickUp",
+    "domains": [
+      "clickup.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "productivity_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI features within ClickUp productivity platform for task management and workflow automation. Internal productivity assistant with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Clockwise",
+    "vendor": "Clockwise",
+    "domains": [
+      "getclockwise.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "scheduling",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered calendar optimization and meeting scheduling assistant for internal time management. Operates as a backend scheduling tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Cognitec FaceVACS",
+    "vendor": "Cognitec Systems GmbH",
+    "domains": [
+      "cognitec.com",
+      "facevacs.cognitec.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "law_enforcement_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 1(a) and Section 6(b). Cognitec provides facial recognition technology used for biometric identification and verification by law enforcement and border control agencies. AI systems intended for biometric identification and categorisation of natural persons, and those used for post-remote biometric identification by law enforcement, are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Connected Papers",
+    "vendor": "Connected Papers Ltd.",
+    "domains": [
+      "connectedpapers.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "research_ai",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-driven visual tool for exploring academic paper relationships through similarity-based graph analysis. Classified as limited risk under EU AI Act Article 50 as an AI system generating automated research recommendations and relationship mappings. Users should be informed that paper connections are algorithmically determined.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Consensus AI",
+    "vendor": "Consensus NLP Inc.",
+    "domains": [
+      "consensus.app"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "research_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI search engine for scientific research that extracts and synthesizes findings from peer-reviewed papers. Classified as limited risk under EU AI Act Article 50, requiring transparency that synthesized answers and confidence indicators are AI-generated. Users must understand that outputs represent AI interpretation of source literature.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ContentBot",
+    "vendor": "ContentBot AI",
+    "domains": [
+      "contentbot.ai",
+      "app.contentbot.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI content automation platform for blog posts, newsletters, and marketing copy. Classified as limited risk under EU AI Act Article 50 — AI-generated written content intended for publication requires transparency disclosure. Automated content workflows increase the need for clear AI attribution.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Copy.ai",
+    "vendor": "Copy.ai",
+    "domains": [
+      "app.copy.ai",
+      "copy.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI copywriting and content generation tool for marketing teams. Minimal risk — generates marketing copy, social media posts, and product descriptions. No autonomous decision-making or interaction with external parties beyond the user.",
+    "privacy_policy_url": "https://www.copy.ai/privacy",
+    "tos_url": "https://www.copy.ai/terms"
+  },
+  {
+    "service_name": "Coveo AI",
+    "vendor": "Coveo",
+    "domains": [
+      "coveo.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "recommendation_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered enterprise search and recommendation platform. Provides backend content and product recommendations without direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "CrowdStrike Charlotte AI",
+    "vendor": "CrowdStrike Holdings Inc.",
+    "domains": [
+      "crowdstrike.com",
+      "falcon.crowdstrike.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "security_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "Generative AI security analyst embedded in the CrowdStrike Falcon platform for conversational threat analysis, automated incident summarization, and hunting query generation. Classified as limited risk under EU AI Act Article 50, requiring transparency that threat intelligence summaries and hunting recommendations are AI-generated. Security operators must be aware of the AI-driven nature of the analysis.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Culture Amp AI",
+    "vendor": "Culture Amp",
+    "domains": [
+      "cultureamp.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven employee engagement survey analytics and organizational insights platform. Used for aggregate people analytics — NOT candidate screening or hiring decisions. No direct interaction with natural persons as an AI system, no autonomous high-stakes employment decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Cursor",
+    "vendor": "Anysphere",
+    "domains": [
+      "cursor.sh",
+      "www.cursor.sh",
+      "cursor.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4",
+      "Claude",
+      "Cursor proprietary"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": 0,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered code editor with integrated LLM assistance. Limited risk due to transparency obligations. Sends codebase context to LLM providers for code generation, which may include proprietary source code. Enterprise plan offers privacy mode with no data retention.",
+    "privacy_policy_url": "https://cursor.sh/privacy",
+    "tos_url": "https://cursor.sh/terms"
+  },
+  {
+    "service_name": "DALL-E",
+    "vendor": "OpenAI",
+    "domains": [
+      "labs.openai.com"
+    ],
+    "oauth_app_ids": [
+      "openai-dalle"
+    ],
+    "foundation_models": [
+      "DALL-E 3",
+      "DALL-E 2"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI image generation system. Limited risk under Article 50 — outputs must be disclosed as AI-generated. Enterprise API does not use uploaded images for training. Deepfake and manipulation risks require transparency controls.",
+    "privacy_policy_url": "https://openai.com/policies/privacy-policy",
+    "tos_url": "https://openai.com/policies/terms-of-use"
+  },
+  {
+    "service_name": "Darktrace",
+    "vendor": "Darktrace plc",
+    "domains": [
+      "darktrace.com",
+      "clientportal.darktrace.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "security_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered cybersecurity platform using self-learning AI for network threat detection, autonomous response, and security posture assessment. Classified as limited risk under EU AI Act Article 50 as an AI system generating automated security alerts and response actions. Security teams must be aware that threat assessments and autonomous containment actions are AI-driven.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Datadog AI",
+    "vendor": "Datadog Inc.",
+    "domains": [
+      "datadoghq.com",
+      "app.datadoghq.com",
+      "api.datadoghq.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "devops_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered observability features within Datadog including Watchdog automated anomaly detection, AI-assisted log analysis, and natural language querying. Subject to EU AI Act Article 50 transparency obligations as an AI system generating automated alerts and root cause analyses. Operations teams must be informed that diagnostics are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Decktopus AI",
+    "vendor": "Decktopus Technology Inc.",
+    "domains": [
+      "decktopus.com",
+      "app.decktopus.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "presentation_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered presentation builder that generates slide decks with content, design, and speaker notes from prompts. Subject to EU AI Act Article 50 transparency obligations as an AI system generating text and visual content. Deployers should ensure audiences are informed when presentations are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "DeepL",
+    "vendor": "DeepL SE",
+    "domains": [
+      "deepl.com",
+      "www.deepl.com",
+      "api.deepl.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "DeepL proprietary"
+    ],
+    "category": "translation",
+    "trains_on_user_data": false,
+    "data_retention_days": 0,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered translation platform. Classified as limited risk under EU AI Act Article 50 — AI-generated translations are content produced by AI that users may rely on for business communications, contracts, or public-facing materials. Transparency about AI involvement in translation is required, especially for official or legal documents.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "DeepSeek Chat",
+    "vendor": "DeepSeek",
+    "domains": [
+      "chat.deepseek.com",
+      "deepseek.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "DeepSeek-V2",
+      "DeepSeek-R1"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose AI chatbot from Chinese AI lab. Classified as limited risk under EU AI Act Article 50 — users interact directly with an AI system and must be informed of this interaction. Additional data sovereignty considerations apply as data may be processed in jurisdictions outside the EU.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Descript",
+    "vendor": "Descript",
+    "domains": [
+      "descript.com",
+      "www.descript.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Descript proprietary"
+    ],
+    "category": "audio_video_editing",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered audio and video editing with voice cloning and transcription. Limited risk — voice cloning capabilities trigger Article 50 transparency requirements for synthetic media. Users must disclose AI-generated or AI-modified audio content.",
+    "privacy_policy_url": "https://www.descript.com/privacy",
+    "tos_url": "https://www.descript.com/terms"
+  },
+  {
+    "service_name": "Designify",
+    "vendor": "Kaleido AI GmbH",
+    "domains": [
+      "designify.com",
+      "api.designify.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "design_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered image editing and design automation tool that removes backgrounds, enhances photos, and generates design compositions. Subject to EU AI Act Article 50 transparency obligations as it manipulates and generates visual content, requiring disclosure to downstream consumers that the output involves AI processing.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Drift AI",
+    "vendor": "Salesloft",
+    "domains": [
+      "drift.com",
+      "app.drift.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "customer_service_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI conversational marketing and sales chatbot platform. Classified as limited risk under EU AI Act Article 50 — website visitors interacting with Drift chatbots must be informed they are communicating with AI. The sales-oriented AI interactions require transparency to prevent deception about the nature of the conversation.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Drift Intelligence",
+    "vendor": "Salesloft",
+    "domains": [
+      "salesloft.com",
+      "app.salesloft.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "sales_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered conversation intelligence and sales engagement analytics platform. Classified as limited risk under EU AI Act Article 50 — AI analyzes sales calls and generates automated insights, deal scores, and next-step recommendations. Transparency obligations apply as the system processes interactions with natural persons and generates AI-derived content for sales decisions.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Dynamic Yield",
+    "vendor": "Mastercard",
+    "domains": [
+      "dynamicyield.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "recommendation_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven personalization and recommendation platform for digital commerce. Operates as a backend recommendation service with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Eightfold AI",
+    "vendor": "Eightfold AI, Inc.",
+    "domains": [
+      "eightfold.ai",
+      "app.eightfold.ai",
+      "api.eightfold.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a) and 4(b). Eightfold AI provides a talent intelligence platform that uses AI for recruitment, talent management, and workforce planning decisions. AI systems used for making decisions on promotion, termination, task allocation, and monitoring of work-related contractual relationships are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Elastic AI",
+    "vendor": "Elastic",
+    "domains": [
+      "elastic.co"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "search_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-enhanced search and analytics engine for enterprise data indexing and retrieval. Operates as backend search infrastructure with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ElevenLabs",
+    "vendor": "ElevenLabs",
+    "domains": [
+      "elevenlabs.io",
+      "api.elevenlabs.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "ElevenLabs proprietary"
+    ],
+    "category": "video_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI voice synthesis and cloning platform. Classified as limited risk under EU AI Act Article 50 — synthetic voice generation requires transparency disclosure. Voice cloning capabilities present significant impersonation and deepfake audio risks, making transparency obligations particularly critical for this service.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Elicit",
+    "vendor": "Ought Inc.",
+    "domains": [
+      "elicit.com",
+      "elicit.org"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "research_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI research assistant that automates literature review, paper analysis, and research synthesis. Classified as limited risk under EU AI Act Article 50 as an AI system interacting with natural persons and generating synthesized research content. Users must be informed that summaries and analyses are AI-generated and should be verified against source material.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Emotion Recognition Workplace Monitor",
+    "vendor": "AffectiSense Corp",
+    "domains": [
+      "affectisense.com",
+      "monitor.affectisense.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "biometric",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "unacceptable",
+    "risk_tier_rationale": "Prohibited under EU AI Act Article 5(1)(f). Real-time emotion recognition systems deployed in the workplace are banned. This system infers emotions of employees in their place of work through biometric data analysis, which is explicitly prohibited unless for medical or safety reasons.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Epic AI",
+    "vendor": "Epic Systems Corporation",
+    "domains": [
+      "epic.com",
+      "userweb.epic.com",
+      "galaxy.epic.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Epic's AI modules include sepsis prediction, deterioration indices, and clinical decision support tools embedded in the EHR. AI systems used for clinical risk prediction and decision support in healthcare settings are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Fathom AI",
+    "vendor": "Fathom Video",
+    "domains": [
+      "fathom.video",
+      "app.fathom.video"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "meeting_transcription",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI meeting recording, transcription, and summarization tool. Classified as limited risk under EU AI Act Article 50 — meeting participants must be informed that AI is recording and processing their conversations. Transparency obligations apply as the system processes speech from natural persons who may not be aware of AI involvement.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Figma AI",
+    "vendor": "Figma Inc.",
+    "domains": [
+      "figma.com",
+      "api.figma.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "design_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered design features within Figma including auto-layout suggestions, content generation, and design-to-code assistance. Classified as limited risk under EU AI Act Article 50 as an AI system that interacts with natural persons, requiring transparency that AI-generated suggestions and content are machine-produced.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Fireflies.ai",
+    "vendor": "Fireflies",
+    "domains": [
+      "fireflies.ai",
+      "app.fireflies.ai"
+    ],
+    "oauth_app_ids": [
+      "fireflies-ai"
+    ],
+    "foundation_models": [
+      "Fireflies proprietary",
+      "GPT-4"
+    ],
+    "category": "meeting_transcription",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI meeting transcription, summarization, and action item extraction. Limited risk — records and processes meeting audio which may contain confidential business discussions. Transparency obligations apply as meeting participants must be informed of AI transcription.",
+    "privacy_policy_url": "https://fireflies.ai/privacy-policy",
+    "tos_url": "https://fireflies.ai/terms-of-service"
+  },
+  {
+    "service_name": "Flowrite",
+    "vendor": "Flowrite Oy",
+    "domains": [
+      "flowrite.com",
+      "app.flowrite.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI writing tool that generates email drafts and professional messages from brief instructions. Subject to EU AI Act Article 50 transparency obligations as an AI system generating text content directed at natural persons. Communication recipients should be informed when messages are AI-composed.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Flux",
+    "vendor": "Black Forest Labs",
+    "domains": [
+      "blackforestlabs.ai",
+      "fal.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "FLUX.1 Pro",
+      "FLUX.1 Dev",
+      "FLUX.1 Schnell"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI image generation model from Black Forest Labs. Classified as limited risk under EU AI Act Article 50 — AI-generated images are synthetic media requiring transparency disclosure. As both an API and open-weight model, deployers are responsible for ensuring generated content is labeled as AI-produced.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Framer AI",
+    "vendor": "Framer B.V.",
+    "domains": [
+      "framer.com",
+      "app.framer.com",
+      "api.framer.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "design_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered website design and generation tool that creates layouts, copy, and visual elements from text prompts. Subject to EU AI Act Article 50 transparency obligations as an AI system generating content that interacts with users, requiring disclosure of AI involvement in content creation.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Gamma",
+    "vendor": "Gamma Tech Inc.",
+    "domains": [
+      "gamma.app"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "presentation_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered presentation and document generation platform that creates slides, documents, and webpages from text prompts. Subject to EU AI Act Article 50 transparency obligations as an AI system generating content for natural persons. Recipients of the output should be informed that the content was AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Gemini",
+    "vendor": "Google",
+    "domains": [
+      "gemini.google.com",
+      "bard.google.com",
+      "generativelanguage.googleapis.com"
+    ],
+    "oauth_app_ids": [
+      "google-gemini"
+    ],
+    "foundation_models": [
+      "Gemini 1.5 Pro",
+      "Gemini 1.5 Flash",
+      "Gemini 1.0 Ultra"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose multimodal AI assistant. Limited risk classification under Article 50 transparency obligations. Google Workspace enterprise customers have separate data processing terms that prevent training on user data.",
+    "privacy_policy_url": "https://policies.google.com/privacy",
+    "tos_url": "https://policies.google.com/terms/generative-ai"
+  },
+  {
+    "service_name": "GitHub Copilot",
+    "vendor": "Microsoft",
+    "domains": [
+      "copilot.github.com",
+      "github.com",
+      "githubcopilot.com"
+    ],
+    "oauth_app_ids": [
+      "github-copilot"
+    ],
+    "foundation_models": [
+      "Codex",
+      "GPT-4"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": 0,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered code completion and generation tool. Classified as limited risk due to transparency obligations. Enterprise plan does not retain code snippets or use them for model training. Risk may increase if used in safety-critical software development.",
+    "privacy_policy_url": "https://docs.github.com/en/site-policy/privacy-policies/github-copilot-for-business-privacy-statement",
+    "tos_url": "https://github.com/customer-terms/github-copilot-product-specific-terms"
+  },
+  {
+    "service_name": "Glean AI",
+    "vendor": "Glean",
+    "domains": [
+      "glean.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "search_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered enterprise workplace search platform for internal knowledge discovery. Operates as a backend search and indexing tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Gong",
+    "vendor": "Gong.io",
+    "domains": [
+      "gong.io",
+      "app.gong.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "sales_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered revenue intelligence platform that records and analyzes sales conversations. Classified as limited risk under EU AI Act Article 50 — call participants must be informed that AI is recording and analyzing their conversations. AI-generated deal insights and coaching recommendations constitute automated content requiring transparency.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Google Cloud AI Recommendations",
+    "vendor": "Google Cloud",
+    "domains": [
+      "cloud.google.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "cloud_optimization",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered cloud infrastructure optimization recommendations for cost and performance. Operates as a backend infrastructure advisory tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Gradescope",
+    "vendor": "Turnitin, LLC",
+    "domains": [
+      "gradescope.com",
+      "app.gradescope.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "education_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 3(a). Gradescope uses AI-assisted grading to evaluate student submissions and assign scores. AI systems intended to evaluate learning outcomes, including those used to score assessments, are classified as high-risk as they directly affect educational progression.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Grammarly",
+    "vendor": "Grammarly",
+    "domains": [
+      "app.grammarly.com",
+      "grammarly.com",
+      "extension.grammarly.com"
+    ],
+    "oauth_app_ids": [
+      "grammarly"
+    ],
+    "foundation_models": [
+      "Grammarly proprietary"
+    ],
+    "category": "writing_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": 0,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered grammar and writing assistant. Minimal risk — performs text correction and style suggestions without interacting with third parties. Enterprise plan processes text transiently without storage or training. Browser extension requires monitoring for data exfiltration scope.",
+    "privacy_policy_url": "https://www.grammarly.com/privacy-policy",
+    "tos_url": "https://www.grammarly.com/terms"
+  },
+  {
+    "service_name": "Greenhouse AI",
+    "vendor": "Greenhouse Software, Inc.",
+    "domains": [
+      "greenhouse.io",
+      "app.greenhouse.io",
+      "api.greenhouse.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a). Greenhouse AI features include automated candidate scoring, interview scheduling optimization, and hiring decision support. AI systems intended for making decisions affecting recruitment and evaluation of candidates are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Grok",
+    "vendor": "xAI",
+    "domains": [
+      "grok.x.ai",
+      "x.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Grok-2",
+      "Grok-1.5"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose AI chatbot from xAI integrated into X (formerly Twitter). Classified as limited risk under EU AI Act Article 50 — users interact with an AI system that generates conversational responses and must be informed they are interacting with AI. Transparency obligations apply to all AI-generated content.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Harness AI",
+    "vendor": "Harness Inc.",
+    "domains": [
+      "harness.io",
+      "app.harness.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "devops_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-augmented software delivery platform with AI-assisted deployment verification, automated rollback recommendations, and pipeline optimization. Subject to EU AI Act Article 50 transparency obligations as an AI system generating deployment decisions and recommendations. Engineers must be informed that verification results and rollback suggestions are AI-driven.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Harvey AI",
+    "vendor": "Harvey AI Inc.",
+    "domains": [
+      "harvey.ai",
+      "app.harvey.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "legal_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI legal assistant for contract analysis, legal research, and document drafting. Classified as limited risk under EU AI Act Article 50 as an AI system interacting with natural persons in a professional context, requiring transparency that outputs are AI-generated. May require reclassification to high-risk if used in administration of justice or legal interpretation contexts per Annex III.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Height AI",
+    "vendor": "Height",
+    "domains": [
+      "height.app"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "project_management",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered autonomous project management tool for task organization and sprint planning. Internal project management assistant with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Hemingway AI",
+    "vendor": "Hemingway",
+    "domains": [
+      "hemingwayapp.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "writing_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-based readability and writing clarity analysis tool. Operates as an internal writing improvement assistant with no direct interaction with natural persons as an AI system in a regulated context, no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Hex AI",
+    "vendor": "Hex Technologies Inc.",
+    "domains": [
+      "hex.tech",
+      "app.hex.tech"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "data_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered data science and analytics notebook platform with Magic AI features for code generation and data exploration. Subject to EU AI Act Article 50 transparency obligations as an AI system generating code and analytical outputs. Users should be informed when outputs are AI-assisted.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "HeyGen",
+    "vendor": "HeyGen",
+    "domains": [
+      "heygen.com",
+      "app.heygen.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "HeyGen proprietary"
+    ],
+    "category": "video_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI avatar video generation platform for marketing and training videos. Limited risk under Article 50 — produces synthetic video with AI-generated human likenesses requiring transparency disclosure. Avatar cloning from real people raises deepfake and consent considerations.",
+    "privacy_policy_url": "https://www.heygen.com/privacy-policy",
+    "tos_url": "https://www.heygen.com/terms-of-service"
+  },
+  {
+    "service_name": "HireVue",
+    "vendor": "HireVue, Inc.",
+    "domains": [
+      "hirevue.com",
+      "app.hirevue.com",
+      "api.hirevue.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a). HireVue uses AI for recruitment and candidate screening, including video interview analysis. AI systems intended to be used for making decisions affecting recruitment or selection of natural persons, notably for screening or filtering applications and evaluating candidates, are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Hive AI",
+    "vendor": "Hive",
+    "domains": [
+      "hive.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "project_management",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-enhanced project management and collaboration platform for team productivity. Internal workflow management tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Hootsuite OwlyWriter",
+    "vendor": "Hootsuite Inc.",
+    "domains": [
+      "hootsuite.com",
+      "app.hootsuite.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "social_media_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI social media content generation tool within Hootsuite that creates captions, hashtags, and post suggestions. Subject to EU AI Act Article 50 transparency obligations as an AI system generating text content that interacts with natural persons on social platforms. Deployers should consider labeling AI-generated social posts.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Hyperscience",
+    "vendor": "Hyperscience",
+    "domains": [
+      "hyperscience.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "document_processing",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven intelligent document processing and data extraction automation platform. Operates as a backend document workflow tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Ideogram",
+    "vendor": "Ideogram AI",
+    "domains": [
+      "ideogram.ai",
+      "www.ideogram.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Ideogram 2.0"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI image generation platform with advanced text rendering in images. Classified as limited risk under EU AI Act Article 50 — AI-generated images must be disclosed as synthetic content. The realistic text rendering capability increases the potential for creating convincing synthetic documents or signage requiring transparency controls.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Intercom Fin",
+    "vendor": "Intercom",
+    "domains": [
+      "intercom.com",
+      "app.intercom.com",
+      "intercom.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "customer_service_ai",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered customer service chatbot that interacts directly with end users. Classified as limited risk under EU AI Act Article 50 — customers interacting with Fin must be informed they are communicating with an AI system, not a human agent. Transparency obligations are mandatory for all AI chatbot interactions with natural persons.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "InVideo AI",
+    "vendor": "InVideo",
+    "domains": [
+      "invideo.io",
+      "ai.invideo.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "video_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI video generation platform creating videos from text prompts. Classified as limited risk under EU AI Act Article 50 — AI-generated video content is synthetic media requiring disclosure. The platform's ability to produce marketing and social media videos at scale necessitates transparency about AI involvement in content creation.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Ironclad AI",
+    "vendor": "Ironclad Inc.",
+    "domains": [
+      "ironcladapp.com",
+      "app.ironcladapp.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "legal_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered contract lifecycle management platform with automated clause extraction, risk identification, and contract generation. Classified as limited risk under EU AI Act Article 50, requiring transparency that contract analysis and suggestions are AI-generated. Standard contract management use does not trigger Annex III high-risk classification.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Jasper",
+    "vendor": "Jasper AI",
+    "domains": [
+      "app.jasper.ai",
+      "jasper.ai"
+    ],
+    "oauth_app_ids": [
+      "jasper-ai"
+    ],
+    "foundation_models": [
+      "GPT-4",
+      "Claude",
+      "Jasper proprietary"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI marketing content generation platform. Limited risk due to AI-generated content transparency requirements under Article 50. Enterprise plan includes DPA with data isolation. Does not train on customer content.",
+    "privacy_policy_url": "https://www.jasper.ai/privacy",
+    "tos_url": "https://www.jasper.ai/terms"
+  },
+  {
+    "service_name": "Khroma",
+    "vendor": "Khroma",
+    "domains": [
+      "khroma.co"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "design_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI color palette generator that learns user preferences to suggest design color combinations. Subject to EU AI Act Article 50 transparency obligations as an AI system interacting with natural persons and generating design recommendations. Users should be informed that suggestions are AI-driven.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Kira Systems",
+    "vendor": "Litera (Kira Systems Inc.)",
+    "domains": [
+      "kirasystems.com",
+      "app.kirasystems.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "legal_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered contract analysis and due diligence platform using machine learning for clause extraction and document review. Classified as limited risk under EU AI Act Article 50, requiring transparency that extracted provisions and risk assessments are AI-generated. Standard due diligence use falls under limited risk with transparency obligations.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Kittl AI",
+    "vendor": "Kittl GmbH",
+    "domains": [
+      "kittl.com",
+      "app.kittl.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "design_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-assisted graphic design platform with AI image generation and text-to-design capabilities. Classified as limited risk under EU AI Act Article 50, which requires transparency when AI systems generate visual content. Users must be informed that designs and images are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Knewton (Alta)",
+    "vendor": "Wiley (Knewton)",
+    "domains": [
+      "knewton.com",
+      "alta.knewton.com",
+      "wileyplus.wiley.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "education_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 3(a). Knewton Alta uses adaptive learning AI to personalise educational content and assess student knowledge, directly influencing the level of education individuals receive. AI systems used for determining access to education or adapting the educational process are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "LanguageTool",
+    "vendor": "LanguageTooler GmbH",
+    "domains": [
+      "languagetool.org"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "writing_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered multilingual grammar and style checking tool. Operates as a backend text analysis service with no direct interaction with natural persons as an AI system in a regulated context, no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Lately AI",
+    "vendor": "Lately Inc.",
+    "domains": [
+      "lately.ai",
+      "app.lately.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "social_media_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered social media content platform that repurposes long-form content into social media posts using natural language processing. Classified as limited risk under EU AI Act Article 50, requiring transparency when AI-generated social content is published. Audiences should be informed that posts are machine-generated from source material.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Lattice AI",
+    "vendor": "Lattice",
+    "domains": [
+      "lattice.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered internal HR analytics for employee engagement and performance trend analysis. Used for aggregate people analytics — NOT candidate screening or hiring decisions. No direct interaction with natural persons as an AI system, no autonomous high-stakes employment decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Lavender AI",
+    "vendor": "Lavender AI Inc.",
+    "domains": [
+      "lavender.ai",
+      "app.lavender.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI email coaching and writing assistant that scores, optimizes, and generates sales emails. Subject to EU AI Act Article 50 transparency obligations as an AI system that generates text content interacting with natural persons. Recipients should be aware when email content is AI-assisted or AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "LawGeex",
+    "vendor": "LawGeex Ltd.",
+    "domains": [
+      "lawgeex.com",
+      "app.lawgeex.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "legal_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI contract review platform that automatically analyzes legal agreements against predefined policies. Subject to EU AI Act Article 50 transparency obligations as an AI system generating legal assessments. Users must be informed that contract reviews and risk scores are AI-produced rather than human legal opinions.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Leonardo AI",
+    "vendor": "Leonardo Interactive",
+    "domains": [
+      "leonardo.ai",
+      "app.leonardo.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Leonardo proprietary",
+      "Stable Diffusion"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI image generation platform focused on game assets, concept art, and creative content. Classified as limited risk under EU AI Act Article 50 — AI-generated images constitute synthetic media requiring disclosure. Generated visual assets must be identifiable as AI-produced, particularly when used in commercial or public-facing contexts.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Lilt",
+    "vendor": "Lilt",
+    "domains": [
+      "lilt.com",
+      "app.lilt.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Lilt proprietary"
+    ],
+    "category": "translation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered enterprise translation platform with adaptive machine translation. Classified as limited risk under EU AI Act Article 50 — AI-generated translations for enterprise content require transparency disclosure. The system adapts to customer-specific terminology, and translated outputs must be identified as AI-assisted.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Linear AI",
+    "vendor": "Linear",
+    "domains": [
+      "linear.app"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "project_management",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI features within Linear issue tracking platform for automated triage and workflow suggestions. Internal project management tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Looka",
+    "vendor": "Looka Inc.",
+    "domains": [
+      "looka.com",
+      "app.looka.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "design_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI logo and brand identity generator that creates visual designs from user preferences. Classified as limited risk under EU AI Act Article 50, requiring transparency that the generated logos and branding materials are AI-produced. No high-risk use case implications in standard deployment.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Loom AI",
+    "vendor": "Loom",
+    "domains": [
+      "loom.com",
+      "www.loom.com"
+    ],
+    "oauth_app_ids": [
+      "loom"
+    ],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "productivity_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI features within a video messaging platform — automatic transcription, chapter generation, and summary. Minimal risk — AI assists with content organization within the user's own video library without autonomous decision-making.",
+    "privacy_policy_url": "https://www.loom.com/privacy-policy",
+    "tos_url": "https://www.loom.com/terms-of-service"
+  },
+  {
+    "service_name": "LOVO AI",
+    "vendor": "LOVO Inc.",
+    "domains": [
+      "lovo.ai",
+      "app.lovo.ai",
+      "api.lovo.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "voice_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI voice generator and text-to-speech platform with voice cloning capabilities. Falls under limited risk per EU AI Act Article 50, which mandates transparency when AI systems generate or manipulate audio content. Deployers must ensure recipients are notified the content is AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Luma AI",
+    "vendor": "Luma AI",
+    "domains": [
+      "lumalabs.ai",
+      "dream-machine.lumalabs.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Dream Machine"
+    ],
+    "category": "video_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI video and 3D generation platform. Classified as limited risk under EU AI Act Article 50 — AI-generated video and 3D content constitutes synthetic media requiring transparency disclosure. Dream Machine produces realistic video from text prompts, triggering deepfake disclosure requirements.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Mabl",
+    "vendor": "Mabl",
+    "domains": [
+      "mabl.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "testing_qa",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven intelligent test automation platform for software quality assurance. Operates as a backend testing tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Make AI",
+    "vendor": "Celonis",
+    "domains": [
+      "make.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "productivity_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-enhanced visual workflow automation platform (formerly Integromat). Operates as a backend integration and automation tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Material Security",
+    "vendor": "Material Security",
+    "domains": [
+      "material.security"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_security",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered email data protection and threat remediation service. Operates as a backend security tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Mem AI",
+    "vendor": "Mem Labs",
+    "domains": [
+      "mem.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "note_taking",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered personal knowledge management and note-taking application. Operates as an internal note organization tool with no direct interaction with natural persons as an AI system, no synthetic content generation for external use, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Microsoft Copilot",
+    "vendor": "Microsoft",
+    "domains": [
+      "copilot.microsoft.com",
+      "www.bing.com",
+      "copilot.cloud.microsoft"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4",
+      "GPT-4o"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose AI chatbot integrated into Microsoft ecosystem. Classified as limited risk under EU AI Act Article 50 — users interact directly with an AI system and must be informed of this interaction. Transparency obligations apply to all AI-generated responses. Risk tier may increase if deployed in high-risk contexts such as HR decision support.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Midjourney",
+    "vendor": "Midjourney",
+    "domains": [
+      "midjourney.com",
+      "www.midjourney.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Midjourney v6"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": false,
+    "soc2_certified": false,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI image generation system. Limited risk under Article 50 — generated content must be labeled as AI-generated. Trains on user-generated images by default. No enterprise DPA available, which presents compliance concerns for organizations handling sensitive visual data.",
+    "privacy_policy_url": "https://docs.midjourney.com/docs/privacy-policy",
+    "tos_url": "https://docs.midjourney.com/docs/terms-of-service"
+  },
+  {
+    "service_name": "Mistral Le Chat",
+    "vendor": "Mistral AI",
+    "domains": [
+      "chat.mistral.ai",
+      "mistral.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Mistral Large",
+      "Mistral Medium",
+      "Mistral Small"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "General-purpose AI chatbot from European AI provider Mistral AI. Classified as limited risk under EU AI Act Article 50 — users interact with an AI system and must be informed of this interaction. As an EU-based provider, Mistral has proactively aligned with transparency obligations under the AI Act.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Mode AI",
+    "vendor": "ThoughtSpot Inc.",
+    "domains": [
+      "mode.com",
+      "app.mode.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "data_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "Collaborative analytics platform with AI-assisted data exploration and automated report generation. Classified as limited risk under EU AI Act Article 50, requiring transparency when AI-generated insights and visualizations are presented to users, so they can distinguish between human-authored and machine-generated analysis.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Monday AI",
+    "vendor": "monday.com",
+    "domains": [
+      "monday.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "productivity_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI features within Monday.com work management platform for task suggestions and workflow optimization. Internal productivity assistant with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Motion",
+    "vendor": "Motion",
+    "domains": [
+      "usemotion.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "scheduling",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered automatic task scheduling and calendar planning assistant. Operates as an internal time management tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Murf AI",
+    "vendor": "Murf AI",
+    "domains": [
+      "murf.ai",
+      "app.murf.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Murf proprietary"
+    ],
+    "category": "voice_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI text-to-speech and voice cloning platform. Limited risk under Article 50 — synthetic voice generation requires transparency disclosure. Voice cloning capabilities present impersonation risks that require appropriate controls.",
+    "privacy_policy_url": "https://murf.ai/privacy",
+    "tos_url": "https://murf.ai/terms"
+  },
+  {
+    "service_name": "Nanonets",
+    "vendor": "Nanonets",
+    "domains": [
+      "nanonets.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "document_processing",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered document OCR and data extraction platform for automating document workflows. Operates as a backend document processing tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "NightCafe",
+    "vendor": "NightCafe Studio",
+    "domains": [
+      "nightcafe.studio",
+      "creator.nightcafe.studio"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Stable Diffusion",
+      "DALL-E"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI art generation platform supporting multiple generative models. Classified as limited risk under EU AI Act Article 50 — AI-generated artwork constitutes synthetic media requiring disclosure. Users and viewers must be informed that visual content is AI-generated, particularly when shared publicly or commercially.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Nosto",
+    "vendor": "Nosto Solutions",
+    "domains": [
+      "nosto.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "recommendation_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-based e-commerce personalization and recommendation platform. Operates as a backend recommendation engine with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Notion AI",
+    "vendor": "Notion",
+    "domains": [
+      "notion.so",
+      "www.notion.so",
+      "api.notion.com"
+    ],
+    "oauth_app_ids": [
+      "notion-ai"
+    ],
+    "foundation_models": [
+      "GPT-4",
+      "Claude"
+    ],
+    "category": "productivity_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI writing assistant embedded in a productivity tool. Minimal risk — primarily used for text summarization, drafting, and editing within the user's own workspace. Does not interact with external parties or make autonomous decisions.",
+    "privacy_policy_url": "https://www.notion.so/privacy",
+    "tos_url": "https://www.notion.so/terms"
+  },
+  {
+    "service_name": "Nuance DAX",
+    "vendor": "Microsoft (Nuance Communications)",
+    "domains": [
+      "nuance.com",
+      "dax.nuance.com",
+      "marketplace.nuance.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Nuance DAX (Dragon Ambient eXperience) uses ambient AI to automatically generate clinical documentation from patient-physician conversations. As an AI system used in clinical settings that influences medical record accuracy and downstream clinical decisions, it is classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Obviously AI",
+    "vendor": "Obviously AI Inc.",
+    "domains": [
+      "obviously.ai",
+      "app.obviously.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "data_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "No-code AI platform for predictive analytics and automated machine learning. Classified as limited risk under EU AI Act Article 50 due to transparency obligations when AI systems generate predictions and forecasts presented to natural persons. May require reclassification to high-risk if deployed in contexts covered by Annex III (e.g., creditworthiness, HR decisions).",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Ocoya",
+    "vendor": "Ocoya Ltd.",
+    "domains": [
+      "ocoya.com",
+      "app.ocoya.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "social_media_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered social media management platform with automated content creation, scheduling, and copywriting. Classified as limited risk under EU AI Act Article 50, requiring transparency for AI-generated social media content. Deployers publishing AI-generated posts must comply with transparency obligations toward their audiences.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Ocrolus",
+    "vendor": "Ocrolus, Inc.",
+    "domains": [
+      "ocrolus.com",
+      "app.ocrolus.com",
+      "api.ocrolus.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "credit_scoring",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(b). Ocrolus provides AI-powered document analysis for financial institutions to verify income, assets, and financial data used in lending decisions. AI systems that process financial documents to inform creditworthiness evaluations are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Otter.ai",
+    "vendor": "Otter.ai",
+    "domains": [
+      "otter.ai",
+      "app.otter.ai"
+    ],
+    "oauth_app_ids": [
+      "otter-ai"
+    ],
+    "foundation_models": [
+      "Otter proprietary"
+    ],
+    "category": "meeting_transcription",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI meeting transcription and summarization service. Limited risk due to processing of audio/video recordings containing potentially sensitive business conversations. Trains on user data by default, which raises data protection concerns. Transparency obligations apply as users may not be aware their meetings are being transcribed by AI.",
+    "privacy_policy_url": "https://otter.ai/privacy-policy",
+    "tos_url": "https://otter.ai/terms-of-service"
+  },
+  {
+    "service_name": "Pagaya",
+    "vendor": "Pagaya Technologies Ltd.",
+    "domains": [
+      "pagaya.com",
+      "app.pagaya.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "credit_scoring",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(b). Pagaya uses AI to analyse credit applications and enable lending partners to extend credit offers. AI systems used for credit risk assessment and evaluation of creditworthiness of natural persons are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "PagerDuty AI",
+    "vendor": "PagerDuty Inc.",
+    "domains": [
+      "pagerduty.com",
+      "app.pagerduty.com",
+      "api.pagerduty.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "devops_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered incident management with automated triage, intelligent alert grouping, and AI-generated incident summaries. Classified as limited risk under EU AI Act Article 50 as an AI system interacting with natural persons during incident response. On-call engineers must be aware that triage recommendations and summaries are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Palantir Gotham",
+    "vendor": "Palantir Technologies, Inc.",
+    "domains": [
+      "palantir.com",
+      "gotham.palantir.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "law_enforcement_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 6(a) and 6(e). Palantir Gotham is used by law enforcement and intelligence agencies for data integration, pattern analysis, and investigation support. AI systems intended to be used by law enforcement for individual risk assessments, as polygraphs and similar tools, and for crime analytics regarding natural persons are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "PathAI",
+    "vendor": "PathAI, Inc.",
+    "domains": [
+      "pathai.com",
+      "app.pathai.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). PathAI develops AI-powered pathology diagnostic tools that analyse tissue samples to assist in disease diagnosis. AI systems used as medical devices for diagnostic purposes fall under high-risk classification per Regulation (EU) 2017/745.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "People.ai",
+    "vendor": "People.ai",
+    "domains": [
+      "people.ai",
+      "app.people.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "sales_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered revenue operations and sales intelligence platform. Classified as limited risk under EU AI Act Article 50 — AI automatically captures and analyzes sales activities, emails, and meetings involving natural persons. Transparency obligations apply as the system generates AI-derived insights about customer interactions and sales performance.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Percy AI",
+    "vendor": "BrowserStack",
+    "domains": [
+      "percy.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "testing_qa",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered visual review and automated screenshot comparison platform for CI/CD pipelines. Operates as a backend visual regression testing tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Perplexity",
+    "vendor": "Perplexity AI",
+    "domains": [
+      "perplexity.ai",
+      "www.perplexity.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4",
+      "Claude",
+      "Perplexity proprietary"
+    ],
+    "category": "ai_search_engine",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered search and answer engine. Limited risk under Article 50 transparency obligations — users interact with AI-generated answers that synthesize web content. Enterprise plan available with DPA. Query history may contain sensitive business intelligence.",
+    "privacy_policy_url": "https://www.perplexity.ai/privacy",
+    "tos_url": "https://www.perplexity.ai/tos"
+  },
+  {
+    "service_name": "Phenom",
+    "vendor": "Phenom People, Inc.",
+    "domains": [
+      "phenom.com",
+      "app.phenom.com",
+      "api.phenom.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a) and 4(b). Phenom provides an intelligent talent experience platform using AI for candidate matching, career pathing, and employee retention predictions. AI systems used for recruitment decisions and monitoring work-related contractual relationships are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Pi",
+    "vendor": "Inflection AI",
+    "domains": [
+      "pi.ai",
+      "heypi.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Inflection-2.5"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "Personal AI assistant chatbot designed for natural conversation. Classified as limited risk under EU AI Act Article 50 — users interact directly with an AI system and must be informed of this. The empathetic, companion-like design increases the importance of transparency to avoid user confusion about the nature of the interaction.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Pictory",
+    "vendor": "Pictory AI",
+    "domains": [
+      "pictory.ai",
+      "app.pictory.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "video_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered video creation platform that converts text and blog posts into videos. Classified as limited risk under EU AI Act Article 50 — AI-generated video content requires transparency disclosure. Automated video creation from text triggers synthetic media labeling requirements.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Pika",
+    "vendor": "Pika Labs",
+    "domains": [
+      "pika.art",
+      "www.pika.art"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Pika 1.0"
+    ],
+    "category": "video_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI video generation platform creating clips from text and image prompts. Classified as limited risk under EU AI Act Article 50 — AI-generated video is synthetic media requiring explicit disclosure. The realistic quality of generated video content heightens deepfake risks and necessitates robust transparency labeling.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "PlayHT",
+    "vendor": "PlayHT Inc.",
+    "domains": [
+      "play.ht",
+      "api.play.ht"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "voice_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered text-to-speech and voice cloning platform. Classified as limited risk under EU AI Act Article 50, which imposes transparency obligations on AI systems that generate synthetic audio content. Users and downstream recipients must be informed that the voice output is artificially generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Plus AI",
+    "vendor": "Plus Docs Inc.",
+    "domains": [
+      "plusdocs.com",
+      "app.plusdocs.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "presentation_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI presentation generator integrated with Google Slides and PowerPoint, creating and editing slides using AI. Classified as limited risk under EU AI Act Article 50, requiring transparency that AI is involved in content generation. Users should disclose AI involvement when presenting AI-generated materials externally.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Poe",
+    "vendor": "Quora",
+    "domains": [
+      "poe.com",
+      "www.poe.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4",
+      "Claude",
+      "Llama",
+      "Gemini"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI chatbot aggregation platform providing access to multiple LLMs. Classified as limited risk under EU AI Act Article 50 — users interact with AI systems through a unified interface and must be informed they are conversing with AI. Transparency obligations extend to all underlying models accessed through the platform.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Predictive Policing System",
+    "vendor": "PredPol Analytics",
+    "domains": [
+      "predpol.com",
+      "analytics.predpol.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "law_enforcement_ai",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "unacceptable",
+    "risk_tier_rationale": "Prohibited under EU AI Act Article 5(1)(d). This system makes risk assessments of natural persons to predict the risk of criminal offence solely on the basis of profiling or personality traits. AI systems that assess the risk of a natural person committing a criminal offence based solely on profiling are explicitly prohibited, as they violate the presumption of innocence.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Predis AI",
+    "vendor": "Predis AI Inc.",
+    "domains": [
+      "predis.ai",
+      "app.predis.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "social_media_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI social media content generator that creates posts, carousels, videos, and memes from text prompts. Subject to EU AI Act Article 50 transparency obligations as an AI system generating both text and visual content directed at natural persons. Deployers must ensure social audiences can identify AI-generated content.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Proctorio",
+    "vendor": "Proctorio, Inc.",
+    "domains": [
+      "proctorio.com",
+      "app.proctorio.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "education_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 3(a). Proctorio uses AI-based exam proctoring with behaviour analysis, gaze tracking, and anomaly detection to flag potential academic dishonesty. AI systems used to evaluate learning outcomes and monitor prohibited behaviour during assessments in educational institutions are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Proofpoint AI",
+    "vendor": "Proofpoint",
+    "domains": [
+      "proofpoint.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_security",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven email threat detection and spam filtering operating entirely in the backend. No direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ProWritingAid",
+    "vendor": "ProWritingAid",
+    "domains": [
+      "prowritingaid.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "writing_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven writing style and grammar analysis tool for internal content editing. Operates as a backend text analysis assistant with no direct interaction with natural persons as an AI system in a regulated context, no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Pymetrics",
+    "vendor": "Pymetrics, Inc. (Harver)",
+    "domains": [
+      "pymetrics.com",
+      "app.pymetrics.com",
+      "harver.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a). Pymetrics uses neuroscience-based games and AI to assess candidate soft skills for hiring decisions. AI systems used for evaluating candidates in recruitment processes through behavioural and cognitive assessments are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "QuillBot",
+    "vendor": "QuillBot",
+    "domains": [
+      "quillbot.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "writing_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered paraphrasing and grammar checking tool used as an internal writing assistant. Operates as a backend text processing tool with no direct interaction with natural persons as an AI system in a regulated context, no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Reclaim AI",
+    "vendor": "Reclaim AI",
+    "domains": [
+      "reclaim.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "scheduling",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-driven smart scheduling and calendar management platform for optimizing work time. Operates as a backend scheduling assistant with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Reflect AI",
+    "vendor": "Reflect",
+    "domains": [
+      "reflect.app"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "note_taking",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-enhanced personal note-taking and knowledge base application with backlink suggestions. Operates as an internal knowledge management tool with no direct interaction with natural persons as an AI system, no synthetic content generation for external use, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Replika",
+    "vendor": "Luka Inc",
+    "domains": [
+      "replika.ai",
+      "my.replika.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Replika proprietary"
+    ],
+    "category": "general_purpose_chatbot",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI companion chatbot designed for emotional support and personal conversation. Classified as limited risk under EU AI Act Article 50 — users interact with an AI system that simulates personal relationships and must be informed of the AI nature. The emotional companion framing makes transparency obligations especially critical to prevent user manipulation.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Replit AI",
+    "vendor": "Replit",
+    "domains": [
+      "replit.com",
+      "repl.it"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Replit Code V1.5",
+      "GPT-4"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered code generation and debugging assistant within an online IDE. Classified as limited risk under EU AI Act Article 50 — AI-generated code and explanations require transparency so users understand the output is AI-produced. Code hosted on the platform may be used for model improvement unless opted out.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Resemble AI",
+    "vendor": "Resemble AI Inc.",
+    "domains": [
+      "resemble.ai",
+      "app.resemble.ai",
+      "api.resemble.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "voice_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI voice generator and cloning service capable of producing synthetic speech from text. Subject to Article 50 transparency obligations under the EU AI Act, requiring clear disclosure that audio output is AI-generated. Voice cloning features carry additional deepfake disclosure requirements.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Respeecher",
+    "vendor": "Respeecher Inc.",
+    "domains": [
+      "respeecher.com",
+      "app.respeecher.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "voice_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered voice conversion and speech-to-speech platform used in film, gaming, and media production. Classified as limited risk under EU AI Act Article 50 due to its generation of synthetic audio that could be mistaken for natural human speech. Transparency labeling is mandatory for all output.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Rossum",
+    "vendor": "Rossum",
+    "domains": [
+      "rossum.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "document_processing",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered intelligent document processing platform for invoice and receipt data extraction. Operates as a backend document automation tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Runway",
+    "vendor": "Runway ML",
+    "domains": [
+      "runwayml.com",
+      "app.runwayml.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Gen-2",
+      "Gen-3 Alpha"
+    ],
+    "category": "video_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI video generation and editing platform. Limited risk under Article 50 — AI-generated video content requires disclosure. Deepfake potential necessitates transparency controls. Enterprise tier does not use uploaded content for training.",
+    "privacy_policy_url": "https://runwayml.com/privacy-policy",
+    "tos_url": "https://runwayml.com/terms-of-use"
+  },
+  {
+    "service_name": "Rytr",
+    "vendor": "Rytr",
+    "domains": [
+      "rytr.me",
+      "app.rytr.me"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI writing assistant for generating blog posts, emails, and marketing content. Classified as limited risk under EU AI Act Article 50 — AI-generated written content triggers transparency obligations. Users must be aware content is AI-produced, and downstream consumers of the content should be informed accordingly.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Saga AI",
+    "vendor": "Saga",
+    "domains": [
+      "saga.so"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "note_taking",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered workspace and note-taking application for connected knowledge management. Operates as an internal productivity tool with no direct interaction with natural persons as an AI system, no synthetic content generation for external use, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Scalenut",
+    "vendor": "Scalenut",
+    "domains": [
+      "scalenut.com",
+      "app.scalenut.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "content_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered SEO content planning and generation platform. Classified as limited risk under EU AI Act Article 50 — AI generates articles, blog posts, and SEO content that is published to the web, requiring transparency about AI authorship to maintain content integrity.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Scienaptic AI",
+    "vendor": "Scienaptic Systems, Inc.",
+    "domains": [
+      "scienaptic.com",
+      "platform.scienaptic.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "credit_scoring",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(b). Scienaptic AI provides an AI-powered credit decisioning platform for banks and lenders to automate underwriting. AI systems used for evaluating creditworthiness and making lending decisions are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Scite AI",
+    "vendor": "Scite Inc.",
+    "domains": [
+      "scite.ai",
+      "api.scite.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "research_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI platform that analyzes citation contexts to determine whether research findings are supported or contrasted by subsequent publications. Subject to EU AI Act Article 50 transparency obligations as an AI system producing automated assessments of scientific evidence. Users must be informed that citation classifications are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "SeekOut",
+    "vendor": "SeekOut, Inc.",
+    "domains": [
+      "seekout.com",
+      "app.seekout.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a). SeekOut uses AI for talent sourcing, candidate ranking, and diversity analytics in recruitment. AI systems used for screening, filtering, and evaluating candidates during recruitment processes are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Semantic Scholar",
+    "vendor": "Allen Institute for AI",
+    "domains": [
+      "semanticscholar.org",
+      "api.semanticscholar.org"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "research_ai",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered academic search engine that uses machine learning for paper recommendations, citation analysis, and research summarization. Subject to EU AI Act Article 50 transparency obligations as an AI system generating recommendations and summaries for natural persons. Users should be aware that rankings and TLDR summaries are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "SentinelOne Purple AI",
+    "vendor": "SentinelOne Inc.",
+    "domains": [
+      "sentinelone.com",
+      "usea1.sentinelone.net"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "security_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered security analyst assistant within the SentinelOne platform, providing natural language threat hunting, automated investigation, and remediation recommendations. Subject to EU AI Act Article 50 transparency obligations as an AI system interacting with security professionals. Analysts must be informed that investigation findings and recommendations are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Shortcut AI",
+    "vendor": "Shortcut",
+    "domains": [
+      "shortcut.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "project_management",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-assisted project management and issue tracking platform for software teams. Internal workflow tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ShotSpotter (SoundThinking)",
+    "vendor": "SoundThinking, Inc.",
+    "domains": [
+      "soundthinking.com",
+      "shotspotter.com",
+      "portal.shotspotter.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "law_enforcement_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 6(a). ShotSpotter uses AI-driven acoustic sensors to detect and locate gunfire incidents, providing alerts to law enforcement for response. AI systems intended to be used by law enforcement for crime detection and investigation support, particularly systems deployed as safety components in critical infrastructure, are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Slides AI",
+    "vendor": "Slides AI Pte. Ltd.",
+    "domains": [
+      "slidesai.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "presentation_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI tool that automatically generates presentation slides from text input, integrated with Google Slides. Classified as limited risk under EU AI Act Article 50 due to transparency obligations for AI-generated content. Users and audiences should be aware that slide content and layouts are produced by an AI system.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Smartling",
+    "vendor": "Smartling",
+    "domains": [
+      "smartling.com",
+      "dashboard.smartling.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "translation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered translation management system for enterprise localization. Classified as limited risk under EU AI Act Article 50 — AI-generated translations integrated into products and content require transparency about AI involvement. Machine translation outputs used in customer-facing content trigger disclosure obligations.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Smartwriter AI",
+    "vendor": "Smartwriter AI Inc.",
+    "domains": [
+      "smartwriter.ai",
+      "app.smartwriter.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered personalized outreach email generator that creates customized cold emails using prospect data. Classified as limited risk under EU AI Act Article 50 due to transparency obligations when AI-generated content is directed at natural persons. Recipients of outreach emails should be informed of AI involvement in content generation.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Social Credit AI System",
+    "vendor": "SocialScore Technologies",
+    "domains": [
+      "socialscore.ai",
+      "platform.socialscore.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "social_scoring",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "unacceptable",
+    "risk_tier_rationale": "Prohibited under EU AI Act Article 5(1)(c). This system evaluates or classifies natural persons based on their social behaviour or known, inferred, or predicted personal characteristics, resulting in detrimental or unfavourable treatment of those persons in social contexts unrelated to the contexts in which the data was collected. Social scoring by public authorities or private actors that leads to unjustified discrimination is explicitly banned.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Sourcegraph Cody",
+    "vendor": "Sourcegraph",
+    "domains": [
+      "sourcegraph.com",
+      "cody.dev"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Claude",
+      "GPT-4",
+      "StarCoder"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI coding assistant with codebase-aware context retrieval. Classified as limited risk under EU AI Act Article 50 — AI-generated code completions and explanations must be transparently identified. Processes proprietary codebases to provide contextual suggestions, requiring transparency about AI involvement in code production.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Speechify",
+    "vendor": "Speechify Inc.",
+    "domains": [
+      "speechify.com",
+      "app.speechify.com",
+      "api.speechify.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "voice_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI text-to-speech platform that converts written content into natural-sounding audio. Classified as limited risk under EU AI Act Article 50 due to transparency obligations requiring disclosure that generated audio is synthetic. Users interacting with the output must be informed of its AI-generated nature.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Stability AI",
+    "vendor": "Stability AI",
+    "domains": [
+      "stability.ai",
+      "dreamstudio.ai",
+      "platform.stability.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Stable Diffusion XL",
+      "Stable Diffusion 3",
+      "Stable Video Diffusion"
+    ],
+    "category": "image_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "Open-source AI image generation platform. Classified as limited risk under EU AI Act Article 50 — AI-generated images must be labeled as synthetic content. The open model distribution raises additional transparency challenges as downstream deployers must also comply with disclosure obligations for AI-generated visual content.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Subliminal Influence Engine",
+    "vendor": "DeepNudge Labs",
+    "domains": [
+      "deepnudge.ai",
+      "api.deepnudge.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "manipulative_ai",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "unacceptable",
+    "risk_tier_rationale": "Prohibited under EU AI Act Article 5(1)(a). This AI system deploys subliminal techniques beyond a person's consciousness or purposefully manipulative or deceptive techniques to materially distort the behaviour of a person or group of persons, causing significant harm. Manipulative AI systems that exploit psychological vulnerabilities are explicitly banned.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Suno",
+    "vendor": "Suno AI",
+    "domains": [
+      "suno.com",
+      "app.suno.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Suno v3.5"
+    ],
+    "category": "music_generation",
+    "trains_on_user_data": true,
+    "data_retention_days": null,
+    "has_enterprise_dpa": false,
+    "soc2_certified": false,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI music generation from text prompts. Minimal risk — generates original music compositions without interacting with external parties or making autonomous decisions. Trains on user data and lacks enterprise DPA, limiting suitability for enterprise use with sensitive content.",
+    "privacy_policy_url": "https://suno.com/privacy",
+    "tos_url": "https://suno.com/terms"
+  },
+  {
+    "service_name": "Superhuman AI",
+    "vendor": "Superhuman Inc.",
+    "domains": [
+      "superhuman.com",
+      "mail.superhuman.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "email_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered email client with features for auto-drafting replies, summarizing threads, and scheduling optimization. Classified as limited risk under EU AI Act Article 50 as an AI system generating email content that interacts with natural persons. Transparency is required so recipients understand when responses are AI-drafted.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Synthesia",
+    "vendor": "Synthesia",
+    "domains": [
+      "synthesia.io",
+      "app.synthesia.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Synthesia proprietary"
+    ],
+    "category": "video_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 90,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI avatar video generation platform. Limited risk under Article 50 — produces synthetic video with AI-generated human avatars, requiring clear disclosure that content is AI-generated. Deepfake and impersonation risks require transparency controls.",
+    "privacy_policy_url": "https://www.synthesia.io/privacy",
+    "tos_url": "https://www.synthesia.io/terms"
+  },
+  {
+    "service_name": "Tableau AI",
+    "vendor": "Salesforce Inc.",
+    "domains": [
+      "tableau.com",
+      "online.tableau.com",
+      "us-west-2a.online.tableau.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "data_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered analytics features within Tableau including natural language querying, automated insights, and predictive modeling. Classified as limited risk under EU AI Act Article 50 as an AI system that interacts with natural persons and generates automated analytical conclusions. Deployers must ensure transparency that insights are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Tabnine",
+    "vendor": "Tabnine",
+    "domains": [
+      "tabnine.com",
+      "www.tabnine.com",
+      "app.tabnine.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Tabnine proprietary"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": 0,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI code completion and generation tool for software developers. Classified as limited risk under EU AI Act Article 50 — AI-generated code suggestions require transparency so developers understand they are receiving AI-produced output. Enterprise plan offers private model deployment with zero data retention.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Taskade AI",
+    "vendor": "Taskade",
+    "domains": [
+      "taskade.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "note_taking",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-enhanced collaborative workspace for notes, tasks, and project organization. Operates as an internal productivity and knowledge management tool with no direct interaction with natural persons as an AI system, no synthetic content generation for external use, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Tempus AI",
+    "vendor": "Tempus Labs, Inc.",
+    "domains": [
+      "tempus.com",
+      "app.tempus.com",
+      "api.tempus.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Tempus AI provides precision medicine analytics including AI-driven genomic sequencing analysis and clinical decision support for cancer treatment. AI systems intended to be used as a safety component of medical devices or as medical devices themselves, per Regulation (EU) 2017/745, are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Testim AI",
+    "vendor": "Tricentis",
+    "domains": [
+      "testim.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "testing_qa",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered test automation platform for creating and maintaining end-to-end tests. Operates as a backend QA tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Textio",
+    "vendor": "Textio, Inc.",
+    "domains": [
+      "textio.com",
+      "app.textio.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "hr_recruiting",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 4(a). Textio uses AI to optimize job listings and performance feedback to influence hiring outcomes and employee evaluations. AI systems used to influence recruitment decisions and evaluate employee performance are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ThoughtSpot",
+    "vendor": "ThoughtSpot Inc.",
+    "domains": [
+      "thoughtspot.com",
+      "my.thoughtspot.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "data_analytics",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-driven analytics platform with natural language search and automated insight generation. Subject to EU AI Act Article 50 transparency obligations as an AI system that produces analytical outputs interacting with human decision-makers. Users must be aware that insights and recommendations are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Tidio AI",
+    "vendor": "Tidio",
+    "domains": [
+      "tidio.com",
+      "www.tidio.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "customer_service_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI chatbot and live chat platform for customer service. Classified as limited risk under EU AI Act Article 50 — the AI chatbot component (Lyro) interacts directly with website visitors who must be informed they are communicating with AI. Transparency is required to distinguish between AI-automated and human-agent responses.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "tl;dv",
+    "vendor": "tl;dv",
+    "domains": [
+      "tldv.io",
+      "app.tldv.io"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "meeting_transcription",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI meeting recorder and transcription tool with automated summaries and highlights. Classified as limited risk under EU AI Act Article 50 — meeting participants must be notified that AI is processing their audio and video. The AI-generated meeting notes and action items require transparency about automated content extraction.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Tome",
+    "vendor": "Tome",
+    "domains": [
+      "tome.app",
+      "beta.tome.app"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "presentation_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": 30,
+    "has_enterprise_dpa": false,
+    "soc2_certified": false,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI presentation and storytelling generation tool. Minimal risk — generates slide decks and narratives from user prompts. No autonomous decision-making or interaction with external parties. Lack of enterprise DPA and SOC2 may limit suitability for regulated industries.",
+    "privacy_policy_url": "https://tome.app/privacy",
+    "tos_url": "https://tome.app/terms"
+  },
+  {
+    "service_name": "Turnitin AI Detection",
+    "vendor": "Turnitin, LLC",
+    "domains": [
+      "turnitin.com",
+      "app.turnitin.com",
+      "api.turnitin.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "education_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 3(a). Turnitin's AI writing detection tool is used by educational institutions to determine whether student submissions were AI-generated, directly influencing academic assessment outcomes. AI systems intended to be used for determining access to or influencing outcomes of education and vocational training are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Unbabel",
+    "vendor": "Unbabel",
+    "domains": [
+      "unbabel.com",
+      "www.unbabel.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "translation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered translation platform combining machine translation with human editing. Classified as limited risk under EU AI Act Article 50 — AI-generated translations used in customer communications require transparency. The hybrid AI-human workflow must clearly disclose which content is AI-generated versus human-edited.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Upstart",
+    "vendor": "Upstart Network, Inc.",
+    "domains": [
+      "upstart.com",
+      "app.upstart.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "credit_scoring",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(b). Upstart uses AI/ML models to evaluate loan applications and assess creditworthiness using non-traditional data variables. AI systems used for credit scoring and loan approval decisions affecting natural persons are classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Vercel AI",
+    "vendor": "Vercel",
+    "domains": [
+      "vercel.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "cloud_optimization",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered deployment optimization and web performance analytics within Vercel platform. Operates as a backend developer infrastructure tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Viz.ai",
+    "vendor": "Viz.ai, Inc.",
+    "domains": [
+      "viz.ai",
+      "app.viz.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "clinical_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(a). Viz.ai is an FDA-cleared AI platform that analyses CT scans to detect suspected large vessel occlusion strokes and alert care teams. As an AI system functioning as a medical device for time-critical clinical triage, it is classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "WellSaid Labs",
+    "vendor": "WellSaid Labs Inc.",
+    "domains": [
+      "wellsaidlabs.com",
+      "app.wellsaidlabs.com",
+      "api.wellsaidlabs.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "voice_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "Enterprise AI voice generation platform producing synthetic speech for corporate training, marketing, and media. Subject to EU AI Act Article 50 transparency obligations requiring that persons exposed to the generated audio are informed it was produced by an AI system.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Windsurf",
+    "vendor": "Codeium",
+    "domains": [
+      "codeium.com",
+      "windsurf.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Codeium proprietary"
+    ],
+    "category": "code_assistant",
+    "trains_on_user_data": false,
+    "data_retention_days": 0,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered code editor and autocomplete tool. Classified as limited risk under EU AI Act Article 50 — AI-generated code suggestions require transparency. Enterprise deployment does not retain code snippets or use them for training. Developers must be aware that suggestions are AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Wordtune",
+    "vendor": "AI21 Labs",
+    "domains": [
+      "wordtune.com",
+      "www.wordtune.com",
+      "app.wordtune.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "AI21 Jamba"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered text rewriting, summarization, and content generation tool. Classified as limited risk under EU AI Act Article 50 — AI rewrites and generates text that users may publish or share, requiring transparency about AI involvement in content creation.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Writer",
+    "vendor": "Writer.com",
+    "domains": [
+      "writer.com",
+      "app.writer.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "Palmyra"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": false,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "Enterprise AI writing platform for brand-consistent content generation. Classified as limited risk under EU AI Act Article 50 — AI-generated marketing copy, blog posts, and business communications require transparency disclosure. Content produced by the system must be identifiable as AI-generated.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Writesonic",
+    "vendor": "Writesonic",
+    "domains": [
+      "writesonic.com",
+      "app.writesonic.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [
+      "GPT-4"
+    ],
+    "category": "content_generation",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI content generation platform for articles, ads, and marketing copy. Classified as limited risk under EU AI Act Article 50 — AI-generated text content must be disclosed as such to maintain transparency. Users and downstream audiences must be informed when content is AI-produced.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Yext AI",
+    "vendor": "Yext",
+    "domains": [
+      "yext.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "search_engine",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-powered enterprise search and knowledge management platform. Operates as a backend search service with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Zapier AI",
+    "vendor": "Zapier",
+    "domains": [
+      "zapier.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "productivity_assistant",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "minimal",
+    "risk_tier_rationale": "AI-assisted workflow automation platform for connecting apps and automating internal tasks. Operates as a backend workflow tool with no direct interaction with natural persons as an AI system, no synthetic content generation, and no autonomous high-stakes decisions. No specific EU AI Act obligations apply.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "Zendesk AI",
+    "vendor": "Zendesk",
+    "domains": [
+      "zendesk.com",
+      "www.zendesk.com"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "customer_service_ai",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": true,
+    "soc2_certified": true,
+    "default_risk_tier": "limited",
+    "risk_tier_rationale": "AI-powered customer support automation with AI agents and ticket routing. Classified as limited risk under EU AI Act Article 50 — AI agents that interact with customers must disclose their AI nature. Automated ticket responses and AI-generated support content require transparency to ensure customers know they are engaging with AI.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  },
+  {
+    "service_name": "ZestFinance",
+    "vendor": "Zest AI, Inc.",
+    "domains": [
+      "zest.ai",
+      "app.zest.ai"
+    ],
+    "oauth_app_ids": [],
+    "foundation_models": [],
+    "category": "credit_scoring",
+    "trains_on_user_data": null,
+    "data_retention_days": null,
+    "has_enterprise_dpa": null,
+    "soc2_certified": null,
+    "default_risk_tier": "high",
+    "risk_tier_rationale": "High-risk under EU AI Act Annex III, Section 5(b). Zest AI provides ML-based credit underwriting models that evaluate creditworthiness of natural persons. AI systems intended to be used for evaluating the creditworthiness of natural persons or establishing their credit score are explicitly classified as high-risk.",
+    "privacy_policy_url": null,
+    "tos_url": null
+  }
+]

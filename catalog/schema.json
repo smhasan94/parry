@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Catalog Entry",
+  "type": "object",
+  "required": ["service_name", "vendor", "domains", "category"],
+  "properties": {
+    "service_name": { "type": "string" },
+    "vendor": { "type": "string" },
+    "domains": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "oauth_app_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "foundation_models": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "category": { "type": "string" },
+    "trains_on_user_data": { "type": ["boolean", "null"] },
+    "data_retention_days": { "type": ["integer", "null"] },
+    "has_enterprise_dpa": { "type": ["boolean", "null"] },
+    "soc2_certified": { "type": ["boolean", "null"] },
+    "default_risk_tier": {
+      "type": ["string", "null"],
+      "enum": ["unacceptable", "high", "limited", "minimal", null]
+    },
+    "risk_tier_rationale": { "type": ["string", "null"] },
+    "privacy_policy_url": { "type": ["string", "null"], "format": "uri" },
+    "tos_url": { "type": ["string", "null"], "format": "uri" }
+  }
+}
