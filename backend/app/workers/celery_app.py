@@ -61,6 +61,7 @@ celery_app = Celery(
         "app.workers.audit_export_task",
         "app.workers.red_team_task",
         "app.workers.supplier_refresh_task",
+        "app.workers.discovery_sync_task",
         "app.workers.auditor_bundle_task",
         "app.workers.compliance_refresh_task",
         "app.workers.threat_intel_task",
@@ -128,6 +129,13 @@ celery_app.conf.update(
             "task": "threat_intel_decay",
             # Daily at 05:00 UTC — after compliance refresh.
             "schedule": crontab(hour=5, minute=0),
+        },
+        "sync-discovery-probes": {
+            "task": "sync_discovery_probes",
+            # Daily at 02:00 UTC. Deliberately before the compliance
+            # refresh at 03:00, so a system discovered overnight is in
+            # the register before posture is recomputed against it.
+            "schedule": crontab(hour=2, minute=0),
         },
         "refresh-supplier-register": {
             "task": "refresh_supplier_register",
