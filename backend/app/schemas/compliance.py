@@ -180,3 +180,28 @@ class AuditorBundleStatusResponse(ParrySchema):
     job_id: str
     status: str  # queued|running|completed|failed
     download_url: str | None = None
+
+
+# ── Risk Classification Review ──────────────────────────────────
+
+
+class RiskClassificationResponse(ParrySchema):
+    """A proposed or decided risk tier for an AI system."""
+
+    id: uuid.UUID
+    system_id: uuid.UUID
+    source: str  # catalog|llm_draft|human_override
+    risk_tier: str
+    confidence_score: float | None = None
+    reasoning: str
+    evidence_urls: list[str] = []
+    status: str  # pending_review|approved|rejected
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    created_at: datetime
+
+
+class ClassificationRejectRequest(ParrySchema):
+    """Optional note explaining why a proposed tier was declined."""
+
+    reason: str | None = None

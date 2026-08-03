@@ -47,7 +47,20 @@ function RiskBadge({
   );
 }
 
-export function ShadowAITable({ systems }: { systems: ShadowSystem[] }) {
+export function ShadowAITable({
+  systems,
+  onApprove,
+  onReject,
+  busyId,
+}: {
+  systems: ShadowSystem[];
+  /** Omitted for viewers, who see the finding but cannot decide on it. */
+  onApprove?: (classificationId: string) => void;
+  onReject?: (classificationId: string) => void;
+  busyId?: string | null;
+}) {
+  const canReview = Boolean(onApprove && onReject);
+
   if (systems.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
@@ -67,7 +80,8 @@ export function ShadowAITable({ systems }: { systems: ShadowSystem[] }) {
             <th className="py-2 pr-4 font-medium">Vendor</th>
             <th className="py-2 pr-4 font-medium">Risk tier</th>
             <th className="py-2 pr-4 font-medium">Found via</th>
-            <th className="py-2 font-medium">Last seen</th>
+            <th className="py-2 pr-4 font-medium">Last seen</th>
+            {canReview && <th className="py-2 font-medium">Review</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -88,11 +102,37 @@ export function ShadowAITable({ systems }: { systems: ShadowSystem[] }) {
                 {s.discovery_source ?? "—"}
               </td>
               <td
-                className="py-2 text-zinc-600 dark:text-zinc-400"
+                className="py-2 pr-4 text-zinc-600 dark:text-zinc-400"
                 title={s.last_seen_at ? `Last seen ${s.last_seen_at}` : "Never seen"}
               >
                 {s.last_seen_at ? new Date(s.last_seen_at).toLocaleDateString() : "—"}
               </td>
+              {canReview && (
+                <td className="py-2 whitespace-nowrap">
+                  {/* Only an undecided proposal is reviewable. An approved
+                      tier is already the tier of record. */}
+                  {s.is_proposed && s.pending_classification_id ? (
+                    <span className="flex gap-1.5">
+                      <button
+                        className="rounded border border-zinc-300 px-2 py-0.5 text-xs font-medium hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                        disabled={busyId === s.pending_classification_id}
+                        onClick={() => onApprove?.(s.pending_classification_id!)}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="rounded border border-zinc-300 px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                        disabled={busyId === s.pending_classification_id}
+                        onClick={() => onReject?.(s.pending_classification_id!)}
+                      >
+                        Reject
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-zinc-400">—</span>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

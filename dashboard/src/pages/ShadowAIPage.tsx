@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShadowAITable } from "@/components/ShadowAITable";
-import { useShadowAI, useSyncOkta } from "@/hooks/useDiscovery";
+import { useShadowAI, useSyncOkta, useReviewClassification } from "@/hooks/useDiscovery";
 import { Radar } from "lucide-react";
 
 const TIER_ORDER = ["unacceptable", "high", "limited", "minimal", "unclassified"];
@@ -10,6 +10,7 @@ const TIER_ORDER = ["unacceptable", "high", "limited", "minimal", "unclassified"
 export function ShadowAIPage() {
   const { data, isLoading } = useShadowAI();
   const syncOkta = useSyncOkta();
+  const { approve, reject } = useReviewClassification();
   const [oktaDomain, setOktaDomain] = useState("");
   const [apiToken, setApiToken] = useState("");
 
@@ -91,7 +92,18 @@ export function ShadowAIPage() {
             {isLoading ? (
               <p className="text-sm text-zinc-500">Loading…</p>
             ) : (
-              <ShadowAITable systems={data?.systems ?? []} />
+              <ShadowAITable
+                systems={data?.systems ?? []}
+                onApprove={(id) => approve.mutate(id)}
+                onReject={(id) => reject.mutate(id)}
+                busyId={
+                  approve.isPending
+                    ? (approve.variables ?? null)
+                    : reject.isPending
+                      ? (reject.variables ?? null)
+                      : null
+                }
+              />
             )}
           </CardContent>
         </Card>

@@ -369,6 +369,8 @@ export interface ShadowSystem {
   effective_risk_level: string;
   /** True when the rendered tier has not been reviewed by a human. */
   is_proposed: boolean;
+  /** The classification to approve or reject, when one is pending. */
+  pending_classification_id: string | null;
   discovery_source: string | null;
   first_seen_at: string | null;
   last_seen_at: string | null;
