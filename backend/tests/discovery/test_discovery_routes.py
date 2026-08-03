@@ -11,9 +11,10 @@ from fastapi import HTTPException
 
 from app.api.v1 import discovery
 from app.core.dependencies import Actor
-from app.db.models import AISystem, Org
+from app.db.models import Org
 from app.discovery.sso_probe import ProcessingResult
 from app.schemas.discovery import SSOIngestRequest, SSOSyncRequest
+from app.services.discovery_service import ShadowSystem
 
 
 def _org() -> Org:
@@ -33,19 +34,17 @@ def _actor() -> Actor:
     return Actor(actor_type="user", actor_id="user_123", label="ada@corp.com")
 
 
-def _shadow_system(name: str = "Notion AI", risk: str = "limited") -> AISystem:
-    return AISystem(
+def _shadow_system(name: str = "Notion AI", risk: str = "limited") -> ShadowSystem:
+    return ShadowSystem(
         id=uuid.uuid4(),
-        org_id=uuid.uuid4(),
         name=name,
         provider_name="Notion",
-        origin="discovered",
+        risk_level="unclassified",
+        proposed_risk_level=risk,
+        proposed_reasoning="Default tier from the AI catalog.",
         discovery_source="sso",
-        risk_level=risk,
-        status="active",
         first_seen_at=datetime(2026, 1, 5, tzinfo=UTC),
         last_seen_at=datetime(2026, 3, 1, tzinfo=UTC),
-        agent_ids=[],
     )
 
 

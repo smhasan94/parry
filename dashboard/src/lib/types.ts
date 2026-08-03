@@ -360,7 +360,15 @@ export interface ShadowSystem {
   id: string;
   name: string;
   provider_name: string | null;
+  /** The approved tier. Stays "unclassified" until a human signs off. */
   risk_level: string;
+  /** What the catalog suggested, still awaiting review. */
+  proposed_risk_level: string | null;
+  proposed_reasoning: string | null;
+  /** The tier to render — approved if there is one, else the proposal. */
+  effective_risk_level: string;
+  /** True when the rendered tier has not been reviewed by a human. */
+  is_proposed: boolean;
   discovery_source: string | null;
   first_seen_at: string | null;
   last_seen_at: string | null;

@@ -195,17 +195,59 @@ async def test_reconcile_backfills_first_seen_when_a_declared_system_is_first_ob
     assert system.origin == "declared"
 
 
-async def test_list_shadow_systems_queries_discovered_and_unmonitored_only() -> None:
-    org_id = uuid.uuid4()
-    rows = [MagicMock()]
-    db = MagicMock()
-    result = MagicMock()
-    result.scalars.return_value.all.return_value = rows
-    db.execute = AsyncMock(return_value=result)
+# The shadow query itself is exercised against a real database in
+# tests/e2e/test_shadow_filter.py — a mock that asserts on generated SQL
+# only restates the implementation and breaks whenever the query is
+# rewritten, without ever checking that the filter selects the right rows.
 
-    found = await discovery_service.list_shadow_systems(db, org_id=org_id)
 
-    assert found == rows
-    where_sql = str(db.execute.call_args.args[0])
-    assert "origin" in where_sql
-    assert "agent_ids" in where_sql
+def test_effective_tier_prefers_an_approved_classification() -> None:
+    row = discovery_service.ShadowSystem(
+        id=uuid.uuid4(),
+        name="HireVue",
+        provider_name="HireVue, Inc.",
+        risk_level="limited",
+        proposed_risk_level="high",
+        proposed_reasoning="catalog default",
+        discovery_source="sso",
+        first_seen_at=None,
+        last_seen_at=None,
+    )
+
+    # A human decided 'limited'. The catalog's 'high' must not override it.
+    assert row.effective_risk_level == "limited"
+    assert row.is_proposed is False
+
+
+def test_effective_tier_falls_back_to_the_pending_proposal() -> None:
+    row = discovery_service.ShadowSystem(
+        id=uuid.uuid4(),
+        name="HireVue",
+        provider_name="HireVue, Inc.",
+        risk_level="unclassified",
+        proposed_risk_level="high",
+        proposed_reasoning="Annex III employment screening",
+        discovery_source="sso",
+        first_seen_at=None,
+        last_seen_at=None,
+    )
+
+    assert row.effective_risk_level == "high"
+    assert row.is_proposed is True
+
+
+def test_effective_tier_is_unclassified_when_nothing_is_known() -> None:
+    row = discovery_service.ShadowSystem(
+        id=uuid.uuid4(),
+        name="Mystery Tool",
+        provider_name=None,
+        risk_level="unclassified",
+        proposed_risk_level=None,
+        proposed_reasoning=None,
+        discovery_source="sso",
+        first_seen_at=None,
+        last_seen_at=None,
+    )
+
+    assert row.effective_risk_level == "unclassified"
+    assert row.is_proposed is False

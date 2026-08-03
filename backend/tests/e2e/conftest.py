@@ -145,9 +145,7 @@ async def client(
 
 
 @pytest.fixture
-async def admin_client(
-    client: AsyncClient, seeded_db: dict
-) -> AsyncGenerator[AsyncClient, None]:
+async def admin_client(client: AsyncClient, seeded_db: dict) -> AsyncGenerator[AsyncClient, None]:
     """Client that also installs an org:admin actor override.
 
     Bypasses the Clerk JWT verification path — every request through

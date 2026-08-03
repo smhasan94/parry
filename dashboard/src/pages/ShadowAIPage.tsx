@@ -65,9 +65,22 @@ export function ShadowAIPage() {
           {tiers.map((tier) => (
             <div
               key={tier}
-              className="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-800"
+              data-tier={tier}
+              className={`rounded-lg border px-4 py-3 ${
+                tier === "high" || tier === "unacceptable"
+                  ? "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/40"
+                  : "border-zinc-200 dark:border-zinc-800"
+              }`}
             >
-              <div className="text-2xl font-semibold">{counts[tier]}</div>
+              <div
+                className={`text-2xl font-semibold ${
+                  tier === "high" || tier === "unacceptable"
+                    ? "text-red-700 dark:text-red-400"
+                    : ""
+                }`}
+              >
+                {counts[tier]}
+              </div>
               <div className="text-xs capitalize text-zinc-500">{tier}</div>
             </div>
           ))}

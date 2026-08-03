@@ -57,9 +57,7 @@ async def test_compliance_full_flow(admin_client: AsyncClient, seeded_db: dict):
     assert "sections" in fria["content"]
 
     # 5. List FRIAs for system
-    resp = await admin_client.get(
-        f"/api/v1/compliance/systems/{system_id}/fria"
-    )
+    resp = await admin_client.get(f"/api/v1/compliance/systems/{system_id}/fria")
     assert resp.status_code == 200
     assert len(resp.json()) >= 1
 

@@ -47,9 +47,7 @@ async def test_agent_group_lifecycle(admin_client: AsyncClient, seeded_db: dict)
     assert resp.json()["agent_count"] == 1
 
     # 6. Unassign agent
-    resp = await admin_client.delete(
-        f"/api/v1/agent-groups/{group_id}/agents/{agent_id}"
-    )
+    resp = await admin_client.delete(f"/api/v1/agent-groups/{group_id}/agents/{agent_id}")
     assert resp.status_code == 204
 
     # 7. Delete group

@@ -14,9 +14,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_audit_log_records_alert_config_update(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_records_alert_config_update(admin_client: AsyncClient, seeded_db: dict):
     """Updating alert config generates an audit entry visible in the log."""
     # PUT /alerts is audit-logged with action=alert_config.updated
     resp = await admin_client.put(
@@ -35,9 +33,7 @@ async def test_audit_log_records_alert_config_update(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_filter_by_action(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_filter_by_action(admin_client: AsyncClient, seeded_db: dict):
     """action= query param returns only entries matching that action."""
     # Update alert config to generate an auditable action
     await admin_client.put(
@@ -54,9 +50,7 @@ async def test_audit_log_filter_by_action(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_filter_by_resource_type(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_filter_by_resource_type(admin_client: AsyncClient, seeded_db: dict):
     """resource_type= query param narrows results to the given resource."""
     # Mutate alert config to produce an audit entry with resource_type=alert_config
     await admin_client.put(
@@ -72,9 +66,7 @@ async def test_audit_log_filter_by_resource_type(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_viewer_role_rejected(
-    client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_viewer_role_rejected(client: AsyncClient, seeded_db: dict):
     """Viewer-role client (Bearer API key) should be rejected from the audit log."""
     resp = await client.get(
         "/api/v1/audit-log",
@@ -84,9 +76,7 @@ async def test_audit_log_viewer_role_rejected(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_csv_export(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_csv_export(admin_client: AsyncClient, seeded_db: dict):
     """GET /audit-log/export returns CSV with chain-tip headers."""
     resp = await admin_client.get(
         "/api/v1/audit-log/export",
@@ -103,9 +93,7 @@ async def test_audit_log_csv_export(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_export_invalid_range(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_export_invalid_range(admin_client: AsyncClient, seeded_db: dict):
     """Export with end <= start should return 400."""
     resp = await admin_client.get(
         "/api/v1/audit-log/export",
@@ -115,9 +103,7 @@ async def test_audit_log_export_invalid_range(
 
 
 @pytest.mark.asyncio
-async def test_audit_log_pagination(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_audit_log_pagination(admin_client: AsyncClient, seeded_db: dict):
     """Audit log response has has_more and next_cursor fields."""
     resp = await admin_client.get("/api/v1/audit-log?limit=1")
     assert resp.status_code == 200

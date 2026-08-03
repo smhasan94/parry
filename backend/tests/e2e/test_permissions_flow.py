@@ -5,9 +5,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_permission_enforcement(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_permission_enforcement(admin_client: AsyncClient, seeded_db: dict):
     """Set deny-by-default → proxy allows listed tool, blocks unlisted."""
     agent_id = str(seeded_db["agent"].id)
     api_key = seeded_db["api_key_raw"]

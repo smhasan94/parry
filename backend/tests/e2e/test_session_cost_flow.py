@@ -55,9 +55,7 @@ async def test_session_list_after_event_ingest(
 
 
 @pytest.mark.asyncio
-async def test_event_carries_estimated_cost(
-    client: AsyncClient, seeded_db: dict, db: AsyncSession
-):
+async def test_event_carries_estimated_cost(client: AsyncClient, seeded_db: dict, db: AsyncSession):
     """An event ingested with a known model has estimated_cost_usd > 0."""
     resp = await client.post(
         "/api/v1/events/ingest",
@@ -138,9 +136,7 @@ async def test_session_list_limit_respected(
 
 
 @pytest.mark.asyncio
-async def test_session_list_unknown_agent_404(
-    admin_client: AsyncClient, seeded_db: dict
-):
+async def test_session_list_unknown_agent_404(admin_client: AsyncClient, seeded_db: dict):
     """GET /agents/{id}/sessions for an unknown agent returns 404."""
     resp = await admin_client.get(f"/api/v1/agents/{uuid.uuid4()}/sessions")
     assert resp.status_code == 404
@@ -175,7 +171,8 @@ async def test_multiple_events_same_session(
 
     # There should be exactly one session entry for the shared session_id
     matching = [
-        s for s in sessions
+        s
+        for s in sessions
         if s.get("session_id") == shared_session or s.get("id") == shared_session
     ]
     assert len(matching) == 1

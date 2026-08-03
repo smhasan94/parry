@@ -20,8 +20,7 @@ async def test_pii_in_response_creates_incident(
             "agent_id": "e2e-agent",
             "prompt": "Show me the customer record",
             "response": (
-                "Name: John Doe, SSN: 123-45-6789, "
-                "CC: 4111 1111 1111 1111, email: john@example.com"
+                "Name: John Doe, SSN: 123-45-6789, CC: 4111 1111 1111 1111, email: john@example.com"
             ),
             "model": "gpt-4o",
             "latency_ms": 180,
