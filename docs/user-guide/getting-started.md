@@ -93,11 +93,11 @@ also a `parryWrap` for the Vercel AI SDK and a
 ### Go
 
 ```bash
-go get github.com/sharukhhasan/parry/sdk-go
+go get github.com/smhasan94/parry/sdk-go
 ```
 
 ```go
-import "github.com/sharukhhasan/parry/sdk-go/parry"
+import "github.com/smhasan94/parry/sdk-go/parry"
 
 client := parry.NewClient("sk-parry-...", parry.WithAgentID("support-bot"))
 wrapped := parry.WrapOpenAI(client, yourCallFn, parry.WrapOptions{})

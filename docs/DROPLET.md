@@ -85,7 +85,7 @@ Reconnect as the deploy user (close the root session, log back in as `deploy@<ip
 ### 4. Clone the repo
 
 ```bash
-git clone https://github.com/sharukhhasan/parry.git
+git clone https://github.com/smhasan94/parry.git
 cd parry
 ```
 

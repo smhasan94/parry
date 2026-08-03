@@ -8,6 +8,39 @@ version bump — read the entries.
 
 ## [Unreleased]
 
+Nothing yet.
+
+---
+
+## [0.1.0] — 2026-08-03
+
+First tagged release. Everything below had accumulated on `main`
+unreleased; this draws a line under it so later changes have something
+to be relative to.
+
+### Added — Discovery
+
+- **Shadow AI discovery** — find AI systems running in an environment
+  that no Parry agent monitors. An SSO probe reads the app grants an
+  org has already issued, so onboarding needs one read-only Okta token
+  and no code in the customer's agent path. Grants match against a
+  200-vendor catalog by OAuth client id or service name; unmatched apps
+  are retained as probe events but never enter the compliance register.
+  Dedup is time-free — an OAuth grant is a standing permission, so
+  re-syncing bumps a counter instead of accreting rows.
+- **Discovered systems join the Article 26 register** — one
+  `ai_systems` row per system regardless of origin (`declared` /
+  `discovered` / `instrumented`). Shadow AI is a query: discovered,
+  with no agent attached.
+- **Risk classification review** — the catalog's suggested tier lands
+  as a *pending* proposal, never an approved one. Approving promotes it
+  to the system's tier of record and re-derives the Article 27 FRIA
+  obligation, so a high-risk approval immediately shows as outstanding
+  work in the compliance posture. Rejecting changes nothing else.
+- **Demo tenant** — 18 apps and 410 grants shaped like a real Okta
+  response, driven through the live pipeline via
+  `scripts/seed_shadow_ai_demo.py`. Nothing is stubbed.
+
 ### Added — Detection engine
 
 - **Active blocking mode** — `/proxy/check` returns a verdict before
@@ -86,7 +119,7 @@ version bump — read the entries.
 - **TypeScript (`@parry/sdk`)** — full Python parity plus a
   duck-typed LangChain.js callback handler. Streaming on OpenAI and
   Anthropic. MCP normalize.ts is byte-identical to Python.
-- **Go (`github.com/sharukhhasan/parry/sdk-go`)** — core client +
+- **Go (`github.com/smhasan94/parry/sdk-go`)** — core client +
   OpenAI wrapper.
 
 ### Added — Operational
@@ -110,12 +143,39 @@ version bump — read the entries.
 
 ### Internal
 
-- 800+ backend tests covering the detection engine, services, RBAC,
-  billing, FRIA / Article 73 workflows, and MCP. 90+ Python SDK
-  tests, 92+ TypeScript SDK tests.
+- **Public detection benchmark** — 42 attacks across 7 categories plus
+  10 clean entries, scored per category and gated in CI at ≥ 80%
+  overall and ≥ 60% per category. `cost_exploit` is excluded on
+  purpose: those detectors need runtime context a static corpus cannot
+  supply, so scoring them would report a number that means nothing.
+  Current: 94% overall.
+- 1,119 backend tests covering the detection engine, services, RBAC,
+  billing, FRIA / Article 73 workflows, MCP, and discovery. 90+ Python
+  SDK tests, 92+ TypeScript SDK tests, 166 dashboard tests.
 - Mypy strict mode across `backend/app/`.
 - TimescaleDB hypertable for `agent_events` with required
   `agent_id` + time-range filtering enforced via review.
+
+### Known limitations
+
+Recorded so a reader can tell what is finished from what merely exists.
+
+- **Discovery runs once, by hand.** `probe_credentials` is modelled but
+  unused and there is no scheduled worker, so the register is a snapshot
+  rather than a monitor and goes stale the day after a scan.
+- **SSO matching is exact-match only.** OAuth client id or exact service
+  name, and only 13 of 200 catalog entries carry an OAuth id — so a
+  renamed app ("Figma" against a catalog entry named "Figma AI") is
+  missed. On a realistic tenant this caps match rate well below 100%.
+  Alias or normalized matching is the fix, and it needs care: a wrong
+  row in a compliance register is worse than a missing one.
+- **Cross-org threat intelligence needs scale to fire.** A pattern must
+  be confirmed across 3+ organizations before `ThreatIntelDetector`
+  triggers, so the feed is inert at low customer counts.
+- **Community rule packs need publishers.** The subscribe/install path
+  works; the marketplace is empty until orgs publish into it.
+- **Plan limits are unvalidated.** The four Stripe tiers and their
+  quotas were chosen without pricing research.
 
 ---
 

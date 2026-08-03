@@ -22,7 +22,7 @@
 1. Clone the repo and configure environment:
 
 ```bash
-git clone https://github.com/sharukhhasan/parry.git
+git clone https://github.com/smhasan94/parry.git
 cd parry
 cp .env.example .env
 ```

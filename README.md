@@ -195,10 +195,10 @@ import { ParryClient, parryOpenAI, ParryBlockedError, ParryPermissionDeniedError
 
 Drop-in OpenAI wrapper via `parryOpenAI()`. ESM + CJS dual build.
 
-### Go SDK (`go get github.com/sharukhhasan/parry/sdk-go`)
+### Go SDK (`go get github.com/smhasan94/parry/sdk-go`)
 
 ```go
-import parry "github.com/sharukhhasan/parry/sdk-go"
+import parry "github.com/smhasan94/parry/sdk-go"
 
 client := parry.NewClient("sk-parry-...", parry.WithAgentID("my-agent"))
 ```
@@ -240,7 +240,7 @@ Library-agnostic OpenAI wrapper via `WrapOpenAI()` callback pattern. Includes `V
 ### Docker Compose (recommended)
 
 ```bash
-git clone https://github.com/sharukhhasan/parry.git
+git clone https://github.com/smhasan94/parry.git
 cd parry
 
 cp .env.example .env
