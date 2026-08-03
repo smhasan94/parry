@@ -10,6 +10,15 @@ version bump — read the entries.
 
 ### Added
 
+- **New-org onboarding defaults** — a new org is provisioned with an
+  org-default permission boundary (dry_run, allow) and an inactive
+  starter policy instead of arriving empty. Both are inert: agents
+  behave exactly as they did before signup. `detector_config` is
+  deliberately left unset so platform defaults keep applying rather than
+  freezing the org at today's values. Applied to both Clerk creation
+  paths, including the personal workspace one, and idempotent so a
+  webhook retry cannot duplicate it.
+  `scripts/backfill_org_defaults.py --dry-run` covers existing orgs.
 - **Normalized SSO matching** — a renamed app now matches its catalog
   entry ("Anthropic Claude" to "Claude", "Perplexity AI" to
   "Perplexity"), recovering vendors exact matching lost. The rule is
@@ -36,7 +45,6 @@ version bump — read the entries.
   fetches it.
 - Sync errors redact the token before being persisted to
   `last_sync_error`.
-
 ---
 
 ## [0.1.0] — 2026-08-03
