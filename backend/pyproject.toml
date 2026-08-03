@@ -53,6 +53,10 @@ ignore = ["B008"]
 # N803: test mocks use the convention `MockClassName` for patched class injection
 # E501: tests often contain long fixture strings (prompts, payloads) that don't benefit from wrapping
 "tests/**" = ["N803", "E501"]
+# Same rationale, different directory: the benchmark corpus is fixture data
+# that happens to live under app/. Wrapping an attack prompt risks changing
+# the string — and the string is what determines whether a detector fires.
+"app/services/benchmark_service.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

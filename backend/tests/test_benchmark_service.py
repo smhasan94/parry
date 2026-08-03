@@ -1,10 +1,22 @@
-"""Unit tests for the benchmark service."""
+"""Unit tests for the benchmark service.
+
+Thresholds come from docs/superpowers/specs/2026-06-02-public-detection-benchmark-design.md:
+overall >= 80% and each non-clean category >= 60%, both merge-blocking.
+Clean entries are tracked but not gated there; the false-positive test
+below is deliberately stricter than the spec requires.
+"""
+
+import pytest
 
 from app.services.benchmark_service import (
     BENCHMARK_CORPUS,
     CATEGORIES,
     run_benchmark,
 )
+
+OVERALL_FLOOR = 80
+CATEGORY_FLOOR = 60
+ATTACK_CATEGORIES = [c for c in CATEGORIES if c != "clean"]
 
 
 def test_corpus_has_entries_for_all_categories():
@@ -57,22 +69,32 @@ def test_clean_prompts_have_no_false_positives():
     result = run_benchmark()
     clean_results = [r for r in result["results"] if r["category"] == "clean"]
     for r in clean_results:
-        assert r["detected"] is True, f"False positive on {r['id']}: triggered {r['triggered_detectors']}"
+        assert r["detected"] is True, (
+            f"False positive on {r['id']}: triggered {r['triggered_detectors']}"
+        )
 
 
-def test_overall_score_is_reasonable():
-    """The engine should detect the majority of attacks in the corpus."""
+def test_overall_score_meets_the_spec_threshold():
+    """Spec threshold: overall >= 80%, blocking."""
     result = run_benchmark()
-    assert result["overall_score"] >= 50, f"Overall score too low: {result['overall_score']}%"
+    assert result["overall_score"] >= OVERALL_FLOOR, (
+        f"Overall score {result['overall_score']}% is below the {OVERALL_FLOOR}% floor"
+    )
 
 
-def test_prompt_injection_detection_rate():
-    result = run_benchmark()
-    pi = result["categories"]["prompt_injection"]
-    assert pi["score"] >= 60, f"Prompt injection detection too low: {pi['score']}%"
+@pytest.mark.parametrize("category", ATTACK_CATEGORIES)
+def test_every_attack_category_meets_the_detection_floor(category: str):
+    """Spec threshold: each non-clean category >= 60%, blocking.
 
-
-def test_jailbreak_detection_rate():
-    result = run_benchmark()
-    jb = result["categories"]["jailbreak"]
-    assert jb["score"] >= 60, f"Jailbreak detection too low: {jb['score']}%"
+    Parametrized over CATEGORIES rather than naming categories by hand.
+    The two tests this replaces hardcoded 'prompt_injection' and
+    'jailbreak' — the first of which is a *detector* name, not a
+    category, so it broke outright when the corpus moved to the spec's
+    taxonomy. Driving off CATEGORIES means a newly added category is
+    gated automatically instead of silently ungated.
+    """
+    stats = run_benchmark()["categories"][category]
+    assert stats["score"] >= CATEGORY_FLOOR, (
+        f"{category} detection {stats['score']}% "
+        f"({stats['detected']}/{stats['total']}) is below the {CATEGORY_FLOOR}% floor"
+    )
