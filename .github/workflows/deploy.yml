@@ -1,0 +1,138 @@
+name: Deploy
+
+# Images are built here on a hosted runner and shipped to the host as a tarball
+# over SSH. No container registry is involved — see scripts/deploy-remote.sh for
+# why. Hosted minutes are billed, but a deploy is ~4 minutes against 2,000
+# free/month on a private repo.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA or branch to deploy
+        required: false
+        default: main
+
+concurrency:
+  # Never let two deploys touch the host at once — the second would load images
+  # on top of a stack the first is still health-gating.
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and ship to the host
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # workflow_run fires on failure too. Only a green CI run deploys.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || inputs.ref || 'main' }}
+
+    steps:
+      # DEPLOY_SHA reaches actions/checkout's `ref:` and, later, a command run
+      # over SSH. workflow_dispatch inputs are write-access-only, but an
+      # allowlist is cheap and removes the question entirely: a value matching
+      # this pattern cannot carry a quote, semicolon, backtick, or $.
+      # Runs before checkout so a bad ref never reaches it.
+      - name: Validate deploy ref
+        run: |
+          if ! printf '%s' "$DEPLOY_SHA" | grep -Eq '^[A-Za-z0-9._/-]{1,100}$'; then
+            echo "::error::Refusing to deploy ref '$DEPLOY_SHA' — not a plain SHA or branch name."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          # workflow_run checks out the default branch tip by default, which is
+          # not necessarily the commit CI just went green on.
+          ref: ${{ env.DEPLOY_SHA }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          load: true
+          tags: parry-backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build dashboard image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./dashboard
+          load: true
+          tags: parry-dashboard:latest
+          # Vite inlines these at build time, so they must be present here
+          # rather than in the host's .env. They are publishable values by
+          # design — they ship inside the JS bundle either way.
+          build-args: |
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}
+            VITE_STRIPE_PRICE_GROWTH=${{ secrets.VITE_STRIPE_PRICE_GROWTH }}
+          cache-from: type=gha,scope=dashboard
+          cache-to: type=gha,mode=max,scope=dashboard
+
+      - name: Bundle images and config
+        run: |
+          # gzip -1: the runner's CPU is worth more than the extra compression.
+          docker save parry-backend:latest parry-dashboard:latest \
+            | gzip -1 > /tmp/parry-images.tar.gz
+          tar czf /tmp/parry-config.tar.gz \
+            docker-compose.prod.yml \
+            docker-compose.small.yml \
+            Caddyfile \
+            scripts/deploy-remote.sh
+          ls -lh /tmp/parry-images.tar.gz /tmp/parry-config.tar.gz
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pinned host key rather than StrictHostKeyChecking=no. Without this,
+          # whoever answers on port 22 receives the deploy.
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Ship and roll
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          ssh_opts=(-i ~/.ssh/deploy_key -o BatchMode=yes)
+
+          ssh "${ssh_opts[@]}" "$target" 'mkdir -p ~/parry'
+          scp "${ssh_opts[@]}" \
+            /tmp/parry-images.tar.gz /tmp/parry-config.tar.gz \
+            "$target:parry/"
+          # $DEPLOY_SHA is interpolated into the remote command, which is safe
+          # only because the validate step above constrained its character set.
+          ssh "${ssh_opts[@]}" "$target" "
+            set -euo pipefail
+            cd ~/parry
+            tar xzf parry-config.tar.gz
+            rm -f parry-config.tar.gz
+            chmod +x scripts/deploy-remote.sh
+            ./scripts/deploy-remote.sh parry-images.tar.gz $DEPLOY_SHA
+          "
+
+      - name: Remove deploy key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
