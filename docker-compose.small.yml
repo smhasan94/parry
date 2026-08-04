@@ -1,0 +1,62 @@
+# Resource overrides for a 2 GB host — e.g. a $12 DigitalOcean droplet
+# (2 GB / 1 vCPU / 50 GB) or any box where the stock limits over-commit.
+#
+# Apply on top of the production file:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.small.yml up -d
+#
+# docker-compose.prod.yml allows up to 3.4 GB across four services and leaves
+# db, redis and caddy uncapped, which a 2 GB box cannot honour. Two things
+# account for most of the gap:
+#
+#   1. The worker runs --concurrency=4. Each prefork child is a full Python
+#      process with spaCy loaded, so three of them are pure overhead on a box
+#      that will never see concurrent load.
+#   2. timescaledb-tune sizes shared_buffers from the host's total RAM at first
+#      boot. On a small shared box that is too generous, so we pin it.
+#
+# Ceilings below total 2208 MiB against 2048 MiB of RAM. That is deliberate
+# mild over-commit: mem_limit is a per-container ceiling, not a reservation,
+# and measured steady-state usage of this configuration is ~1.45 GB. The point
+# of the caps is to bound one runaway container, not to partition the box.
+# Because of that headroom the host still needs swap — `npm ci` is gone (CI
+# builds the images) but Postgres and the worker can both spike.
+#
+# Do not apply this file to a real production host: --concurrency=1 processes
+# the detection queue serially.
+
+services:
+  backend:
+    # Measured 415 MiB steady-state. Headroom is for WeasyPrint, which builds
+    # compliance-report PDFs in memory.
+    mem_limit: 576m
+
+  worker:
+    command: celery -A app.workers.celery_app worker --loglevel=warning --concurrency=1
+    mem_limit: 576m
+
+  beat:
+    # The stock 256m and an earlier 192m here were both guesses under what this
+    # image actually needs — the worker container measures 290 MiB running the
+    # same code. An OOM-killed beat stops every scheduled job silently,
+    # including the daily discovery sync, so this one gets real headroom.
+    mem_limit: 320m
+
+  db:
+    # The official entrypoint passes trailing args to postgres, and
+    # shared_preload_libraries=timescaledb still comes from the image's
+    # postgresql.conf — this only overrides the one setting.
+    command: postgres -c shared_buffers=256MB
+    mem_limit: 448m
+
+  dashboard:
+    # nginx serving a static bundle. Measured 17 MiB.
+    mem_limit: 96m
+
+  redis:
+    # Uncapped in the production file. Measured 22 MiB as a Celery broker with
+    # no persistence configured, but an unbounded broker on a 2 GB box is how
+    # you lose the host rather than a container.
+    mem_limit: 128m
+
+  caddy:
+    mem_limit: 64m
