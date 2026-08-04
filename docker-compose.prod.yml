@@ -41,6 +41,11 @@ services:
       retries: 5
 
   backend:
+    # Pinned so CI can ship a prebuilt image (docker save / docker load) and
+    # `up -d --no-build` picks it up. Without it compose derives the tag from
+    # the project directory name, which differs between the runner and the
+    # host. See docs/DEPLOY.md.
+    image: parry-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -68,6 +73,8 @@ services:
     cpus: 1.0
 
   worker:
+    # Same image as backend — different command.
+    image: parry-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -96,6 +103,7 @@ services:
     cpus: 2.0
 
   beat:
+    image: parry-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -116,6 +124,7 @@ services:
     cpus: 0.25
 
   dashboard:
+    image: parry-dashboard:latest
     build:
       context: ./dashboard
       dockerfile: Dockerfile
