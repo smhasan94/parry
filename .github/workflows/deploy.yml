@@ -28,10 +28,19 @@ jobs:
     name: Build and ship to the host
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # workflow_run fires on failure too. Only a green CI run deploys.
+    # Three gates:
+    #   1. DEPLOY_ENABLED — kill switch. Until a host exists and its secrets
+    #      are set, this workflow would fail on every push to main. Flip it on
+    #      with `gh variable set DEPLOY_ENABLED --body true` once step 7 of the
+    #      setup in docs/DEPLOY.md is done. A repository *variable* rather than
+    #      a secret because the secrets context is unavailable in a job-level
+    #      `if`, and this value is not sensitive.
+    #   2. workflow_run fires on failure too — only a green CI run deploys.
+    #   3. workflow_dispatch bypasses the CI check but not the kill switch.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success')
     permissions:
       contents: read
     env:
