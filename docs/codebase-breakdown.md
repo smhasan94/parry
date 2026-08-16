@@ -1,8 +1,6 @@
 # Parry — Codebase Breakdown
 
-A ground-truth map of the system: what it does, how a request moves through it, why the load-bearing decisions were made, and where the existing docs have drifted from the code.
-
-Every number below was measured against the tree at `main` (352800e) — counted from the source, not copied from the README. Where a README or doc claim diverges from the code, §8 records it.
+Verified against the tree at `main` (352800e). Every number below came from a command, not from the README. Where README claims diverge from code, I flag it — those are the ones that bite in interviews.
 
 ---
 
@@ -16,7 +14,7 @@ Buyer: security/compliance teams at B2B companies running production AI agents. 
 
 ## 2. Architecture — request flow
 
-Two distinct paths. Most confusion about this system comes from conflating them.
+Two distinct paths. Confusing them is the most likely interview stumble.
 
 ### Path A — async ingest (default, zero added latency)
 
@@ -70,7 +68,7 @@ Async ingest (Celery) and sync blocking (proxy) each need a merged org policy. `
 
 - **Tradeoff:** two implementations that can drift, in exchange for the blocking path never importing the Celery/detection stack into its hot path.
 - **Not taken:** running the full pipeline synchronously on every call. That would put Postgres + 12 detectors + a possible Claude call in the caller's latency budget, destroying the "zero added latency" claim.
-- **Known debt:** the shared merge *should* be extracted into a module both paths import — it just must not drag the detection stack in with it. Until then, `tests/test_merge_policies.py` is the only thing keeping the two copies honest.
+- **Interview risk:** an interviewer will ask "why not extract the shared function?" The honest answer is that it *should* be extracted — the duplication is a known cost, mitigated by `tests/test_merge_policies.py`.
 
 ### 3.2 Protocol over ABC for detectors
 
@@ -162,6 +160,9 @@ Coverage gate: `--cov-fail-under=50` on backend unit tests (`ci.yml`). The comme
 - All versions are `0.1.0` (backend, SDK, TS SDK, FastAPI app).
 - **Sole contributor**, 491 commits, one 4-month window. No external users, issues, or PR reviewers — all 10 PRs are self-merged.
 
+**Say:** "Built solo over four months; ~52k lines, 1,300+ tests, full CI across five packages, deploy pipeline built and gated pending a host. Not yet published or serving traffic."
+**Don't say:** "in production," "used by customers," "available on PyPI."
+
 ---
 
 ## 6. Differentiation
@@ -178,9 +179,9 @@ No competitor is named anywhere in README, docs, or landing copy — so this is 
 
 ---
 
-## 7. Non-obvious implementation details
+## 7. Notable engineering depth
 
-The parts that took real investigation to get right. Read these before changing the code around them.
+Ranked by what a staff-level interviewer would actually find interesting.
 
 | # | Thing | Where |
 |---|---|---|
@@ -198,16 +199,29 @@ The parts that took real investigation to get right. Read these before changing 
 
 ---
 
-## 8. Doc-drift punch list
+## 8. Discrepancies to fix before you interview
 
-Places where the repo's own documentation contradicts its code. Each is a real fix, not a wording preference.
+These are places where the repo's own documentation contradicts its code. Any of them, caught by an interviewer, costs more than the claim was worth.
 
 | # | Claim | Reality |
 |---|---|---|
-| 1 | `backend/pyproject.toml` declares **`spacy>=3.8.0`** and **`scikit-learn>=1.6.0`**; `CLAUDE.md` and README list them under "Detection." | **Neither is imported anywhere in `backend/app/`.** Verified by grep. There is no ML model in this codebase — detection is regex + statistics + a Claude API fallback. Both are heavy transitive-dependency trees pulled into every image build for nothing. Drop them from `pyproject.toml` and correct the README/`CLAUDE.md` stack tables. |
+| 1 | `backend/pyproject.toml` declares **`spacy>=3.8.0`** and **`scikit-learn>=1.6.0`**; `CLAUDE.md` and README list them under "Detection." | **Neither is imported anywhere in `backend/app/`.** Verified by grep. There is no ML model in this codebase — detection is regex + statistics + a Claude API fallback. **Do not put "spaCy/scikit-learn" or "ML classifiers" on your resume.** Separately worth fixing on its own merits: both drag heavy transitive dependency trees into every image build for nothing. |
 | 2 | README: "tamper-evident hash-chained audit log." | The chain is computed **per-export**, not persisted. `audit_export_service.py:14` says so explicitly; the `audit_log` table has no `prev_hash` column (`models.py:351–376`). It's append-only-by-convention with a verifiable export. Phrase it as "verifiable hash-chained audit export," not "hash-chained audit log." |
 | 3 | `docs/architecture.md` describes `agent_events` with `prompt_hash`, `prompt_preview`, `response_preview`. | The model stores **full `prompt` and `response` as `Text`** (`models.py:245–246`). PII stripping happens client-side in the SDK only. The doc is stale relative to the schema. |
 | 4 | README: "700+ tests." | ~1,350+ test functions. Stale downward. |
 | 5 | README/architecture: "ML classifiers" in the detection engine. | No ML classifier exists. `llm_fallback.py` calls the Anthropic API. |
 | 6 | `CLAUDE.md` references `docs/adr/` for Architecture Decision Records. | Directory does not exist. Rationale lives in module docstrings and `docs/plans/` instead — which is defensible, but don't claim ADRs. |
-| 7 | `DetectionPipeline` docstring lists "3. Check policy enforcement" as a stage. | `run()` has no separate policy stage; policy is passed into `event_data` and consumed by the tool-misuse/policy-logic detectors. |
+| 7 | `DetectionPipeline` docstring lists "3. Check policy enforcement" as a stage. | `run()` has no separate policy stage; policy is passed into `event_data` and consumed by the tool-misuse/policy-logic detectors. Cosmetic, but it's in the file you're most likely to be asked to walk through. |
+
+---
+
+## 9. Resume bullets you can defend
+
+Each maps to something above; the file reference is where you'd open the laptop.
+
+- Built an AI-agent runtime security platform — ~52k LOC across a FastAPI/Postgres+TimescaleDB backend, three language SDKs (Python/TypeScript/Go), and a 28-page React dashboard — with 1,300+ tests and an 8-job CI matrix covering every package. *(counts verified above; `ci.yml`)*
+- Designed a 12-detector pipeline with a two-path enforcement model: async fire-and-forget ingest for zero added agent latency, plus a synchronous pre-call blocking endpoint with a Redis-cached policy load on a p99<10ms budget. *(`detection/pipeline.py`, `api/v1/proxy.py:1–15`)*
+- Built a cross-organization threat-intelligence feed that anonymizes detection signatures via normalization + SHA-256, promotes indicators only after independent sighting by 3+ orgs, and decays them at a 14-day half-life. *(`services/threat_intel_service.py:22–70`)*
+- Cut anomaly-detector false positives by gating 3-sigma drift alerts on baseline sample quality — low-quality baselines suppressed outright, medium scaled to 4σ — while emitting drift as a Prometheus histogram on non-triggered events to tune thresholds against live traffic. *(`detectors/anomaly.py:13`, `detection_service.py:78`)*
+- Shipped agentless Shadow-AI discovery: a read-only Okta probe matches SSO grants against a 200-vendor catalog and files findings into an EU AI Act Article 26 register, with asymmetric name matching validated at 0 false positives over 32 enterprise apps and machine-suggested risk tiers held as human-review proposals rather than approved classifications. *(`discovery/sso_probe.py`, `catalog/services.json`, CHANGELOG)*
+- Hardened the credential path against SSRF and secret leakage: Fernet encryption that refuses to store rather than fall back to plaintext, host allowlist validation at write time so an unattended worker never fetches an attacker-controlled host, and token redaction in persisted sync errors. *(`services/probe_credential_service.py`)*
