@@ -126,6 +126,16 @@ $RECYCLE.BIN/
 CLAUDE.local.md
 **/CLAUDE.local.md
 
+# ── Nested repos ─────────────────────────────────────────────
+# career-ops is its own git repo that happens to live here. Ignored so
+# it stays out of `git status` and can't be swallowed by `git add -A`.
+backend/career-ops/
+
+# ── Secret scanner output ────────────────────────────────────
+# Findings can quote the matched secret. Never commit a report.
+gitleaks-report.json
+trufflehog-report.json
+
 # ── Misc ─────────────────────────────────────────────────────
 .cache/
 tmp/
