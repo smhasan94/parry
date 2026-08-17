@@ -28,7 +28,6 @@ from app.db.models import Agent, AgentEvent, Org, Policy, Severity
 from app.detection.base import DetectionResult
 from app.services import detection_service
 
-
 # ── _merge_policies ───────────────────────────────────────────────
 
 
@@ -137,12 +136,13 @@ def _make_agent(org_id: uuid.UUID, baseline: dict[str, Any] | None = None) -> Ag
     )
 
 
-def _make_event(agent_id: uuid.UUID) -> AgentEvent:
+def _make_event(agent_id: uuid.UUID, session_id: uuid.UUID | None = None) -> AgentEvent:
     from datetime import UTC, datetime
 
     return AgentEvent(
         id=uuid.uuid4(),
         agent_id=agent_id,
+        session_id=session_id,
         timestamp=datetime.now(UTC),
         prompt="hello",
         response="hi",
@@ -221,12 +221,18 @@ async def test_run_and_persist_creates_detection_rows_for_every_result() -> None
 
     results = [
         DetectionResult(
-            triggered=False, severity=Severity.LOW, confidence=0.1,
-            reason="clean", detector="prompt_injection",
+            triggered=False,
+            severity=Severity.LOW,
+            confidence=0.1,
+            reason="clean",
+            detector="prompt_injection",
         ),
         DetectionResult(
-            triggered=False, severity=Severity.LOW, confidence=0.0,
-            reason="no policy", detector="tool_misuse",
+            triggered=False,
+            severity=Severity.LOW,
+            confidence=0.0,
+            reason="no policy",
+            detector="tool_misuse",
         ),
     ]
 
@@ -257,6 +263,124 @@ async def test_run_and_persist_creates_detection_rows_for_every_result() -> None
 
 
 @pytest.mark.asyncio
+async def test_run_and_persist_passes_session_history_to_pipeline() -> None:
+    """CostExploitLoopDetector reads event_data["session_history"] and
+    bails with "Insufficient session history" when it is missing. Nothing
+    used to populate it, so the detector could never fire in production —
+    only in its own unit tests, which inject the key by hand. This asserts
+    the orchestrator actually loads prior events in the session and hands
+    them to the pipeline."""
+    org_id = uuid.uuid4()
+    agent = _make_agent(org_id, baseline={"avg_token_count": 50})
+    event = _make_event(agent.id, session_id=uuid.uuid4())
+    org = _make_org(org_id)
+
+    prior = [_make_event(agent.id, session_id=event.session_id) for _ in range(12)]
+    for e in prior:
+        e.tool_calls = [{"name": "search"}]
+
+    db = AsyncMock()
+    db.get.side_effect = [agent, org]
+    db.execute.side_effect = [
+        _scalars_returning([]),  # active policies
+        _scalars_returning(prior),  # session history
+    ]
+
+    pipeline = _build_pipeline([], max_severity=None)
+    with patch("app.detection.pipeline.DetectionPipeline", return_value=pipeline):
+        with (
+            patch(
+                "app.services.webhook_dispatch_service.dispatch_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.baseline_service.compute_baseline",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+        ):
+            await detection_service.run_and_persist_detections(db, event)
+
+    event_data = pipeline.run.await_args.args[0]
+    history = event_data["session_history"]
+    assert len(history) == 12
+    # The detector reads .get("tool_calls") off each entry — dicts, not ORM rows.
+    assert all(isinstance(entry, dict) for entry in history)
+    assert history[0]["tool_calls"] == [{"name": "search"}]
+
+
+@pytest.mark.asyncio
+async def test_run_and_persist_omits_session_history_for_sessionless_event() -> None:
+    """An event with no session_id has no session to reconstruct. Skip the
+    query entirely rather than scanning the hypertable for a NULL match."""
+    org_id = uuid.uuid4()
+    agent = _make_agent(org_id, baseline={"avg_token_count": 50})
+    event = _make_event(agent.id)  # session_id is None
+    org = _make_org(org_id)
+
+    db = AsyncMock()
+    db.get.side_effect = [agent, org]
+    db.execute.return_value = _scalars_returning([])  # policies only
+
+    pipeline = _build_pipeline([], max_severity=None)
+    with patch("app.detection.pipeline.DetectionPipeline", return_value=pipeline):
+        with (
+            patch(
+                "app.services.webhook_dispatch_service.dispatch_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.services.baseline_service.compute_baseline",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+        ):
+            await detection_service.run_and_persist_detections(db, event)
+
+    event_data = pipeline.run.await_args.args[0]
+    assert event_data["session_history"] == []
+    # Only the policy query ran — no second round trip for a missing session.
+    assert db.execute.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_loaded_session_history_actually_fires_the_loop_detector() -> None:
+    """Contract test across the loader/detector seam.
+
+    The two tests above prove ``session_history`` reaches the pipeline, but
+    not that its *shape* is one CostExploitLoopDetector can use — which is
+    the thing that was silently wrong. This feeds the real detector the
+    real output of ``_load_session_history`` and asserts it fires.
+
+    Guards against a future change to the dict keys, or to
+    SESSION_HISTORY_LIMIT dropping below the detector's 10-entry minimum,
+    quietly killing the detector again.
+    """
+    from app.detection.detectors.cost_explosion import CostExploitLoopDetector
+
+    agent_id = uuid.uuid4()
+    session_id = uuid.uuid4()
+    event = _make_event(agent_id, session_id=session_id)
+    event.tool_calls = [{"name": "search"}]
+
+    prior = [_make_event(agent_id, session_id=session_id) for _ in range(15)]
+    for e in prior:
+        e.tool_calls = [{"name": "search"}]
+
+    db = AsyncMock()
+    db.execute.return_value = _scalars_returning(prior)
+
+    history = await detection_service._load_session_history(db, event)
+
+    result = CostExploitLoopDetector().detect(
+        {"tool_calls": event.tool_calls, "session_history": history}
+    )
+
+    assert result.triggered is True
+    assert result.detector == "cost_exploit_loop"
+
+
+@pytest.mark.asyncio
 async def test_run_and_persist_creates_incident_when_any_result_triggers() -> None:
     """A triggered result creates exactly one Incident row that groups
     all triggered detections."""
@@ -267,12 +391,18 @@ async def test_run_and_persist_creates_incident_when_any_result_triggers() -> No
 
     results = [
         DetectionResult(
-            triggered=True, severity=Severity.HIGH, confidence=0.9,
-            reason="injection", detector="prompt_injection",
+            triggered=True,
+            severity=Severity.HIGH,
+            confidence=0.9,
+            reason="injection",
+            detector="prompt_injection",
         ),
         DetectionResult(
-            triggered=False, severity=Severity.LOW, confidence=0.1,
-            reason="clean", detector="jailbreak",
+            triggered=False,
+            severity=Severity.LOW,
+            confidence=0.1,
+            reason="clean",
+            detector="jailbreak",
         ),
     ]
 
@@ -323,8 +453,11 @@ async def test_run_and_persist_skips_incident_when_no_result_triggers() -> None:
 
     results = [
         DetectionResult(
-            triggered=False, severity=Severity.LOW, confidence=0.0,
-            reason="clean", detector="prompt_injection",
+            triggered=False,
+            severity=Severity.LOW,
+            confidence=0.0,
+            reason="clean",
+            detector="prompt_injection",
         ),
     ]
 
@@ -364,8 +497,11 @@ async def test_run_and_persist_auto_computes_baseline_when_agent_has_none() -> N
 
     results = [
         DetectionResult(
-            triggered=False, severity=Severity.LOW, confidence=0.0,
-            reason="clean", detector="prompt_injection",
+            triggered=False,
+            severity=Severity.LOW,
+            confidence=0.0,
+            reason="clean",
+            detector="prompt_injection",
         ),
     ]
 
