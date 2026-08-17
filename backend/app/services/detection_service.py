@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from typing import Any
 
 import structlog
@@ -14,6 +15,15 @@ from app.db.models import Agent, AgentEvent, Detection, Incident, Org, Policy, S
 from app.services.detector_config_service import merged_config
 
 log = structlog.get_logger()
+
+# CostExploitLoopDetector reads the last 20 entries and needs 10 before it
+# fires, so 20 is the whole useful window — loading more just costs I/O.
+SESSION_HISTORY_LIMIT = 20
+
+# Upper bound on how far back to look. agent_events is a hypertable; an
+# unbounded predicate plans as a scan across every chunk. A cost-exploit
+# loop burns its budget in minutes, so an hour is already generous.
+SESSION_HISTORY_WINDOW = timedelta(hours=1)
 
 
 async def run_and_persist_detections(
@@ -38,6 +48,8 @@ async def run_and_persist_detections(
     org_for_config = await db.get(Org, agent.org_id)
     detector_config = merged_config(org_for_config.detector_config if org_for_config else None)
 
+    session_history = await _load_session_history(db, event)
+
     event_data = {
         "prompt": event.prompt,
         "response": event.response,
@@ -48,6 +60,7 @@ async def run_and_persist_detections(
         "baseline": agent.baseline or {},
         "policy": merged_policy,
         "detector_config": detector_config,
+        "session_history": session_history,
     }
 
     pipeline = DetectionPipeline()
@@ -92,16 +105,21 @@ async def run_and_persist_detections(
             try:
                 from app.services.webhook_dispatch_service import dispatch_event
 
-                await dispatch_event(db, agent.org_id, "detection.triggered", {
-                    "detection_id": str(d.id),
-                    "detector": d.detector,
-                    "severity": d.severity.value,
-                    "confidence": d.confidence,
-                    "reason": d.reason[:200],
-                    "event_id": str(d.event_id),
-                    "agent_id": str(agent.id),
-                    "agent_name": agent.name,
-                })
+                await dispatch_event(
+                    db,
+                    agent.org_id,
+                    "detection.triggered",
+                    {
+                        "detection_id": str(d.id),
+                        "detector": d.detector,
+                        "severity": d.severity.value,
+                        "confidence": d.confidence,
+                        "reason": d.reason[:200],
+                        "event_id": str(d.event_id),
+                        "agent_id": str(agent.id),
+                        "agent_name": agent.name,
+                    },
+                )
             except Exception:
                 log.debug("webhook.detection_dispatch_failed", exc_info=True)
 
@@ -146,14 +164,19 @@ async def run_and_persist_detections(
         try:
             from app.services.webhook_dispatch_service import dispatch_event as wh_dispatch
 
-            await wh_dispatch(db, agent.org_id, "incident.created", {
-                "incident_id": str(incident.id),
-                "title": incident.title,
-                "severity": incident.severity.value,
-                "agent_id": str(agent.id),
-                "agent_name": agent.name,
-                "detection_count": len(triggered_results),
-            })
+            await wh_dispatch(
+                db,
+                agent.org_id,
+                "incident.created",
+                {
+                    "incident_id": str(incident.id),
+                    "title": incident.title,
+                    "severity": incident.severity.value,
+                    "agent_id": str(agent.id),
+                    "agent_name": agent.name,
+                    "detection_count": len(triggered_results),
+                },
+            )
         except Exception:
             log.debug("webhook.incident_dispatch_failed", exc_info=True)
 
@@ -186,6 +209,57 @@ async def run_and_persist_detections(
             )
 
     return detections
+
+
+async def _load_session_history(
+    db: AsyncSession,
+    event: AgentEvent,
+) -> list[dict[str, Any]]:
+    """Load the recent events preceding this one in the same session.
+
+    ``CostExploitLoopDetector`` compares the current event's tool-call
+    signature against the last 20 entries and needs at least 10 before
+    it will fire, so ``SESSION_HISTORY_LIMIT`` is sized just above that
+    window rather than loading the whole session.
+
+    ``agent_events`` is a TimescaleDB hypertable, so this filters on
+    ``agent_id`` and a bounded time range — never on ``session_id``
+    alone, which would plan as a scan across every chunk.
+
+    Returns plain dicts because detectors are given a JSON-ish
+    ``event_data`` mapping, not ORM rows.
+    """
+    if event.session_id is None:
+        return []
+
+    window_start = event.timestamp - SESSION_HISTORY_WINDOW
+
+    result = await db.execute(
+        select(AgentEvent)
+        .where(
+            AgentEvent.agent_id == event.agent_id,
+            AgentEvent.session_id == event.session_id,
+            AgentEvent.timestamp >= window_start,
+            AgentEvent.timestamp <= event.timestamp,
+            AgentEvent.id != event.id,
+        )
+        .order_by(AgentEvent.timestamp.desc())
+        .limit(SESSION_HISTORY_LIMIT)
+    )
+    rows = list(result.scalars().all())
+
+    # Query is newest-first so the LIMIT keeps the most recent events;
+    # the detector treats the tail as "recent", so hand it back oldest-first.
+    rows.reverse()
+
+    return [
+        {
+            "tool_calls": row.tool_calls or [],
+            "token_count": row.token_count,
+            "model": row.model,
+        }
+        for row in rows
+    ]
 
 
 async def _get_active_policies(db: AsyncSession, org_id: uuid.UUID) -> list[Policy]:
