@@ -8,9 +8,24 @@ from app.services.detector_config_service import threshold_for
 # Common prompt injection patterns
 INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
     (
-        re.compile(r"ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts)", re.I),
+        re.compile(
+            r"ignore\s+(all\s+|the\s+)?(previous|above|prior)\s+(instructions?|prompts?)",
+            re.I,
+        ),
         "Instruction override attempt",
         0.9,
+    ),
+    (
+        # Narrow on purpose. "ignore the user request" alone is ordinary
+        # developer prose ("the API will ignore the user request if
+        # rate limited") — the redirect clause is what makes it an attack.
+        re.compile(
+            r"ignore\s+(the\s+)?users?(?:'s|s')?\s+"
+            r"(request|instruction|question|query)s?\s+and\s+(instead|rather)",
+            re.I,
+        ),
+        "Principal redirect attempt",
+        0.85,
     ),
     (
         re.compile(r"you\s+are\s+now\s+(?:a|an)\s+", re.I),
@@ -18,7 +33,7 @@ INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
         0.8,
     ),
     (
-        re.compile(r"disregard\s+(all\s+)?(previous|your)\s+", re.I),
+        re.compile(r"disregard\s+(all\s+|the\s+)?(previous|prior|above|your)\s+", re.I),
         "Instruction disregard attempt",
         0.85,
     ),
