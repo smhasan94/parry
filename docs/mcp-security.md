@@ -157,10 +157,13 @@ returns 402 with `X-Upgrade-Required: true`.
 - **HTTP and SSE transports.** Stdio is the launch transport because
   it's the riskiest (an `npx` install of an MCP server gets full
   manifest control). HTTP and SSE will follow.
-- **Indirect injection from tool results.** A compromised tool can
-  also poison an agent at call time (e.g., search results that hide
-  instructions). That's a separate detector on the roadmap; the
-  current layer covers manifest-time attacks only.
+- **Call-time interception of tool results.** The `indirect_injection`
+  detector now scores instructions smuggled through content — search
+  results, retrieved documents, quoted email, extracted PDF text — but
+  it reads the event's prompt. It catches poisoned tool output once
+  that output has been folded into a prompt, not at the moment the
+  tool returns. A dedicated tool-result hook is still roadmap; this
+  MCP layer covers manifest-time attacks only.
 - **Public threat-intel feed sharing.** Suspicious MCP server
   hashes stay org-local for now. Sharing across orgs (opt-in) is
   on the cross-agent threat intel roadmap.

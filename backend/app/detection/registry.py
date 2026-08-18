@@ -7,6 +7,7 @@ from app.detection.detectors.cost_explosion import (
 )
 from app.detection.detectors.custom_rules import CustomRulesDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
+from app.detection.detectors.indirect_injection import IndirectInjectionDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.mcp_manifest import MCPManifestDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
@@ -17,6 +18,7 @@ from app.detection.detectors.tool_misuse import ToolMisuseDetector
 # All registered detectors — order matters for the pipeline
 DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
+    IndirectInjectionDetector(),
     JailbreakDetector(),
     ToolMisuseDetector(),
     DataExfiltrationDetector(),

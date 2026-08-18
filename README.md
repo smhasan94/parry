@@ -66,11 +66,12 @@ Unrecognized apps are kept as probe events for triage but never enter the regist
 
 ### Detection Engine
 
-12 detectors run in parallel on every event:
+13 detectors run in parallel on every event:
 
 | Detector | What it catches | Method |
 |---|---|---|
 | **Prompt Injection** | "Ignore previous instructions", fake system prompts | 10 regex patterns, confidence-weighted |
+| **Indirect Injection** | Instructions smuggled in documents, search results, quoted email, MCP tool output | Content-boundary + embedded-payload scoring |
 | **Jailbreak** | DAN, developer mode, persona hijacks | 8 known jailbreak families |
 | **Tool Misuse** | Tools outside policy allowlist/blocklist | Policy comparison |
 | **Data Exfiltration** | Credit cards, SSNs, API keys, credentials in responses | 6 PII/secret patterns |
@@ -170,7 +171,7 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
                                  v                       +--------------+
                     +-------------------------+
                     |   Detection Pipeline     |
-                    |  12 detectors parallel   |
+                    |  13 detectors parallel   |
                     |  + Threat intel feed     |
                     |  + Permission check      |
                     |  + LLM fallback          |

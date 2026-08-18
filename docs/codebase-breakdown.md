@@ -23,7 +23,7 @@ Agent → SDK wrapper → interceptor.strip_pii() → background thread
      → POST /api/v1/events/ingest  (202 Accepted)
      → event_service.ingest_event() → agent_events (TimescaleDB hypertable)
      → Celery .delay() → detection_task
-     → DetectionPipeline.run() — 12 detectors in a ThreadPoolExecutor
+     → DetectionPipeline.run() — 13 detectors in a ThreadPoolExecutor
      → ambiguous (0.4–0.7 conf) → Claude LLM fallback
      → persist Detection rows → _create_or_update_incident()
      → webhooks + alerts + threat-intel extraction (conf ≥ 0.7)
@@ -67,7 +67,7 @@ Agent → SDK → POST /api/v1/proxy/check (always 200; decision in body)
 Async ingest (Celery) and sync blocking (proxy) each need a merged org policy. `proxy.py:54 _merge_policies` is a **deliberate copy** of `detection_service.py:198 _merge_policies`, with a comment saying so: *"Mirrors detection_service._merge_policies so the blocking path enforces the same rules as the async ingest path."*
 
 - **Tradeoff:** two implementations that can drift, in exchange for the blocking path never importing the Celery/detection stack into its hot path.
-- **Not taken:** running the full pipeline synchronously on every call. That would put Postgres + 12 detectors + a possible Claude call in the caller's latency budget, destroying the "zero added latency" claim.
+- **Not taken:** running the full pipeline synchronously on every call. That would put Postgres + 13 detectors + a possible Claude call in the caller's latency budget, destroying the "zero added latency" claim.
 - **Interview risk:** an interviewer will ask "why not extract the shared function?" The honest answer is that it *should* be extracted — the duplication is a known cost, mitigated by `tests/test_merge_policies.py`.
 
 ### 3.2 Protocol over ABC for detectors

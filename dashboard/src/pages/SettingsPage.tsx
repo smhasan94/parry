@@ -262,6 +262,11 @@ const DETECTOR_LABELS: Record<string, { label: string; description: string }> = 
     label: "Prompt Injection",
     description: "Detects attempts to override or hijack the agent's system prompt.",
   },
+  indirect_injection: {
+    label: "Indirect Injection",
+    description:
+      "Detects instructions smuggled through content the agent was asked to process \u2014 documents, search results, quoted email, extracted PDF text.",
+  },
   jailbreak: {
     label: "Jailbreak",
     description: "Catches DAN, developer mode, and other jailbreak prompts.",
