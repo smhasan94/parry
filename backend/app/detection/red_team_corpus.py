@@ -44,6 +44,7 @@ _VALID_SEVERITIES = {"low", "medium", "high", "critical"}
 _REQUIRED_ATTACK_FIELDS = {"id", "severity_expected", "expected_detectors"}
 _KNOWN_DETECTORS = {
     "prompt_injection",
+    "indirect_injection",
     "jailbreak",
     "privilege_escalation",
     "tool_misuse",

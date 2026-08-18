@@ -75,6 +75,37 @@ via `detector_config["prompt_injection"]["trigger_threshold"]`.
 Severity is `critical` at confidence ≥ 0.9, otherwise `high`.
 Severity is `low` when not triggered.
 
+### `indirect_injection`
+
+Catches instructions that arrive through *content* rather than
+from the principal. The user asks for something ordinary —
+"summarise this document", "reply to this thread" — and the
+hostile instruction rides in on the material being processed.
+See Greshake et al 2023 (arXiv:2302.12173).
+
+Scoring is two-factor. A **content boundary** is evidence the
+prompt carries third-party text: a `---` or triple-backtick
+fence, a quoted mail chain, a markdown table, embedded JSON, or
+a provenance phrase (`extracted text from`, `search results
+for`, `the following document`). An **embedded payload** is
+instruction-shaped content: pseudo-system tags, covert-action
+phrasing (`without notifying the user`), principal abandonment
+(`stop helping the user`), system-prompt disclosure requests,
+bulk exfiltration imperatives, and privilege requests.
+
+Soft payloads require both factors. Each alone is unremarkable
+— a fenced document is the normal case, and a bare imperative
+from the user is direct injection, which `prompt_injection`
+already covers. Pseudo-privilege override markers (`[[ADMIN
+OVERRIDE:`, `⟨ADMIN-OVERRIDE⟩`) are the exception and score on
+their own, because no legitimate prompt wraps `OVERRIDE` in
+bracket delimiters to address the model.
+
+Weights run 0.75 to 0.95. Default trigger threshold is 0.6.
+Severity is `critical` at confidence ≥ 0.9, otherwise `high`.
+`details` carries the matched signals and which boundaries were
+seen, so a reviewer can tell *how* the content got in.
+
 ### `jailbreak`
 
 Detects model-behaviour-bypass attempts. Pattern catalogue
@@ -315,7 +346,7 @@ page.
 
 Not in the registered detector list — `llm_fallback` is a
 **meta-detector** that only runs when the built-ins are
-ambiguous. After every event passes through the twelve detectors,
+ambiguous. After every event passes through the thirteen detectors,
 the pipeline collects any non-triggered results whose confidence
 falls in the **0.4–0.7 ambiguous zone** and forwards them to
 Claude Sonnet 4.6 for a second opinion. The fallback is given
@@ -356,6 +387,7 @@ other than a confidence score.
 | Detector | Default threshold | Severity range | Stateful |
 | --- | --- | --- | --- |
 | `prompt_injection` | 0.6 | low → critical | no |
+| `indirect_injection` | 0.6 | low → critical | no |
 | `jailbreak` | 0.7 | low → critical | no |
 | `privilege_escalation` | 0.7 | low → critical | no |
 | `data_exfiltration` | n/a | low → critical | no |

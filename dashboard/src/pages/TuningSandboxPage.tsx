@@ -9,6 +9,7 @@ import { FlaskConical } from "lucide-react";
 
 const DETECTORS = [
   { key: "prompt_injection", label: "Prompt Injection", defaultThreshold: 0.6 },
+  { key: "indirect_injection", label: "Indirect Injection", defaultThreshold: 0.6 },
   { key: "jailbreak", label: "Jailbreak", defaultThreshold: 0.7 },
   { key: "privilege_escalation", label: "Privilege Escalation", defaultThreshold: 0.7 },
   { key: "data_exfiltration", label: "Data Exfiltration", defaultThreshold: 0.5 },
