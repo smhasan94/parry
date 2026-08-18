@@ -9,8 +9,8 @@
 # account for most of the gap:
 #
 #   1. The worker runs --concurrency=4. Each prefork child is a full Python
-#      process with spaCy loaded, so three of them are pure overhead on a box
-#      that will never see concurrent load.
+#      process with the whole app imported, so three of them are pure
+#      overhead on a box that will never see concurrent load.
 #   2. timescaledb-tune sizes shared_buffers from the host's total RAM at first
 #      boot. On a small shared box that is too generous, so we pin it.
 #

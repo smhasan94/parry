@@ -47,7 +47,7 @@ parry/
 - **Backend:** FastAPI, Python 3.12, SQLAlchemy 2.x (async), Alembic, Pydantic v2
 - **Database:** PostgreSQL 16 + TimescaleDB (hypertable for agent_events)
 - **Cache/Queue:** Redis 7, Celery 5
-- **Detection:** spaCy, scikit-learn, Anthropic API (claude-sonnet-4-6 for LLM fallback)
+- **Detection:** regex/heuristic rules + statistical baselining (stdlib `statistics`), Anthropic API (claude-sonnet-4-6 for LLM fallback). No ML model is trained or loaded.
 - **Auth:** Clerk (JWT verification middleware)
 - **Billing:** Stripe (metered billing per agent)
 - **Dashboard:** React 18, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
