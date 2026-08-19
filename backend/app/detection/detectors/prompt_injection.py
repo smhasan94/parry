@@ -10,7 +10,8 @@ from app.services.detector_config_service import threshold_for
 INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
     (
         re.compile(
-            r"ignore\s+(all\s+|the\s+)?(previous|above|prior)\s+(instructions?|prompts?)",
+            r"ignore\s+(all\s+|the\s+|your\s+)?(previous|above|prior)\s+"
+            r"(instructions?|prompts?|rules?|directions?)",
             re.I,
         ),
         "Instruction override attempt",
@@ -54,7 +55,7 @@ INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
         0.9,
     ),
     (
-        re.compile(r"forget\s+(everything|all|what)\s+", re.I),
+        re.compile(r"forget\s+(everything|all|what|every|each)\s+", re.I),
         "Memory wipe attempt",
         0.75,
     ),
@@ -64,12 +65,17 @@ INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
         0.8,
     ),
     (
-        re.compile(r"pretend\s+(you|that)\s+(are|have|can)", re.I),
+        re.compile(
+            r"pretend\s+(you|that\s+you)\s+(are|have|can)[^.?!\n]{0,40}?"
+            r"(no\s+(rules?|restrictions?|instructions?|guidelines?|limits?)"
+            r"|unrestricted|unfiltered|a\s+different\s+ai|another\s+ai)",
+            re.I,
+        ),
         "Role-play exploitation attempt",
         0.7,
     ),
     (
-        re.compile(r"act\s+as\s+(if\s+)?(you|a|an)\s+", re.I),
+        re.compile(r"act\s+as\s+if\s+(you|i)\s+", re.I),
         "Role assumption attempt",
         0.65,
     ),

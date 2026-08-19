@@ -72,11 +72,11 @@ Unrecognized apps are kept as probe events for triage but never enter the regist
 |---|---|---|
 | **Prompt Injection** | "Ignore previous instructions", fake system prompts | 10 regex patterns, confidence-weighted |
 | **Indirect Injection** | Instructions smuggled in documents, search results, quoted email, MCP tool output | Content-boundary + embedded-payload scoring |
-| **Jailbreak** | DAN, developer mode, persona hijacks | 8 known jailbreak families |
+| **Jailbreak** | DAN, AIM, developer mode, deceased-relative and persona pretexts | 10 known jailbreak families |
 | **Tool Misuse** | Tools outside policy allowlist/blocklist | Policy comparison |
 | **Data Exfiltration** | Credit cards, SSNs, API keys, credentials in responses | 6 PII/secret patterns |
 | **Exfiltration Intent** | Prompts asking for the system prompt, credential files, bulk records, or conversation PII | 5 intent patterns, target-anchored |
-| **Privilege Escalation** | sudo/admin claims, disable auth/logging | 6 escalation patterns |
+| **Privilege Escalation** | Self-elevation, false operator identity, guardrail disabling, role forging | 11 escalation patterns |
 | **Anomaly** | Token/latency drift (3-sigma), unknown models, excessive tool calls | Statistical baseline comparison |
 | **Custom Rules** | Org-defined regex patterns | Per-org rules with severity + target |
 | **MCP Manifest** | Injection, jailbreaks, unicode smuggling in MCP tool descriptions | 6 pattern categories |

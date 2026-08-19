@@ -8,34 +8,76 @@ from app.services.detector_config_service import threshold_for
 
 PRIVILEGE_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
     (
-        re.compile(r"(?i)(sudo|root|admin)\s+(access|privilege|permission|rights)", re.I),
-        "Elevated privilege request",
-        0.8,
-    ),
-    (
-        re.compile(r"(?i)grant\s+(me|yourself)\s+(admin|root|superuser)", re.I),
+        # Anchored on the beneficiary, not the keyword. "Grant a user
+        # admin access in Postgres" is a DBA question; "grant me admin
+        # access" is the agent being asked to elevate its own caller.
+        re.compile(
+            r"grant\s+(me|us|yourself|the\s+agent|this\s+session)\b[^.?!\n]{0,40}?"
+            r"(admin|root|sudo|superuser|elevated|privileg)",
+            re.I,
+        ),
         "Self-privilege escalation",
         0.9,
     ),
     (
-        re.compile(r"(?i)modify\s+(your|the)\s+(permissions|access\s+level|role)", re.I),
+        re.compile(r"you\s+(now\s+)?have\s+(root|admin|superuser|full\s+access)", re.I),
+        "Privilege assertion",
+        0.9,
+    ),
+    (
+        re.compile(r"modify\s+(your|the)\s+(permissions|access\s+level|role)", re.I),
         "Permission modification attempt",
         0.85,
     ),
     (
-        re.compile(r"(?i)(execute|run)\s+(as|with)\s+(admin|root|system)", re.I),
+        re.compile(r"(execute|run)\s+(as|with)\s+(admin|root|system)", re.I),
         "Elevated execution attempt",
         0.9,
     ),
     (
-        re.compile(r"(?i)override\s+(access|security|auth)", re.I),
+        re.compile(r"override\s+(all\s+|the\s+)?(access|security|auth|safety)", re.I),
         "Security override attempt",
         0.85,
     ),
     (
-        re.compile(r"(?i)disable\s+(auth|authentication|authorization|security|logging)", re.I),
+        re.compile(r"disable\s+(auth|authentication|authorization|security|logging)", re.I),
         "Security disabling attempt",
         0.9,
+    ),
+    (
+        re.compile(r"disable\s+(all\s+|the\s+)?(guardrails?|safeguards?|safety\s+checks?)", re.I),
+        "Guardrail disabling attempt",
+        0.9,
+    ),
+    (
+        re.compile(r"bypass\s+(all\s+|the\s+)?(confirmation|approval|permission)", re.I),
+        "Approval bypass attempt",
+        0.85,
+    ),
+    (
+        # Claiming to be *the model's own* operator. "I am a developer"
+        # is ordinary; "I am one of your developers" is false authority.
+        re.compile(
+            r"(i\s+am|i'm)\s+(one\s+of\s+)?your\s+"
+            r"(developer|engineer|creator|operator|admin)",
+            re.I,
+        ),
+        "False operator identity claim",
+        0.85,
+    ),
+    (
+        re.compile(
+            r"inherit\s+(the\s+)?(permissions?|privileges?|rights?|access|role)", re.I
+        ),
+        "Permission inheritance attempt",
+        0.85,
+    ),
+    (
+        # superadmin/superuser as a requested role value. Distinct from
+        # "explain how JWT role claims work", which names no role.
+        re.compile(r"role\s*[:=]?\s*['\"]?\s*(superadmin|superuser|root)\b", re.I),
+        "Elevated role assignment attempt",
+        0.85,
     ),
 ]
 

@@ -33,13 +33,33 @@ JAILBREAK_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
         0.9,
     ),
     (
-        re.compile(r"(?i)evil\s+(mode|version|twin|bot)", re.I),
+        re.compile(r"(?i)evil\s+(?:\w+\s+){0,2}(mode|version|twin|bot|confidant|persona)", re.I),
         "Evil mode activation",
         0.8,
     ),
     (
         re.compile(r"(?i)(uncensored|unfiltered|unmoderated)\s+(mode|version|response)", re.I),
         "Uncensored mode request",
+        0.85,
+    ),
+    (
+        # AIM (Always Intelligent and Machiavellian). Anchored on the
+        # expansion so the acronym alone — an optimizer, a company name —
+        # is not enough.
+        re.compile(r"\bAIM\b[^.\n]{0,60}(always\s+intelligent|machiavellian)", re.I),
+        "AIM persona jailbreak",
+        0.9,
+    ),
+    (
+        # The deceased-relative pretext: an emotional frame used to make
+        # refusal feel cruel. Narrow on purpose — talking *about* a
+        # grandmother is not the attack; asking the model to become one is.
+        re.compile(
+            r"act\s+as\s+my\s+(deceased|dead|late|departed)\s+"
+            r"(grand)?(mother|father|ma|pa|parent|aunt|uncle)",
+            re.I,
+        ),
+        "Deceased-relative roleplay pretext",
         0.85,
     ),
     (
