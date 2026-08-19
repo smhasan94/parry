@@ -123,7 +123,7 @@ The SDK swallows all exceptions (`interceptor.py:48–66`), the proxy returns `a
 | SDKs | 3 languages; Python has **7 framework wrappers** + MCP client | `sdk/parry/wrappers/` |
 | Vendor catalog | **200** entries | `catalog/services.json`, verified by parse |
 | Red-team corpus | **48** attacks, 8 categories × 6 | verified by parse of `red_team_corpus/*.json` |
-| Benchmark corpus | 42 attacks / 7 categories + 10 clean (FP check) | `benchmark_service.py:11` |
+| Benchmark corpus | 42 attacks / 7 categories + 10 clean (FP check). Public and deliberately separate from the server-side red-team corpus — the endpoint is unauthenticated and publishes per-entry PASS/MISS | `benchmark_service.py:11` |
 | Backend dependencies | 24 production | `backend/pyproject.toml` |
 | Python SDK dependencies | **1 required** (`httpx`) + 8 optional extras | deliberate — SDK stays light |
 

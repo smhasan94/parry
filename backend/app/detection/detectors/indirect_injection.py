@@ -111,7 +111,11 @@ EMBEDDED_PAYLOAD_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
         0.8,
     ),
     (
-        re.compile(r"grant\s+(me|us|the\s+sender)\s+(admin|root|full|elevated)", re.I),
+        re.compile(
+            r"grant\s+(me|us|them|this\s+user|the\s+(sender|requester|requestor|user))\s+"
+            r"(admin|root|full|elevated)",
+            re.I,
+        ),
         "Privilege request in embedded content",
         0.8,
     ),
