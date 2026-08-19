@@ -45,6 +45,7 @@ _REQUIRED_ATTACK_FIELDS = {"id", "severity_expected", "expected_detectors"}
 _KNOWN_DETECTORS = {
     "prompt_injection",
     "indirect_injection",
+    "exfil_intent",
     "jailbreak",
     "privilege_escalation",
     "tool_misuse",

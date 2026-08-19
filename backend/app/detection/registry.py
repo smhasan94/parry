@@ -7,6 +7,7 @@ from app.detection.detectors.cost_explosion import (
 )
 from app.detection.detectors.custom_rules import CustomRulesDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
+from app.detection.detectors.exfil_intent import ExfiltrationIntentDetector
 from app.detection.detectors.indirect_injection import IndirectInjectionDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.mcp_manifest import MCPManifestDetector
@@ -19,6 +20,7 @@ from app.detection.detectors.tool_misuse import ToolMisuseDetector
 DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
     IndirectInjectionDetector(),
+    ExfiltrationIntentDetector(),
     JailbreakDetector(),
     ToolMisuseDetector(),
     DataExfiltrationDetector(),

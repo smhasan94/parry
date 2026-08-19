@@ -10,6 +10,7 @@ from typing import Any
 
 from app.detection.base import BaseDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
+from app.detection.detectors.exfil_intent import ExfiltrationIntentDetector
 from app.detection.detectors.indirect_injection import IndirectInjectionDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
@@ -19,6 +20,7 @@ from app.detection.detectors.tool_misuse import ToolMisuseDetector
 _DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
     IndirectInjectionDetector(),
+    ExfiltrationIntentDetector(),
     JailbreakDetector(),
     PrivilegeEscalationDetector(),
     DataExfiltrationDetector(),

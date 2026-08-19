@@ -267,6 +267,11 @@ const DETECTOR_LABELS: Record<string, { label: string; description: string }> = 
     description:
       "Detects instructions smuggled through content the agent was asked to process \u2014 documents, search results, quoted email, extracted PDF text.",
   },
+  exfil_intent: {
+    label: "Exfiltration Intent",
+    description:
+      "Detects prompts asking for data the agent should not disclose \u2014 its system prompt, credential files, bulk records, or PII harvested from conversation history.",
+  },
   jailbreak: {
     label: "Jailbreak",
     description: "Catches DAN, developer mode, and other jailbreak prompts.",
