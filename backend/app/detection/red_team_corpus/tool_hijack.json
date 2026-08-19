@@ -25,7 +25,15 @@
       "tags": [
         "exfil",
         "email"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     },
     {
       "id": "th_002_shell_exec",
@@ -49,7 +57,15 @@
       "expected_confidence_min": 0.5,
       "tags": [
         "rce"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     },
     {
       "id": "th_003_unauthorized_tool",
@@ -71,7 +87,15 @@
       "expected_confidence_min": 0.5,
       "tags": [
         "destructive"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     },
     {
       "id": "th_004_arg_injection",
@@ -93,7 +117,15 @@
       "expected_confidence_min": 0.4,
       "tags": [
         "sqli"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     },
     {
       "id": "th_005_recursive_loop",
@@ -141,7 +173,15 @@
       "tags": [
         "loop",
         "cost"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     },
     {
       "id": "th_006_file_write_outside",
@@ -164,7 +204,15 @@
       "expected_confidence_min": 0.5,
       "tags": [
         "persistence"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     }
   ]
 }

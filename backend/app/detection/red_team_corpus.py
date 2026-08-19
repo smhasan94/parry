@@ -18,6 +18,7 @@ Schema for a category file::
           "prompt": "...",
           "response": null,
           "tool_calls": null,
+          "policy": null,
           "target": "prompt",
           "expected_detectors": ["prompt_injection"],
           "expected_confidence_min": 0.6,
@@ -26,6 +27,12 @@ Schema for a category file::
         }
       ]
     }
+
+``policy`` is required whenever ``expected_detectors`` names
+``tool_misuse``: that detector only fires on an allowlist/blocklist
+violation, so without a policy the expectation can never be met and
+the entry scores as a detection gap that does not exist. See
+``tests/test_corpus_satisfiability.py``.
 
 Validation runs at import time so a corrupt file fails the worker
 boot loud rather than producing silently bad reports.

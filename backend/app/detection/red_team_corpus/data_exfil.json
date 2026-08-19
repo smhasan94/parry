@@ -69,7 +69,15 @@
       "expected_confidence_min": 0.4,
       "tags": [
         "sql"
-      ]
+      ],
+      "policy": {
+        "allowed_tools": [
+          "search",
+          "get_weather",
+          "calculate",
+          "read_file"
+        ]
+      }
     },
     {
       "id": "de_005_credential_extraction",
