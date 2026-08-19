@@ -29,7 +29,7 @@
 │  ┌──────────────▼──────────────┐    │
 │  │  Detection Engine           │    │
 │  │  - Rule-based detectors     │    │
-│  │  - ML classifiers           │    │
+│  │  - Statistical baselining   │    │
 │  │  - LLM fallback (Claude)    │    │
 │  │  - Policy enforcer          │    │
 │  └──────────────┬──────────────┘    │

@@ -22,8 +22,6 @@ dependencies = [
     # Present transitively via pyjwt[crypto], but relied on directly here.
     "cryptography>=44.0.0",
     "stripe>=11.0.0",
-    "spacy>=3.8.0",
-    "scikit-learn>=1.6.0",
     "sse-starlette>=2.1.0",
     "svix>=1.80.0",
     "watchdog>=6.0.0",
