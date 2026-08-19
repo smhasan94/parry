@@ -3,6 +3,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.detection.normalize import scan_text
 from app.services.detector_config_service import threshold_for
 
 PRIVILEGE_PATTERNS: list[tuple[re.Pattern[str], str, float]] = [
@@ -43,7 +44,7 @@ class PrivilegeEscalationDetector:
     name = "privilege_escalation"
 
     def detect(self, event_data: dict[str, Any]) -> DetectionResult:
-        prompt = event_data.get("prompt", "") or ""
+        prompt = scan_text(event_data)
         tool_calls = event_data.get("tool_calls") or []
 
         max_confidence = 0.0

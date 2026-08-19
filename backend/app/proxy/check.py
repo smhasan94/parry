@@ -13,6 +13,7 @@ from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
 from app.detection.detectors.prompt_injection import PromptInjectionDetector
 from app.detection.detectors.tool_misuse import ToolMisuseDetector
+from app.detection.normalize import normalize
 
 # Only fast rule-based detectors run in the blocking path. Instantiate
 # once at import time — detectors are stateless per the BaseDetector
@@ -59,6 +60,10 @@ def run_blocking_check(event_data: dict[str, Any], org_blocking_enabled: bool) -
     """
     if not org_blocking_enabled:
         return ProxyCheckResult(allowed=True, reason="blocking_disabled")
+
+    # Same precompute as DetectionPipeline. This path is synchronous and
+    # budgeted at <10ms p99, so normalization runs once for all detectors.
+    event_data = {**event_data, "_scan_text": normalize(event_data.get("prompt") or "")}
 
     for detector in BLOCKING_DETECTORS:
         result = detector.detect(event_data)

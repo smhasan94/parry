@@ -27,6 +27,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.detection.normalize import scan_text
 from app.services.detector_config_service import threshold_for
 
 # Evidence the prompt is carrying third-party content.
@@ -123,7 +124,7 @@ class IndirectInjectionDetector:
     name = "indirect_injection"
 
     def detect(self, event_data: dict[str, Any]) -> DetectionResult:
-        prompt = event_data.get("prompt") or ""
+        prompt = scan_text(event_data)
 
         boundaries = [
             label for pattern, label in CONTENT_BOUNDARY_PATTERNS if pattern.search(prompt)

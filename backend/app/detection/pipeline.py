@@ -6,6 +6,7 @@ import structlog
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.detection.normalize import normalize
 from app.detection.registry import get_all_detectors
 
 log = structlog.get_logger()
@@ -27,6 +28,11 @@ class DetectionPipeline:
         from app.services.detector_config_service import is_enabled
 
         detectors = [d for d in get_all_detectors() if is_enabled(event_data, d.name)]
+
+        # Normalize once here rather than in each detector: the fan-out
+        # below shares one event_data across threads, so a per-detector
+        # computation would repeat the same work N times on the hot path.
+        event_data = {**event_data, "_scan_text": normalize(event_data.get("prompt") or "")}
 
         # Run all sync detectors in parallel via thread pool
         loop = asyncio.get_running_loop()

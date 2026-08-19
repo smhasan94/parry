@@ -3,6 +3,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.detection.normalize import scan_text
 from app.services.detector_config_service import threshold_for
 
 # Common prompt injection patterns
@@ -79,7 +80,7 @@ class PromptInjectionDetector:
     name = "prompt_injection"
 
     def detect(self, event_data: dict[str, Any]) -> DetectionResult:
-        prompt = event_data.get("prompt", "") or ""
+        prompt = scan_text(event_data)
 
         max_confidence = 0.0
         matched_reason = ""
