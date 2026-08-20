@@ -1,4 +1,16 @@
-"""Tests for LLM fallback detector."""
+"""Tests for LLM fallback detector.
+
+``@patch("app.core.config.settings")`` swaps the whole settings
+singleton for a MagicMock, and every attribute of a MagicMock is
+truthy. ``evaluate_ambiguous`` imports ``app.core.on_prem`` lazily, so
+if that module is first imported while the patch is active it binds the
+mock and ``is_on_prem()`` reads a truthy attribute — the detector then
+short-circuits as air-gapped and returns None.
+
+The full suite hides this because something imports ``on_prem`` earlier
+against the real settings; running this file alone does not. Hence the
+explicit ``on_prem_mode = False`` on every mock.
+"""
 
 import asyncio
 import json
@@ -60,6 +72,7 @@ def _mock_anthropic_response(
 async def test_skips_without_api_key(mock_settings):
     """Returns None when ANTHROPIC_API_KEY is not configured."""
     mock_settings.anthropic_api_key = ""
+    mock_settings.on_prem_mode = False
     result = await evaluate_ambiguous(_event_data(), [_ambiguous_result()])
     assert result is None
 
@@ -70,6 +83,7 @@ async def test_skips_without_api_key(mock_settings):
 async def test_confirms_threat(mock_settings, MockAnthropic):
     """Returns DetectionResult when Claude confirms a threat."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(
         return_value=_mock_anthropic_response(
@@ -102,6 +116,7 @@ async def test_confirms_threat(mock_settings, MockAnthropic):
 async def test_clears_non_threat(mock_settings, MockAnthropic):
     """Returns None when Claude determines it's not a threat."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(
         return_value=_mock_anthropic_response(
@@ -128,6 +143,7 @@ async def test_clears_non_threat(mock_settings, MockAnthropic):
 async def test_handles_malformed_json(mock_settings, MockAnthropic):
     """Returns None when Claude returns invalid JSON."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
 
     bad_block = MagicMock()
@@ -146,6 +162,7 @@ async def test_handles_malformed_json(mock_settings, MockAnthropic):
 async def test_handles_api_error(mock_settings, MockAnthropic):
     """Returns None when Anthropic API call fails."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(side_effect=ConnectionError("timeout"))
 
@@ -159,6 +176,7 @@ async def test_handles_api_error(mock_settings, MockAnthropic):
 async def test_caps_confidence_at_1(mock_settings, MockAnthropic):
     """Confidence is capped at 1.0 even if Claude returns higher."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(
         return_value=_mock_anthropic_response(
@@ -183,6 +201,7 @@ async def test_timeout_returns_none_and_records_metric(mock_settings, MockAnthro
     """If the Anthropic call exceeds ANTHROPIC_TIMEOUT_SECONDS, return None
     and increment the timeout metric — not the api_error one."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
 
     async def _hang(*args, **kwargs):
         await asyncio.sleep(60)  # longer than the wait_for cap
@@ -207,6 +226,7 @@ async def test_http_500_counted_as_api_error(mock_settings, MockAnthropic):
     """A 5xx from Anthropic is caught by the broad except and counted as
     api_error, not parse_error or timeout."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
 
     class FakeAPIError(Exception):
@@ -226,6 +246,7 @@ async def test_http_500_counted_as_api_error(mock_settings, MockAnthropic):
 async def test_tokens_recorded_on_confirmed_threat(mock_settings, MockAnthropic):
     """message.usage tokens flow into metric counters and detection details."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(
         return_value=_mock_anthropic_response(
@@ -261,6 +282,7 @@ async def test_user_prompt_fences_untrusted_content(mock_settings, MockAnthropic
     closing tag inside the content must be escaped so it can't break
     out of the fence."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(
         return_value=_mock_anthropic_response(
@@ -314,6 +336,7 @@ def test_cost_formula_matches_published_rates():
 async def test_multiple_ambiguous_detectors(mock_settings, MockAnthropic):
     """Multiple ambiguous detectors are included in the details."""
     mock_settings.anthropic_api_key = "sk-ant-test"
+    mock_settings.on_prem_mode = False
     mock_client = MockAnthropic.return_value
     mock_client.messages.create = AsyncMock(
         return_value=_mock_anthropic_response(
