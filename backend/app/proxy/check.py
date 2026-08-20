@@ -21,6 +21,8 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import BaseDetector
+from app.detection.detectors.exfil_intent import ExfiltrationIntentDetector
+from app.detection.detectors.indirect_injection import IndirectInjectionDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
 from app.detection.detectors.prompt_injection import PromptInjectionDetector
@@ -33,17 +35,22 @@ from app.detection.normalize import normalize
 # re-compiling regex/pattern state on every call.
 BLOCKING_DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
+    IndirectInjectionDetector(),
+    ExfiltrationIntentDetector(),
     JailbreakDetector(),
     ToolMisuseDetector(),
     PrivilegeEscalationDetector(),
 ]
 
-# Widest slice of a prompt this path will scan. Sized from measurement:
-# the phrase detectors cost roughly 0.2ms per 1k characters each, so this
-# keeps the scan itself near 3ms and leaves headroom in the 10ms budget.
-# It is far wider than any real injection, which is measured in hundreds
-# of characters.
-MAX_BLOCKING_SCAN_CHARS = 16_000
+# Widest slice of a prompt this path will scan, sized by measuring the
+# detector list above against the 10ms budget: those six cost about 4.3ms
+# over this window and roughly double it at 16k. The window is therefore
+# a function of that list — adding a detector shrinks it, so re-measure
+# instead of assuming the old value still fits.
+#
+# Still far wider than any real injection, which runs to hundreds of
+# characters rather than thousands.
+MAX_BLOCKING_SCAN_CHARS = 8_000
 
 # Marker spliced between the head and tail slices. Without it the two
 # ends abut and can fabricate a phrase present in neither, producing a
