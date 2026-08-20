@@ -3,6 +3,18 @@
 This runs inline on the caller's thread before their LLM call fires,
 so it MUST be fast (<10ms p99) and MUST NOT touch async-only detectors
 (AnomalyDetector, LLMFallback). Those stay in the Celery pipeline.
+
+Pattern scanning is linear in prompt length and ProxyCheckRequest puts
+no cap on ``prompt``, so a large retrieved context — or a tenant sending
+a deliberately huge one — used to spend the entire budget and more: the
+three phrase detectors measured ~10ms on a 50k-character prompt and grow
+from there. This path therefore scans a bounded window rather than the
+whole prompt.
+
+That trade is deliberate and it is only made here. The Celery pipeline
+re-runs every detector over the untruncated prompt moments later, so a
+payload buried past the window still produces a detection and an
+incident; what the bound costs is that one call went through first.
 """
 
 from typing import Any
@@ -25,6 +37,34 @@ BLOCKING_DETECTORS: list[BaseDetector] = [
     ToolMisuseDetector(),
     PrivilegeEscalationDetector(),
 ]
+
+# Widest slice of a prompt this path will scan. Sized from measurement:
+# the phrase detectors cost roughly 0.2ms per 1k characters each, so this
+# keeps the scan itself near 3ms and leaves headroom in the 10ms budget.
+# It is far wider than any real injection, which is measured in hundreds
+# of characters.
+MAX_BLOCKING_SCAN_CHARS = 16_000
+
+# Marker spliced between the head and tail slices. Without it the two
+# ends abut and can fabricate a phrase present in neither, producing a
+# block on text the user never wrote.
+_ELISION = "\n[...]\n"
+
+
+def bounded_scan_source(prompt: str) -> str:
+    """Return at most ``MAX_BLOCKING_SCAN_CHARS`` of ``prompt`` to scan.
+
+    Keeps the head and the tail. Injections cluster at the edges — an
+    override at the top of the prompt, or a payload appended after a
+    retrieved document — so the middle is the cheapest thing to give up
+    when something has to be given up.
+    """
+    if not prompt or len(prompt) <= MAX_BLOCKING_SCAN_CHARS:
+        return prompt or ""
+
+    half = (MAX_BLOCKING_SCAN_CHARS - len(_ELISION)) // 2
+    return prompt[:half] + _ELISION + prompt[-half:]
+
 
 # Severities that actually block the call. MEDIUM and LOW triggers are
 # still recorded by the async pipeline but don't prevent the LLM call.
@@ -63,7 +103,10 @@ def run_blocking_check(event_data: dict[str, Any], org_blocking_enabled: bool) -
 
     # Same precompute as DetectionPipeline. This path is synchronous and
     # budgeted at <10ms p99, so normalization runs once for all detectors.
-    event_data = {**event_data, "_scan_text": normalize(event_data.get("prompt") or "")}
+    event_data = {
+        **event_data,
+        "_scan_text": normalize(bounded_scan_source(event_data.get("prompt") or "")),
+    }
 
     for detector in BLOCKING_DETECTORS:
         result = detector.detect(event_data)

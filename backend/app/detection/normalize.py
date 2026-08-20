@@ -25,9 +25,18 @@ import codecs
 import re
 from typing import Any
 
-# A hostile prompt should not be able to make normalization the slowest
-# thing in the request. The blocking path budgets <10ms p99.
-MAX_INPUT = 200_000
+import structlog
+
+log = structlog.get_logger()
+
+# Memory guard only. This used to be 200k, which silently dropped
+# detection input: a payload past the cut simply was not scanned, and
+# nothing said so. The synchronous path now bounds its own input before
+# calling here (proxy.check.bounded_scan_source), so this cap exists for
+# the Celery worker, where correctness outranks speed — normalizing 5MB
+# measures in tens of milliseconds there. Truncation is logged because a
+# silent one is indistinguishable from a clean scan.
+MAX_INPUT = 1_000_000
 
 # Shifting a whole prompt and scanning the result for English is the
 # dominant cost of normalization on large inputs. A smuggled rot13
@@ -232,6 +241,9 @@ def normalize(prompt: str) -> str:
     """
     if not prompt:
         return ""
+
+    if len(prompt) > MAX_INPUT:
+        log.warning("normalize.truncated", length=len(prompt), cap=MAX_INPUT)
 
     cleaned = prompt[:MAX_INPUT].translate(_TRANSLATION)
 
