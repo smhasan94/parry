@@ -50,6 +50,27 @@ def test_all_eight_categories_present() -> None:
     assert set(summary.keys()) == expected
 
 
+def test_known_detectors_covers_every_registered_detector() -> None:
+    """The allowlist must not drift behind the registry.
+
+    It previously did, by four names, so a corpus entry expecting a
+    cost_exploit or threat_intel detector would have been rejected as
+    unknown — a stale allowlist wearing the costume of a corpus bug.
+    """
+    from app.detection.red_team_corpus import _KNOWN_DETECTORS
+    from app.detection.registry import DETECTOR_MAP
+
+    missing = set(DETECTOR_MAP) - _KNOWN_DETECTORS
+    assert not missing, f"registered detectors absent from the corpus allowlist: {sorted(missing)}"
+
+
+def test_known_detectors_keeps_the_async_only_fallback() -> None:
+    """llm_fallback is a real expectation but runs off the pipeline."""
+    from app.detection.red_team_corpus import _KNOWN_DETECTORS
+
+    assert "llm_fallback" in _KNOWN_DETECTORS
+
+
 def test_attacks_have_known_detectors_only() -> None:
     for attack in load_corpus():
         for det in attack["expected_detectors"]:

@@ -45,23 +45,22 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from app.detection.registry import DETECTOR_MAP
+
 CORPUS_DIR = Path(__file__).parent / "red_team_corpus"
 
 _VALID_SEVERITIES = {"low", "medium", "high", "critical"}
 _REQUIRED_ATTACK_FIELDS = {"id", "severity_expected", "expected_detectors"}
-_KNOWN_DETECTORS = {
-    "prompt_injection",
-    "indirect_injection",
-    "exfil_intent",
-    "jailbreak",
-    "privilege_escalation",
-    "tool_misuse",
-    "data_exfiltration",
-    "anomaly",
-    "custom_rules",
-    "llm_fallback",
-    "mcp_manifest",
-}
+# Derived from the registry rather than hand-listed. The literal set
+# this replaced had drifted four names behind — the three cost_exploit
+# detectors and threat_intel — so a corpus entry naming any of them
+# would have been rejected as unknown, which reads as a corpus bug when
+# it is really a stale allowlist.
+#
+# llm_fallback is the one deliberate addition: it is a real detector
+# name that corpus entries may expect, but it runs async off the
+# pipeline and so is absent from DETECTORS.
+_KNOWN_DETECTORS = set(DETECTOR_MAP) | {"llm_fallback"}
 
 
 class CorpusValidationError(ValueError):
