@@ -3,6 +3,11 @@
 The SDK is the process that actually dials the URL, so these are the
 rules that stop an injected "connect to this MCP server" instruction
 from turning an agent into a probe of its own network.
+
+Every test that uses a hostname injects a resolver. Names are judged by
+what they resolve to, so leaving DNS real would make the suite depend
+on the network and, worse, would let a lapsed domain quietly change
+what these tests assert.
 """
 
 from __future__ import annotations
@@ -10,7 +15,23 @@ from __future__ import annotations
 import pytest
 
 from parry.mcp.errors import MCPManifestError, MCPURLError
-from parry.mcp.validate import MAX_URL_CHARS, validate_server_url
+from parry.mcp.validate import MAX_URL_CHARS, Resolver, validate_server_url
+
+PUBLIC_IP = "93.184.216.34"
+
+
+def resolves_to(*addresses: str) -> Resolver:
+    return lambda host: list(addresses)
+
+
+def refuses(exc: type[BaseException] = OSError) -> Resolver:
+    def _resolve(host: str) -> list[str]:
+        raise exc(f"no such host: {host}")
+
+    return _resolve
+
+
+public = resolves_to(PUBLIC_IP)
 
 
 class TestCloudMetadataIsNeverReachable:
@@ -27,13 +48,92 @@ class TestCloudMetadataIsNeverReachable:
     )
     def test_metadata_endpoints_are_refused(self, url: str) -> None:
         with pytest.raises(MCPURLError):
-            validate_server_url(url)
+            validate_server_url(url, resolver=public)
 
     def test_allow_private_does_not_open_link_local(self) -> None:
         with pytest.raises(MCPURLError, match="link-local"):
             validate_server_url(
                 "http://169.254.169.254/", allow_private=True, allow_insecure=True
             )
+
+    def test_a_name_pointing_at_metadata_is_refused(self) -> None:
+        """The whole point of resolving: a DNS record is not a bypass."""
+        with pytest.raises(MCPURLError, match="link-local"):
+            validate_server_url(
+                "https://metadata-proxy.attacker.example/x",
+                resolver=resolves_to("169.254.169.254"),
+            )
+
+    def test_allow_private_does_not_open_a_name_pointing_at_metadata(self) -> None:
+        with pytest.raises(MCPURLError, match="link-local"):
+            validate_server_url(
+                "https://metadata-proxy.attacker.example/x",
+                allow_private=True,
+                resolver=resolves_to("169.254.169.254"),
+            )
+
+
+class TestNamesAreJudgedByWhatTheyResolveTo:
+    def test_name_pointing_into_a_private_range_is_refused(self) -> None:
+        with pytest.raises(MCPURLError, match="private"):
+            validate_server_url(
+                "https://internal.attacker.example/mcp",
+                resolver=resolves_to("10.0.0.5"),
+            )
+
+    def test_name_pointing_into_a_private_range_may_be_opted_in(self) -> None:
+        assert validate_server_url(
+            "https://mcp.corp.example/mcp",
+            allow_private=True,
+            resolver=resolves_to("10.0.0.5"),
+        )
+
+    def test_every_resolved_address_is_checked_not_just_the_first(self) -> None:
+        """A round-robin record with one hostile answer is hostile."""
+        with pytest.raises(MCPURLError, match="link-local"):
+            validate_server_url(
+                "https://mixed.attacker.example/mcp",
+                resolver=resolves_to(PUBLIC_IP, "169.254.169.254"),
+            )
+
+    def test_unresolvable_host_fails_closed(self) -> None:
+        """Costs nothing real: a name that will not resolve will not dial."""
+        with pytest.raises(MCPURLError, match="could not resolve"):
+            validate_server_url("https://nope.example/mcp", resolver=refuses())
+
+    def test_host_resolving_to_nothing_fails_closed(self) -> None:
+        with pytest.raises(MCPURLError, match="no addresses"):
+            validate_server_url("https://nope.example/mcp", resolver=resolves_to())
+
+
+class TestAddressesThatOnlyLookPublic:
+    """Forms that pass a naive is_private check but do not route publicly."""
+
+    def test_cgnat_shared_space_is_refused(self) -> None:
+        """100.64.0.0/10 reports is_private False — carrier NAT, not public."""
+        with pytest.raises(MCPURLError, match="globally routable"):
+            validate_server_url("https://100.64.0.1/mcp")
+
+    def test_cgnat_may_be_opted_in_like_any_other_internal_address(self) -> None:
+        assert validate_server_url("https://100.64.0.1/mcp", allow_private=True)
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            "[::ffff:169.254.169.254]",  # v4-mapped
+            "[2002:a9fe:a9fe::1]",  # 6to4
+            "[64:ff9b::a9fe:a9fe]",  # NAT64
+        ],
+    )
+    def test_v6_wrappers_around_metadata_are_refused(self, host: str) -> None:
+        """Each of these routes to 169.254.169.254 wearing a v6 coat."""
+        with pytest.raises(MCPURLError):
+            validate_server_url(f"https://{host}/mcp", allow_private=True)
+
+    @pytest.mark.parametrize("host", ["0.0.0.0", "[::]"])
+    def test_unspecified_addresses_are_refused(self, host: str) -> None:
+        with pytest.raises(MCPURLError):
+            validate_server_url(f"https://{host}/mcp", allow_private=True)
 
 
 class TestPrivateRangesAreOptIn:
@@ -44,28 +144,59 @@ class TestPrivateRangesAreOptIn:
         with pytest.raises(MCPURLError, match="private"):
             validate_server_url(f"https://{host}/mcp")
 
-    @pytest.mark.parametrize("host", ["10.0.0.5", "192.168.1.10"])
+    @pytest.mark.parametrize("host", ["10.0.0.5", "192.168.1.10", "[fc00::1]"])
     def test_private_addresses_allowed_when_opted_in(self, host: str) -> None:
         assert validate_server_url(f"https://{host}/mcp", allow_private=True)
 
     def test_public_address_needs_no_flag(self) -> None:
-        assert validate_server_url("https://mcp.example.com/sse")
+        assert validate_server_url("https://mcp.example.com/sse", resolver=public)
+
+
+class TestLoopback:
+    """Local dev must keep working; a *name* aimed at loopback must not."""
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://localhost:3000/mcp",
+            "http://127.0.0.1:3000/mcp",
+            "http://[::1]:3000/mcp",
+        ],
+    )
+    def test_loopback_written_as_loopback_is_allowed(self, url: str) -> None:
+        assert validate_server_url(url, resolver=resolves_to("127.0.0.1"))
+
+    def test_a_name_resolving_to_loopback_is_refused(self) -> None:
+        with pytest.raises(MCPURLError, match="loopback"):
+            validate_server_url(
+                "https://local.attacker.example/mcp",
+                resolver=resolves_to("127.0.0.1"),
+            )
+
+    def test_a_name_resolving_to_loopback_may_be_opted_in(self) -> None:
+        assert validate_server_url(
+            "https://local.attacker.example/mcp",
+            allow_private=True,
+            resolver=resolves_to("127.0.0.1"),
+        )
 
 
 class TestPlaintextRules:
     def test_http_to_a_public_host_is_refused(self) -> None:
         with pytest.raises(MCPURLError, match="plaintext"):
-            validate_server_url("http://mcp.example.com/sse")
+            validate_server_url("http://mcp.example.com/sse", resolver=public)
 
     def test_http_to_loopback_is_allowed_for_local_dev(self) -> None:
-        assert validate_server_url("http://localhost:3000/mcp")
+        assert validate_server_url("http://localhost:3000/mcp", resolver=public)
         assert validate_server_url("http://127.0.0.1:3000/mcp")
 
     def test_http_allowed_when_explicitly_opted_in(self) -> None:
-        assert validate_server_url("http://mcp.example.com/sse", allow_insecure=True)
+        assert validate_server_url(
+            "http://mcp.example.com/sse", allow_insecure=True, resolver=public
+        )
 
     def test_https_is_always_fine(self) -> None:
-        assert validate_server_url("https://mcp.example.com/sse")
+        assert validate_server_url("https://mcp.example.com/sse", resolver=public)
 
 
 class TestCredentialsAndSchemes:
@@ -74,7 +205,9 @@ class TestCredentialsAndSchemes:
             validate_server_url("https://user:token@mcp.example.com/sse")
 
     def test_query_and_fragment_are_dropped(self) -> None:
-        got = validate_server_url("https://mcp.example.com/sse?api_key=secret#frag")
+        got = validate_server_url(
+            "https://mcp.example.com/sse?api_key=secret#frag", resolver=public
+        )
         assert got == "https://mcp.example.com/sse"
         assert "secret" not in got
 
@@ -89,14 +222,21 @@ class TestCredentialsAndSchemes:
 class TestCanonicalisation:
     def test_host_is_lowercased_and_default_port_dropped(self) -> None:
         assert (
-            validate_server_url("HTTPS://MCP.Example.COM:443/sse/")
+            validate_server_url("HTTPS://MCP.Example.COM:443/sse/", resolver=public)
             == "https://mcp.example.com/sse"
         )
 
     def test_non_default_port_survives(self) -> None:
         assert (
-            validate_server_url("https://mcp.example.com:8443/sse")
+            validate_server_url("https://mcp.example.com:8443/sse", resolver=public)
             == "https://mcp.example.com:8443/sse"
+        )
+
+    def test_v6_literal_keeps_its_brackets(self) -> None:
+        """Unbracketed, the port delimiter is ambiguous and the URL is junk."""
+        assert (
+            validate_server_url("https://[fc00::1]:8443/mcp", allow_private=True)
+            == "https://[fc00::1]:8443/mcp"
         )
 
     def test_overlong_url_is_refused(self) -> None:
