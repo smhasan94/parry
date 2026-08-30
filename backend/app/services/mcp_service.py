@@ -46,6 +46,7 @@ async def upsert_server(
     server_uri: str,
     server_name: str | None,
     manifest: dict[str, Any],
+    transport: str = "stdio",
 ) -> tuple[MCPServer, bool, str | None]:
     """Register or refresh an MCP server.
 
@@ -71,6 +72,7 @@ async def upsert_server(
         server = MCPServer(
             org_id=org_id,
             server_uri=server_uri,
+            transport=transport,
             server_name=server_name,
             manifest=manifest,
             manifest_hash=new_hash,
@@ -100,6 +102,10 @@ async def upsert_server(
 
     if existing.manifest_hash == new_hash:
         existing.last_seen_at = now
+        # Transport is last-seen, not identity: a server that moves
+        # from stdio to a remote endpoint keeps its row and its trust
+        # level, and the column reflects how it was reached this time.
+        existing.transport = transport
         if server_name and existing.server_name != server_name:
             existing.server_name = server_name
         await db.flush()
@@ -122,6 +128,7 @@ async def upsert_server(
     existing.manifest_hash = new_hash
     existing.tool_count = count
     existing.last_seen_at = now
+    existing.transport = transport
     if server_name:
         existing.server_name = server_name
 

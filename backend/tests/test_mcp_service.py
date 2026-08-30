@@ -80,6 +80,71 @@ async def test_upsert_server_registers_new_server_as_observed() -> None:
     db.flush.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+async def test_upsert_server_defaults_transport_to_stdio() -> None:
+    """Callers predating remote transports must keep working."""
+    db = AsyncMock()
+    db.execute.return_value = _scalar_one_or_none(None)
+
+    with patch.object(mcp_service, "manifest_hash", return_value=_HASH_A), \
+         patch.object(mcp_service, "tool_count", return_value=2):
+        server, _, _ = await mcp_service.upsert_server(
+            db, ORG_ID,
+            server_uri="stdio://npx -y @scope/server",
+            server_name="Local MCP",
+            manifest=_MANIFEST,
+        )
+
+    assert server.transport == "stdio"
+
+
+@pytest.mark.asyncio
+async def test_upsert_server_records_remote_transport() -> None:
+    db = AsyncMock()
+    db.execute.return_value = _scalar_one_or_none(None)
+
+    with patch.object(mcp_service, "manifest_hash", return_value=_HASH_A), \
+         patch.object(mcp_service, "tool_count", return_value=2):
+        server, _, _ = await mcp_service.upsert_server(
+            db, ORG_ID,
+            server_uri="https://mcp.example.com/sse",
+            server_name="Remote MCP",
+            manifest=_MANIFEST,
+            transport="sse",
+        )
+
+    assert server.transport == "sse"
+
+
+@pytest.mark.asyncio
+async def test_upsert_server_updates_transport_on_revisit() -> None:
+    """Transport is last-seen state, so the row follows the move.
+
+    Trust level must survive it — changing how a server is reached is
+    not itself manifest drift, and silently re-approving or downgrading
+    on transport alone would be wrong in both directions.
+    """
+    existing = _make_server(trust_level="trusted")
+    existing.transport = "stdio"
+    db = AsyncMock()
+    db.execute.return_value = _scalar_one_or_none(existing)
+
+    with patch.object(mcp_service, "manifest_hash", return_value=_HASH_A), \
+         patch.object(mcp_service, "tool_count", return_value=2):
+        server, changed, downgraded = await mcp_service.upsert_server(
+            db, ORG_ID,
+            server_uri="https://mcp.example.com",
+            server_name="Example MCP",
+            manifest=_MANIFEST,
+            transport="http",
+        )
+
+    assert server.transport == "http"
+    assert server.trust_level == "trusted"
+    assert changed is False
+    assert downgraded is None
+
+
 # ── upsert_server — same hash (heartbeat) ─────────────────────────
 
 

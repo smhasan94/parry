@@ -18,10 +18,12 @@ from typing import Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import Actor, get_org_from_sdk_key
 from app.core.rbac import Role, require_role
+from app.core.url_guard import InvalidServerURIError, validate_mcp_server_uri
 from app.db.models import MCPServer, Org
 from app.db.session import get_db
 from app.detection.detectors.mcp_manifest import scan_manifest
@@ -36,11 +38,39 @@ router = APIRouter()
 # ── Schemas ──────────────────────────────────────────────────────────
 
 
+# A manifest this large is a payload, not a tool list. The 2MB body cap
+# in RequestSizeLimitMiddleware bounds the bytes; this bounds the shape,
+# since the manifest detector walks every tool and every schema property.
+MAX_MANIFEST_TOOLS = 1_000
+
+
 class MCPConnectionRequest(ParrySchema):
     agent_id: str
     server_uri: str
+    transport: Literal["stdio", "http", "sse"] | None = None
     server_name: str | None = None
     manifest: dict[str, Any]
+
+    @model_validator(mode="after")
+    def _canonicalise_uri(self) -> MCPConnectionRequest:
+        """Normalise the URI and derive the transport it implies.
+
+        Runs at the boundary rather than in the service because a
+        credential-bearing URI has to be refused before anything
+        durable happens to it.
+        """
+        try:
+            parsed = validate_mcp_server_uri(self.server_uri, self.transport)
+        except InvalidServerURIError as exc:
+            raise ValueError(str(exc)) from exc
+
+        tools = self.manifest.get("tools")
+        if isinstance(tools, list) and len(tools) > MAX_MANIFEST_TOOLS:
+            raise ValueError(f"manifest declares more than {MAX_MANIFEST_TOOLS} tools")
+
+        self.server_uri = parsed.uri
+        self.transport = parsed.transport
+        return self
 
 
 class MCPDetection(ParrySchema):
@@ -64,6 +94,7 @@ class MCPConnectionResponse(ParrySchema):
 class MCPServerSummary(ParrySchema):
     id: str
     server_uri: str
+    transport: str
     server_name: str | None
     trust_level: str
     reputation: int
@@ -90,6 +121,7 @@ def _summary(server: MCPServer) -> dict[str, Any]:
     return {
         "id": str(server.id),
         "server_uri": server.server_uri,
+        "transport": server.transport,
         "server_name": server.server_name,
         "trust_level": server.trust_level,
         "reputation": server.reputation,
@@ -125,6 +157,7 @@ async def register_connection(
             server_uri=body.server_uri,
             server_name=body.server_name,
             manifest=body.manifest,
+            transport=body.transport or "stdio",
         )
     except mcp_service.MCPServerBlockedError as e:
         await db.commit()

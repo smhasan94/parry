@@ -467,6 +467,10 @@ class MCPServer(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
     server_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    # How the SDK reached this server. Not part of the uniqueness key:
+    # the URI scheme already separates local from remote, and the same
+    # endpoint reached over SSE or streamable-HTTP is one logical server.
+    transport: Mapped[str] = mapped_column(String(8), nullable=False, default="stdio")
     server_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     manifest_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
@@ -488,6 +492,10 @@ class MCPServer(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         CheckConstraint(
             "trust_level IN ('observed', 'trusted', 'suspicious', 'blocked')",
             name="ck_mcp_servers_trust_level",
+        ),
+        CheckConstraint(
+            "transport IN ('stdio', 'http', 'sse')",
+            name="ck_mcp_servers_transport",
         ),
         CheckConstraint(
             "reputation BETWEEN 0 AND 100",
