@@ -1081,9 +1081,12 @@ export interface OrgSpendSummary {
 
 export type MCPTrustLevel = "observed" | "trusted" | "suspicious" | "blocked";
 
+export type MCPTransport = "stdio" | "http" | "sse";
+
 export interface MCPServerSummary {
   id: string;
   server_uri: string;
+  transport: MCPTransport;
   server_name: string | null;
   trust_level: MCPTrustLevel;
   reputation: number;

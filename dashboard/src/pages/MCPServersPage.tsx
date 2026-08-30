@@ -5,7 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMCPServers } from "@/hooks/useMCP";
 import { Plug } from "lucide-react";
-import type { MCPTrustLevel } from "@/lib/api";
+import type { MCPTransport, MCPTrustLevel } from "@/lib/api";
+
+// Remote servers are controlled by someone else, so the transport is
+// worth seeing at a glance next to the trust level.
+const TRANSPORT_STYLES: Record<MCPTransport, string> = {
+  stdio: "bg-slate-800/60 text-slate-300 border-slate-700",
+  http: "bg-violet-950/50 text-violet-300 border-violet-900",
+  sse: "bg-violet-950/50 text-violet-300 border-violet-900",
+};
 
 const TRUST_STYLES: Record<MCPTrustLevel, string> = {
   trusted: "bg-emerald-950/50 text-emerald-300 border-emerald-900",
@@ -98,7 +106,18 @@ export function MCPServersPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {server.server_uri}
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`border text-[10px] uppercase ${
+                              TRANSPORT_STYLES[server.transport] ??
+                              TRANSPORT_STYLES.stdio
+                            }`}
+                          >
+                            {server.transport ?? "stdio"}
+                          </Badge>
+                          <span className="truncate">{server.server_uri}</span>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <Badge
