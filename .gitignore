@@ -143,3 +143,6 @@ temp/
 *.tmp
 *.bak
 *.orig
+
+# Serena tooling index
+.serena/
