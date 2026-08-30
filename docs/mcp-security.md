@@ -149,10 +149,25 @@ MCP server" instruction would otherwise turn your agent into a probe:
 | --- | --- | --- |
 | Cloud metadata (`169.254.169.254`, `metadata.google.internal`, link-local) | refused | **none — cannot be overridden** |
 | Private ranges (`10/8`, `172.16/12`, `192.168/16`, `fc00::/7`) | refused | `allow_private=True` |
+| Anything else not globally routable (`100.64/10` carrier NAT, `0.0.0.0`, `240/4`, multicast) | refused | `allow_private=True` |
+| Loopback reached via a *hostname* rather than written as one | refused | `allow_private=True` |
 | Plaintext `http://` to a non-loopback host | refused | `allow_insecure=True` |
 | Credentials in the URL (`https://user:pw@…`, `?api_key=…`) | refused / stripped | none — use `headers=` |
 | HTTP redirects | not followed | none |
 | TLS verification | always on | none — there is no opt-out |
+
+These are rules about **addresses**, and a URL is reduced to addresses
+before they run. Hostnames are resolved first, so publishing a DNS
+record pointing at `169.254.169.254` gets you the metadata error rather
+than a connection; every address a name resolves to must pass, not just
+the first. IPv6 forms that carry an IPv4 address inside them — v4-mapped
+`::ffff:a.b.c.d`, 6to4 `2002::/16`, NAT64 `64:ff9b::/96`, Teredo — are
+unwrapped and judged by what they actually route to. A name that will
+not resolve is refused, which costs nothing: it would not have
+connected either.
+
+`resolver=` overrides how names are resolved, if you need to point the
+check at something other than system DNS.
 
 Two further bounds apply to what a remote server may return, since it
 controls both: the manifest handshake times out (`manifest_timeout`,
@@ -206,10 +221,12 @@ returns 402 with `X-Upgrade-Required: true`.
 
 ## What's not yet supported
 
-- **DNS rebinding.** URL validation resolves nothing: a hostname that
-  passes the check and then resolves to a private address at connect
-  time is not caught. Redirects are refused, which closes the easy
-  version of this, but a hostile DNS answer is a residual risk. Use
+- **DNS rebinding.** Validation resolves the hostname, but the
+  transport resolves it again when it dials, so a record that changes
+  between those two moments is not caught. Closing this needs
+  connect-time pinning — validating and connecting to the same address.
+  A *static* hostile record is caught, and redirects are refused, so
+  what remains is the timing attack rather than the easy version. Use
   `allow_private=False` (the default) and egress policy for the rest.
 - **Call-time interception of tool results.** The `indirect_injection`
   detector now scores instructions smuggled through content — search
