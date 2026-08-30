@@ -146,3 +146,8 @@ temp/
 
 # Serena tooling index
 .serena/
+.agent/state/
+.agent/export/
+.agent/running/
+.claude/worktrees/
+.claude/settings.local.json
