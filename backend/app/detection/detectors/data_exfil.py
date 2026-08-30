@@ -17,7 +17,17 @@ SENSITIVE_PATTERNS: list[tuple[re.Pattern[str], str, Severity]] = [
         Severity.CRITICAL,
     ),
     (
-        re.compile(r"(?i)(sk-[a-zA-Z0-9]{20,}|api[_-]?key[\"']?\s*[:=]\s*[\"'][a-zA-Z0-9]{16,})"),
+        # Hyphens belong inside the key body: real OpenAI keys are
+        # ``sk-proj-…``/``sk-svcacct-…``, and the old class stopped at
+        # the second hyphen, so the most common secret in circulation
+        # went unmatched. \b keeps that from firing on words ending in
+        # "sk-" such as ``task-…``. The quote in the api_key branch is
+        # optional for the same reason — ``API_KEY=<value>`` in an env
+        # dump carries no quotes and so missed both branches.
+        re.compile(
+            r"(?i)(\bsk-[a-zA-Z0-9][a-zA-Z0-9-]{17,}"
+            r"|api[_-]?key[\"']?\s*[:=]\s*[\"']?[a-zA-Z0-9_-]{16,})"
+        ),
         "API key or secret detected",
         Severity.HIGH,
     ),
