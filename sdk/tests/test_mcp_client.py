@@ -19,6 +19,14 @@ from parry.mcp.client import MAX_MANIFEST_CHARS, MAX_MANIFEST_TOOLS
 from parry.mcp.errors import MCPManifestError, MCPURLError
 from parry.mcp.normalize import manifest_hash
 
+# Remote URLs are judged by what they resolve to, so every test that
+# constructs one injects its own answer rather than depending on DNS.
+PUBLIC_IP = "93.184.216.34"
+
+
+def resolves_public(host: str) -> list[str]:
+    return [PUBLIC_IP]
+
 
 def _parry_handler(
     *,
@@ -190,7 +198,9 @@ def _remote_client(fake_manifest: dict, transport: str = "http", **overrides):
     kwargs = {"agent_id": "dev-assistant", "api_key": "sk-parry-test"}
     kwargs.update(overrides)
     factory = getattr(SentinelMCPClient, transport)
-    client = factory(url="https://mcp.example.com/sse", **kwargs)
+    client = factory(
+        url="https://mcp.example.com/sse", resolver=resolves_public, **kwargs
+    )
     client._fake_manifest = fake_manifest
     return client
 
@@ -252,6 +262,7 @@ async def test_credential_in_url_never_reaches_parry(patch_httpx) -> None:
         url="https://mcp.example.com/sse?api_key=leaked-key",
         agent_id="dev-assistant",
         api_key="sk-parry-test",
+        resolver=resolves_public,
     )
     client._fake_manifest = _MANIFEST
     async with client:
@@ -271,7 +282,9 @@ async def test_credential_in_url_never_reaches_parry(patch_httpx) -> None:
 def test_unsafe_urls_fail_at_construction(url) -> None:
     """Refused at the call site, not deep inside the context manager."""
     with pytest.raises(MCPURLError):
-        SentinelMCPClient.http(url=url, agent_id="a", api_key="sk-parry-test")
+        SentinelMCPClient.http(
+            url=url, agent_id="a", api_key="sk-parry-test", resolver=resolves_public
+        )
 
 
 def test_private_url_connects_when_opted_in() -> None:

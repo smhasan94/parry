@@ -35,7 +35,7 @@ import httpx
 
 from parry.mcp.errors import MCPBlockedError, MCPManifestError
 from parry.mcp.normalize import manifest_hash
-from parry.mcp.validate import validate_server_url
+from parry.mcp.validate import Resolver, validate_server_url
 
 logger = logging.getLogger("parry.mcp")
 
@@ -194,6 +194,7 @@ class SentinelMCPClient:
         auth: Any = None,
         allow_insecure: bool = False,
         allow_private: bool = False,
+        resolver: Resolver | None = None,
         **parry_kwargs: Any,
     ) -> SentinelMCPClient:
         """Connect to a remote MCP server over streamable HTTP.
@@ -201,6 +202,9 @@ class SentinelMCPClient:
         ``headers``/``auth`` stay in this process: they are handed to
         the transport and never included in the payload sent to Parry,
         so a bearer token cannot end up in the server registry.
+
+        ``resolver`` overrides how the hostname is turned into addresses
+        for the SSRF checks — see ``parry.mcp.validate``.
         """
         return cls._remote(
             "http",
@@ -209,6 +213,7 @@ class SentinelMCPClient:
             auth=auth,
             allow_insecure=allow_insecure,
             allow_private=allow_private,
+            resolver=resolver,
             **parry_kwargs,
         )
 
@@ -221,6 +226,7 @@ class SentinelMCPClient:
         auth: Any = None,
         allow_insecure: bool = False,
         allow_private: bool = False,
+        resolver: Resolver | None = None,
         **parry_kwargs: Any,
     ) -> SentinelMCPClient:
         """Connect to a remote MCP server over SSE."""
@@ -231,6 +237,7 @@ class SentinelMCPClient:
             auth=auth,
             allow_insecure=allow_insecure,
             allow_private=allow_private,
+            resolver=resolver,
             **parry_kwargs,
         )
 
@@ -244,13 +251,17 @@ class SentinelMCPClient:
         auth: Any,
         allow_insecure: bool,
         allow_private: bool,
+        resolver: Resolver | None,
         **parry_kwargs: Any,
     ) -> SentinelMCPClient:
         # Validate before construction so a refused URL fails at the
         # call site the developer wrote, not later inside a context
         # manager where the traceback points at our internals.
         server_uri = validate_server_url(
-            url, allow_insecure=allow_insecure, allow_private=allow_private
+            url,
+            allow_insecure=allow_insecure,
+            allow_private=allow_private,
+            resolver=resolver,
         )
         return cls(
             transport=transport,
