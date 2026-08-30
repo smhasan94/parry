@@ -49,6 +49,14 @@ _DEFAULT_MANIFEST_TIMEOUT = 30.0
 # Bounds on what a remote server may hand back. Failing closed is right
 # here: a manifest this size is not a tool list, and the alternative is
 # hashing and scanning attacker-chosen bulk on the caller's thread.
+#
+# These reject a manifest that has already been received and parsed, so
+# they bound what we *do* with it, not what a server can make us buffer.
+# Bounding that means capping bytes before the JSON-RPC parse, inside
+# the transport — and it has to be per message, since an SSE session's
+# response body stays open for the life of the session and a cap on the
+# whole body would kill long-running sessions. Until then the real
+# bound on a server streaming bulk at us is ``manifest_timeout``.
 MAX_MANIFEST_TOOLS = 500
 MAX_MANIFEST_CHARS = 1_000_000
 

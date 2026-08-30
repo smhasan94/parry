@@ -172,7 +172,10 @@ check at something other than system DNS.
 Two further bounds apply to what a remote server may return, since it
 controls both: the manifest handshake times out (`manifest_timeout`,
 30s default), and a manifest over 500 tools or 1,000,000 characters is
-refused outright rather than hashed and scanned.
+refused outright rather than hashed and scanned. The size limit applies
+to a manifest that has already arrived, so it bounds what the SDK does
+with one, not how much a server can make it buffer first — the timeout
+is what bounds that today.
 
 `headers` and `auth` are used only to talk to the MCP server. They are
 never included in the payload sent to Parry, so a bearer token cannot
