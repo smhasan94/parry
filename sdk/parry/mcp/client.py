@@ -1,6 +1,6 @@
 """``SentinelMCPClient`` — Parry-aware wrapper over ``mcp.ClientSession``.
 
-Lifecycle (stdio example):
+Lifecycle (stdio example; http and sse follow the same shape):
 
 1. ``__aenter__`` opens the underlying ``mcp.ClientSession``, calls
    ``initialize()``, fetches ``list_tools()``, hashes the manifest,
@@ -24,19 +24,75 @@ a constructor is actually called, not at module import time.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from contextlib import AsyncExitStack
 from typing import Any
 
+import anyio
 import httpx
 
 from parry.mcp.errors import MCPBlockedError, MCPManifestError
 from parry.mcp.normalize import manifest_hash
+from parry.mcp.validate import validate_server_url
 
 logger = logging.getLogger("parry.mcp")
 
 _DEFAULT_BASE_URL = "https://api.parry.dev"
+
+# A remote server controls how long it takes to answer, so the manifest
+# handshake gets its own bound rather than inheriting the backend HTTP
+# timeout.
+_DEFAULT_MANIFEST_TIMEOUT = 30.0
+
+# Bounds on what a remote server may hand back. Failing closed is right
+# here: a manifest this size is not a tool list, and the alternative is
+# hashing and scanning attacker-chosen bulk on the caller's thread.
+MAX_MANIFEST_TOOLS = 500
+MAX_MANIFEST_CHARS = 1_000_000
+
+
+def _no_redirect_client(
+    headers: dict[str, str] | None = None,
+    timeout: Any = None,
+    auth: Any = None,
+) -> httpx.AsyncClient:
+    """httpx client for the MCP transports, with redirects disabled.
+
+    Validating the URL only proves the *first* hop is acceptable. A
+    permitted host answering 302 → http://169.254.169.254/ would walk
+    straight past every check, so the transport never follows.
+    """
+    return httpx.AsyncClient(
+        headers=headers,
+        timeout=timeout,
+        auth=auth,
+        follow_redirects=False,
+        verify=True,
+    )
+
+
+def _check_manifest_bounds(manifest: dict[str, Any] | None) -> None:
+    """Refuse a manifest too large to be a real tool list.
+
+    Both limits matter: a few enormous tool descriptions weigh nothing
+    by count, and thousands of tiny tools weigh nothing by size.
+    """
+    if not manifest:
+        return
+
+    tools = manifest.get("tools")
+    if isinstance(tools, list) and len(tools) > MAX_MANIFEST_TOOLS:
+        raise MCPManifestError(
+            f"MCP server declared {len(tools)} tools, above the {MAX_MANIFEST_TOOLS} limit"
+        )
+
+    size = len(json.dumps(manifest, ensure_ascii=False, default=str))
+    if size > MAX_MANIFEST_CHARS:
+        raise MCPManifestError(
+            f"MCP manifest is {size} characters, above the {MAX_MANIFEST_CHARS} limit"
+        )
 
 
 def _require_mcp() -> Any:
@@ -60,9 +116,9 @@ class SentinelMCPClient:
         SentinelMCPClient.http(url=..., **parry_kwargs)
         SentinelMCPClient.sse(url=..., **parry_kwargs)
 
-    Only ``stdio`` is implemented in v1 — ``http`` and ``sse`` raise
-    ``NotImplementedError`` and will be filled in once Claude Desktop
-    customers are stable on stdio.
+    ``http`` and ``sse`` reach remote servers and so validate their
+    URL before dialling: see ``parry.mcp.validate``. Auth material
+    passed to them stays in this process and never reaches Parry.
     """
 
     def __init__(
@@ -77,6 +133,7 @@ class SentinelMCPClient:
         sandbox: bool = False,
         server_name: str | None = None,
         timeout: float = 10.0,
+        manifest_timeout: float = _DEFAULT_MANIFEST_TIMEOUT,
     ) -> None:
         self._transport = transport
         self._transport_kwargs = transport_kwargs
@@ -91,6 +148,7 @@ class SentinelMCPClient:
         self.sandbox = sandbox
         self.server_name = server_name
         self.timeout = timeout
+        self.manifest_timeout = manifest_timeout
 
         self._stack: AsyncExitStack | None = None
         self._session: Any = None
@@ -128,15 +186,81 @@ class SentinelMCPClient:
         )
 
     @classmethod
-    def http(cls, *, url: str, **parry_kwargs: Any) -> SentinelMCPClient:  # pragma: no cover
-        raise NotImplementedError(
-            "HTTP transport is not implemented in v1. Use stdio() for now."
+    def http(
+        cls,
+        *,
+        url: str,
+        headers: dict[str, str] | None = None,
+        auth: Any = None,
+        allow_insecure: bool = False,
+        allow_private: bool = False,
+        **parry_kwargs: Any,
+    ) -> SentinelMCPClient:
+        """Connect to a remote MCP server over streamable HTTP.
+
+        ``headers``/``auth`` stay in this process: they are handed to
+        the transport and never included in the payload sent to Parry,
+        so a bearer token cannot end up in the server registry.
+        """
+        return cls._remote(
+            "http",
+            url=url,
+            headers=headers,
+            auth=auth,
+            allow_insecure=allow_insecure,
+            allow_private=allow_private,
+            **parry_kwargs,
         )
 
     @classmethod
-    def sse(cls, *, url: str, **parry_kwargs: Any) -> SentinelMCPClient:  # pragma: no cover
-        raise NotImplementedError(
-            "SSE transport is not implemented in v1. Use stdio() for now."
+    def sse(
+        cls,
+        *,
+        url: str,
+        headers: dict[str, str] | None = None,
+        auth: Any = None,
+        allow_insecure: bool = False,
+        allow_private: bool = False,
+        **parry_kwargs: Any,
+    ) -> SentinelMCPClient:
+        """Connect to a remote MCP server over SSE."""
+        return cls._remote(
+            "sse",
+            url=url,
+            headers=headers,
+            auth=auth,
+            allow_insecure=allow_insecure,
+            allow_private=allow_private,
+            **parry_kwargs,
+        )
+
+    @classmethod
+    def _remote(
+        cls,
+        transport: str,
+        *,
+        url: str,
+        headers: dict[str, str] | None,
+        auth: Any,
+        allow_insecure: bool,
+        allow_private: bool,
+        **parry_kwargs: Any,
+    ) -> SentinelMCPClient:
+        # Validate before construction so a refused URL fails at the
+        # call site the developer wrote, not later inside a context
+        # manager where the traceback points at our internals.
+        server_uri = validate_server_url(
+            url, allow_insecure=allow_insecure, allow_private=allow_private
+        )
+        return cls(
+            transport=transport,
+            transport_kwargs={
+                "url": server_uri,
+                "headers": headers or {},
+                "auth": auth,
+                "server_uri": server_uri,
+            },
+            **parry_kwargs,
         )
 
     # ── Context manager lifecycle ──────────────────────────────────
@@ -155,16 +279,18 @@ class SentinelMCPClient:
             )
             await self._stack.enter_async_context(self._http)
 
-        if self._transport == "stdio":
-            self._server_uri = self._transport_kwargs["server_uri"]
-            if self.sandbox:
-                self._manifest = {"tools": []}
-            elif self._fake_manifest is not None:
-                self._manifest = self._fake_manifest
-            else:
-                await self._open_stdio_session()
-        else:  # pragma: no cover
+        if self._transport not in _OPENERS:  # pragma: no cover
             raise NotImplementedError(self._transport)
+
+        self._server_uri = self._transport_kwargs["server_uri"]
+        if self.sandbox:
+            self._manifest = {"tools": []}
+        elif self._fake_manifest is not None:
+            self._manifest = self._fake_manifest
+            _check_manifest_bounds(self._manifest)
+        else:
+            await _OPENERS[self._transport](self)
+            _check_manifest_bounds(self._manifest)
 
         if not self.sandbox:
             await self._register_with_parry()
@@ -200,6 +326,71 @@ class SentinelMCPClient:
         # We normalize to the wire-level dict shape Parry's backend expects.
         self._manifest = _tools_result_to_manifest(tools_result)
 
+    async def _open_http_session(self) -> None:
+        """Streamable HTTP. Yields a 3-tuple; the session id is unused."""
+        _require_mcp()
+        # Renamed in newer mcp releases; the old spelling still exists
+        # but emits a DeprecationWarning, so prefer the current one and
+        # fall back for anyone pinned to an older version.
+        try:
+            from mcp.client.streamable_http import streamable_http_client
+        except ImportError:  # pragma: no cover — mcp < 1.16
+            from mcp.client.streamable_http import (
+                streamablehttp_client as streamable_http_client,
+            )
+
+        assert self._stack is not None
+        read, write, _get_session_id = await self._stack.enter_async_context(
+            streamable_http_client(
+                self._transport_kwargs["url"],
+                headers=self._transport_kwargs.get("headers") or None,
+                auth=self._transport_kwargs.get("auth"),
+                timeout=self.timeout,
+                httpx_client_factory=_no_redirect_client,
+            )
+        )
+        await self._finish_remote_session(read, write)
+
+    async def _open_sse_session(self) -> None:
+        """SSE. Same handshake, but this transport yields a 2-tuple."""
+        _require_mcp()
+        from mcp.client.sse import sse_client
+
+        assert self._stack is not None
+        read, write = await self._stack.enter_async_context(
+            sse_client(
+                self._transport_kwargs["url"],
+                headers=self._transport_kwargs.get("headers") or None,
+                auth=self._transport_kwargs.get("auth"),
+                timeout=self.timeout,
+                httpx_client_factory=_no_redirect_client,
+            )
+        )
+        await self._finish_remote_session(read, write)
+
+    async def _finish_remote_session(self, read: Any, write: Any) -> None:
+        """Handshake shared by both remote transports.
+
+        Bounded by a timeout because a remote server controls how long
+        it takes to answer: without this, a server that accepts the
+        connection and then never responds hangs the caller's startup
+        indefinitely.
+        """
+        from mcp import ClientSession
+
+        assert self._stack is not None
+        self._session = await self._stack.enter_async_context(ClientSession(read, write))
+        try:
+            with anyio.fail_after(self.manifest_timeout):
+                await self._session.initialize()
+                tools_result = await self._session.list_tools()
+        except TimeoutError as e:
+            raise MCPManifestError(
+                f"MCP server did not return a manifest within "
+                f"{self.manifest_timeout}s: {self._server_uri}"
+            ) from e
+        self._manifest = _tools_result_to_manifest(tools_result)
+
     # ── Parry backend round-trip ───────────────────────────────────
 
     async def _register_with_parry(self) -> None:
@@ -210,6 +401,7 @@ class SentinelMCPClient:
         payload = {
             "agent_id": self.agent_id,
             "server_uri": self._server_uri,
+            "transport": self._transport,
             "server_name": self.server_name,
             "manifest": self._manifest,
         }
@@ -314,3 +506,12 @@ def _tools_result_to_manifest(tools_result: Any) -> dict[str, Any]:
             }
         )
     return {"tools": tools_out}
+
+
+# Registered after the class body so __aenter__ can dispatch without a
+# chain of transport conditionals.
+_OPENERS: dict[str, Any] = {
+    "stdio": SentinelMCPClient._open_stdio_session,
+    "http": SentinelMCPClient._open_http_session,
+    "sse": SentinelMCPClient._open_sse_session,
+}

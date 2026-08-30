@@ -29,3 +29,12 @@ class MCPBlockedError(Exception):
 
 class MCPManifestError(Exception):
     """Raised when the manifest is structurally invalid or can't be fetched."""
+
+
+class MCPURLError(MCPManifestError):
+    """Raised when a remote MCP server URL is refused before connecting.
+
+    Subclasses ``MCPManifestError`` so callers that already handle a
+    failed manifest fetch keep working — a URL this SDK will not dial
+    is one more way of failing to obtain a manifest.
+    """

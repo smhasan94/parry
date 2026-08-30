@@ -25,13 +25,14 @@ The ``mcp`` package is an optional extra — install via
 """
 
 from parry.mcp.client import SentinelMCPClient
-from parry.mcp.errors import MCPBlockedError, MCPManifestError
+from parry.mcp.errors import MCPBlockedError, MCPManifestError, MCPURLError
 from parry.mcp.normalize import canonical_manifest, manifest_hash
 
 __all__ = [
     "SentinelMCPClient",
     "MCPBlockedError",
     "MCPManifestError",
+    "MCPURLError",
     "canonical_manifest",
     "manifest_hash",
 ]
