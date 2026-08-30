@@ -126,11 +126,63 @@ What the wrapper does on `__aenter__`:
 The TypeScript SDK has the equivalent at `@parry/sdk` →
 `SentinelMCPClient.stdio()`.
 
+### Remote servers (HTTP and SSE)
+
+```python
+async with SentinelMCPClient.http(
+    parry=parry,
+    agent_id="research-agent",
+    url="https://mcp.vendor.example/mcp",
+    headers={"Authorization": "Bearer ..."},   # stays in your process
+) as client:
+    tools = await client.list_tools()
+```
+
+`SentinelMCPClient.sse(...)` takes the same arguments and speaks the
+SSE transport instead.
+
+Remote URLs are validated **before** the SDK dials them, because the
+SDK connects from inside your network and an injected "connect to this
+MCP server" instruction would otherwise turn your agent into a probe:
+
+| Rule | Default | Override |
+| --- | --- | --- |
+| Cloud metadata (`169.254.169.254`, `metadata.google.internal`, link-local) | refused | **none — cannot be overridden** |
+| Private ranges (`10/8`, `172.16/12`, `192.168/16`, `fc00::/7`) | refused | `allow_private=True` |
+| Plaintext `http://` to a non-loopback host | refused | `allow_insecure=True` |
+| Credentials in the URL (`https://user:pw@…`, `?api_key=…`) | refused / stripped | none — use `headers=` |
+| HTTP redirects | not followed | none |
+| TLS verification | always on | none — there is no opt-out |
+
+Two further bounds apply to what a remote server may return, since it
+controls both: the manifest handshake times out (`manifest_timeout`,
+30s default), and a manifest over 500 tools or 1,000,000 characters is
+refused outright rather than hashed and scanned.
+
+`headers` and `auth` are used only to talk to the MCP server. They are
+never included in the payload sent to Parry, so a bearer token cannot
+end up in the server registry or an audit row. The same applies to a
+credential passed in the URL — the query string is stripped before the
+URI is stored.
+
+Transport is recorded per server and shown in the dashboard, but it is
+not part of a server's identity: the same endpoint reached over SSE and
+streamable-HTTP is one row, and moving a server between transports does
+not change its manifest hash or reset its trust level.
+
 ## Backend API
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `POST` | `/api/v1/mcp/connections` | SDK (`X-Parry-Secret`) | Register a connection, run inline detection |
+
+`POST /connections` takes an optional `transport` (`stdio` \| `http` \|
+`sse`, derived from the URI scheme when omitted, so older SDKs keep
+working). `server_uri` is canonicalised on the way in — scheme and host
+lowercased, default port and trailing slash dropped, query and fragment
+removed — and rejected outright if it embeds credentials. Every server
+response carries `transport`.
+
 | `GET`  | `/api/v1/mcp/servers` | Viewer | List known servers, filterable by trust level |
 | `GET`  | `/api/v1/mcp/servers/{id}` | Viewer | Full server detail incl. manifest + `hash_history` |
 | `PATCH`| `/api/v1/mcp/servers/{id}` | **Admin** | Change trust level (audit-logged) |
@@ -154,9 +206,11 @@ returns 402 with `X-Upgrade-Required: true`.
 
 ## What's not yet supported
 
-- **HTTP and SSE transports.** Stdio is the launch transport because
-  it's the riskiest (an `npx` install of an MCP server gets full
-  manifest control). HTTP and SSE will follow.
+- **DNS rebinding.** URL validation resolves nothing: a hostname that
+  passes the check and then resolves to a private address at connect
+  time is not caught. Redirects are refused, which closes the easy
+  version of this, but a hostile DNS answer is a residual risk. Use
+  `allow_private=False` (the default) and egress policy for the rest.
 - **Call-time interception of tool results.** The `indirect_injection`
   detector now scores instructions smuggled through content — search
   results, retrieved documents, quoted email, extracted PDF text — but
