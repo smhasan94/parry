@@ -54,3 +54,27 @@ class TestPrivilegeEscalationDetector:
             }
         )
         assert not result.triggered
+
+    def test_escalation_in_args_keyed_call_triggers(self) -> None:
+        """``args`` is what the corpora and several wrappers send.
+
+        This detector read ``arguments``/``input`` only, so a call in
+        this shape was scanned as the empty string — the argument
+        checking below it was dead for that whole class of caller.
+        """
+        result = self.detector.detect(
+            {
+                "prompt": "Run the maintenance task.",
+                "tool_calls": [{"name": "config_set", "args": {"cmd": "disable authentication"}}],
+            }
+        )
+        assert result.triggered
+
+    def test_benign_args_keyed_call_no_trigger(self) -> None:
+        result = self.detector.detect(
+            {
+                "prompt": "Check the weather.",
+                "tool_calls": [{"name": "get_weather", "args": {"city": "Boston"}}],
+            }
+        )
+        assert not result.triggered

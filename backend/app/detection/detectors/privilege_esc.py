@@ -3,6 +3,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import DetectionResult
+from app.detection.detectors._args import call_arg_text
 from app.detection.normalize import scan_text
 from app.services.detector_config_service import threshold_for
 
@@ -98,9 +99,15 @@ class PrivilegeEscalationDetector:
                 max_confidence = weight
                 matched_reason = reason
 
-        # Check tool call arguments for privilege escalation signals
+        # Check tool call arguments for privilege escalation signals.
+        # Read through the shared helper: this used to look at
+        # ``arguments``/``input`` only, so calls carrying an ``args``
+        # dict — what the corpora and several wrappers send — were
+        # scanned as the empty string. The helper also bounds the text,
+        # since this detector runs on the blocking path and the old
+        # str() was unbounded.
         for call in tool_calls:
-            args = str(call.get("arguments", call.get("input", "")))
+            args = call_arg_text(call)
             for pattern, reason, weight in PRIVILEGE_PATTERNS:
                 if pattern.search(args) and weight > max_confidence:
                     max_confidence = weight
