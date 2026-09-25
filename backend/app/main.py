@@ -17,6 +17,7 @@ from app.core.metrics_middleware import MetricsMiddleware
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.request_size import RequestSizeLimitMiddleware
 from app.core.sentry import init_sentry
+from app.core.url_safety import UnsafeURLError
 
 log = structlog.get_logger()
 
@@ -108,6 +109,14 @@ async def conflict_handler(request: Request, exc: ConflictError) -> JSONResponse
 async def policy_violation_handler(request: Request, exc: PolicyViolationError) -> JSONResponse:
     return JSONResponse(
         status_code=403,
+        content={"detail": exc.message, "code": exc.code},
+    )
+
+
+@app.exception_handler(UnsafeURLError)
+async def unsafe_url_handler(request: Request, exc: UnsafeURLError) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
         content={"detail": exc.message, "code": exc.code},
     )
 
