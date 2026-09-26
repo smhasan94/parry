@@ -177,6 +177,33 @@ to a manifest that has already arrived, so it bounds what the SDK does
 with one, not how much a server can make it buffer first — the timeout
 is what bounds that today.
 
+The addresses that pass validation are the ones the transport actually
+connects to. `SentinelMCPClient.http()`/`.sse()` pin the TCP connection
+to every validated address for the server's host — not just the first —
+trying each in resolution order and falling back if one is unreachable.
+That matters in practice: `localhost` commonly resolves to `::1` before
+`127.0.0.1`, and a dev server that only listens on the latter would
+otherwise fail to connect once pinning was in place. Because the
+transport never re-resolves the hostname at dial time, a DNS record that
+changes between validation and connection can't be raced — there is no
+second lookup left to exploit. Pinning is scoped to the validated host
+only: a request to a *different* host made through the same client —
+for example, an OAuth authorization server that the MCP spec's
+standard auth flow points at — resolves normally and is unaffected.
+TLS server-name verification still checks the real hostname, regardless
+of which address the connection was actually pinned to.
+
+Pinning and an environment-configured proxy are mutually exclusive
+today. If `HTTP_PROXY`, `HTTPS_PROXY`, or `ALL_PROXY` applies to the MCP
+server's host (and the host isn't excluded via `NO_PROXY`), `.http()`/
+`.sse()` raise `MCPURLError` at construction time rather than picking
+one of two unsafe defaults — silently connecting direct and bypassing
+your proxy, or routing through the proxy and letting it re-resolve the
+hostname, which reopens the DNS-rebinding gap. On macOS, the same check
+also picks up proxies configured in System Settings, not only
+environment variables, since that's what the underlying proxy lookup
+reads there.
+
 `headers` and `auth` are used only to talk to the MCP server. They are
 never included in the payload sent to Parry, so a bearer token cannot
 end up in the server registry or an audit row. The same applies to a
@@ -224,13 +251,6 @@ returns 402 with `X-Upgrade-Required: true`.
 
 ## What's not yet supported
 
-- **DNS rebinding.** Validation resolves the hostname, but the
-  transport resolves it again when it dials, so a record that changes
-  between those two moments is not caught. Closing this needs
-  connect-time pinning — validating and connecting to the same address.
-  A *static* hostile record is caught, and redirects are refused, so
-  what remains is the timing attack rather than the easy version. Use
-  `allow_private=False` (the default) and egress policy for the rest.
 - **Call-time interception of tool results.** The `indirect_injection`
   detector now scores instructions smuggled through content — search
   results, retrieved documents, quoted email, extracted PDF text — but
