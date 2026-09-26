@@ -47,6 +47,7 @@ from __future__ import annotations
 import ipaddress
 import socket
 from collections.abc import Callable
+from dataclasses import dataclass
 from urllib.parse import urlsplit, urlunsplit
 
 from .errors import MCPURLError
@@ -193,6 +194,22 @@ def _addresses_for(host: str, resolver: Resolver | None) -> list[str]:
     return addresses
 
 
+@dataclass(frozen=True)
+class ValidatedURL:
+    """Result of validating a remote MCP server URL.
+
+    ``pinned_address`` is the address ``canonical_url``'s host resolved
+    to and had checked against every rule in this module. Connecting to
+    it directly — instead of letting the transport resolve the hostname
+    again — is what closes the DNS-rebinding gap: there is no second
+    lookup left to race. When the URL already named a literal address
+    (IPv4 or IPv6, unbracketed), ``pinned_address`` is just that address.
+    """
+
+    canonical_url: str
+    pinned_address: str
+
+
 def validate_server_url(
     url: str,
     *,
@@ -210,6 +227,42 @@ def validate_server_url(
     ``resolver`` overrides how names are turned into addresses. Tests
     inject one so the suite does not depend on live DNS.
     """
+    return _validate(
+        url,
+        allow_insecure=allow_insecure,
+        allow_private=allow_private,
+        resolver=resolver,
+    ).canonical_url
+
+
+def validate_and_pin(
+    url: str,
+    *,
+    allow_insecure: bool = False,
+    allow_private: bool = False,
+    resolver: Resolver | None = None,
+) -> ValidatedURL:
+    """Like ``validate_server_url``, but also return the address to pin.
+
+    Used by ``SentinelMCPClient.http``/``.sse`` so the transport can
+    connect to the exact address that was checked, rather than letting
+    it re-resolve the hostname at dial time.
+    """
+    return _validate(
+        url,
+        allow_insecure=allow_insecure,
+        allow_private=allow_private,
+        resolver=resolver,
+    )
+
+
+def _validate(
+    url: str,
+    *,
+    allow_insecure: bool,
+    allow_private: bool,
+    resolver: Resolver | None,
+) -> ValidatedURL:
     raw = (url or "").strip()
     if not raw:
         raise MCPURLError("MCP server URL must not be empty")
@@ -242,7 +295,8 @@ def validate_server_url(
 
     is_loopback = _is_loopback_host(host)
 
-    for address in _addresses_for(host, resolver):
+    addresses = _addresses_for(host, resolver)
+    for address in addresses:
         _check_address(
             address,
             host=host,
@@ -263,4 +317,5 @@ def validate_server_url(
     if port is not None and port != default_port:
         netloc = f"{netloc}:{port}"
 
-    return urlunsplit((scheme, netloc, parts.path.rstrip("/"), "", ""))
+    canonical_url = urlunsplit((scheme, netloc, parts.path.rstrip("/"), "", ""))
+    return ValidatedURL(canonical_url=canonical_url, pinned_address=addresses[0])

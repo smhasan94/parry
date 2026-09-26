@@ -15,7 +15,13 @@ from __future__ import annotations
 import pytest
 
 from parry.mcp.errors import MCPManifestError, MCPURLError
-from parry.mcp.validate import MAX_URL_CHARS, Resolver, validate_server_url
+from parry.mcp.validate import (
+    MAX_URL_CHARS,
+    Resolver,
+    ValidatedURL,
+    validate_and_pin,
+    validate_server_url,
+)
 
 PUBLIC_IP = "93.184.216.34"
 
@@ -248,3 +254,57 @@ def test_url_error_is_catchable_as_manifest_error() -> None:
     """Existing callers handle MCPManifestError; they must keep working."""
     with pytest.raises(MCPManifestError):
         validate_server_url("file:///etc/passwd")
+
+
+class TestValidateAndPin:
+    """validate_and_pin returns the same canonical URL as validate_server_url,
+    plus the address that was actually checked — the one connect-time pinning
+    (client.py) will dial instead of letting the transport re-resolve.
+    """
+
+    def test_returns_canonical_url_and_pinned_address(self) -> None:
+        result = validate_and_pin(
+            "https://mcp.example.com/mcp/", resolver=resolves_to(PUBLIC_IP)
+        )
+        assert result == ValidatedURL(
+            canonical_url="https://mcp.example.com/mcp",
+            pinned_address=PUBLIC_IP,
+        )
+
+    def test_pins_first_resolved_address_when_host_has_several(self) -> None:
+        second_public = "93.184.216.35"
+        result = validate_and_pin(
+            "https://mcp.example.com/mcp",
+            resolver=resolves_to(PUBLIC_IP, second_public),
+        )
+        assert result.pinned_address == PUBLIC_IP
+
+    def test_pins_ipv6_literal_unbracketed(self) -> None:
+        # A bare IPv6 literal in the URL is already an address — no
+        # resolver call — and must come back without brackets, since
+        # that's what anyio.connect_tcp expects as remote_host.
+        #
+        # NOTE: the brief's original example used 2001:db8::1 (the IANA
+        # *documentation* prefix). Python's ipaddress module classifies
+        # that whole /32 as is_private=True (and is_global=False), so it
+        # is refused by the existing, unchanged private-address rule —
+        # not something this refactor touches. Swapped for a real
+        # globally-routable v6 literal (Cloudflare DNS) so the test
+        # actually exercises "bare v6 literal, no resolver, unbracketed"
+        # without needing allow_private=True.
+        result = validate_and_pin("https://[2606:4700:4700::1111]/mcp")
+        assert result.pinned_address == "2606:4700:4700::1111"
+
+    def test_still_refuses_unsafe_addresses(self) -> None:
+        with pytest.raises(MCPURLError):
+            validate_and_pin(
+                "https://mcp.example.com/mcp",
+                resolver=resolves_to("169.254.169.254"),
+            )
+
+    def test_validate_server_url_unchanged(self) -> None:
+        # Existing public function keeps its exact contract: a bare str.
+        assert (
+            validate_server_url("https://mcp.example.com/mcp", resolver=public)
+            == "https://mcp.example.com/mcp"
+        )
