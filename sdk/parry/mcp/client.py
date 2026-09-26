@@ -71,6 +71,14 @@ MAX_MANIFEST_CHARS = 1_000_000
 # sse_client uses).
 _SSE_READ_TIMEOUT = 300.0
 
+# Stagger between connection attempts when a pinned host has several
+# addresses: the next one starts after this long, or at once if the
+# previous attempt fails. Same value (RFC 8305's recommendation) anyio
+# uses for the hostname connects this replaces.
+_HAPPY_EYEBALLS_DELAY = 0.25
+
+_REMOTE_TRANSPORTS = frozenset({"http", "sse"})
+
 
 def _no_redirect_client(
     headers: dict[str, str] | None = None,
@@ -115,10 +123,16 @@ class _PinnedNetworkBackend(AnyIOBackend):
     and connection no longer matters, because there is no second lookup
     left to race.
 
-    Addresses are tried in resolution order, falling back on failure the
-    way a normal connect does (``localhost`` often resolves to ``::1``
-    first while dev servers listen on 127.0.0.1 only). Only hosts other
-    than ``pinned_host`` resolve normally.
+    With several addresses, they are raced the way anyio races a
+    hostname's addresses (RFC 8305 "happy eyeballs"): attempts start in
+    resolution order, each ``_HAPPY_EYEBALLS_DELAY`` after the last or
+    immediately once the previous one fails; the first to connect wins
+    and the rest are cancelled. The whole race shares one ``timeout``
+    budget, as httpcore gives anyio's connect, so a blackholed address
+    costs the stagger rather than a full timeout. (``localhost`` often
+    resolves to ``::1`` first while dev servers listen on 127.0.0.1 only.)
+
+    Hosts other than ``pinned_host`` are not pinned and resolve normally.
 
     TLS server-name verification is unaffected: httpcore derives SNI
     from the request's origin host, not from what this backend dials,
@@ -151,24 +165,66 @@ class _PinnedNetworkBackend(AnyIOBackend):
                 local_address=local_address,
                 socket_options=socket_options,
             )
-        last_error: Exception | None = None
-        for candidate in self._pinned_addresses:
+        return await self._race_pinned(port, timeout, local_address, socket_options)
+
+    async def _race_pinned(
+        self,
+        port: int,
+        timeout: float | None,
+        local_address: str | None,
+        socket_options: Any,
+    ) -> Any:
+        connect = super().connect_tcp
+        winner: Any = None
+        errors: list[Exception] = []
+
+        async def attempt(address: str, done: anyio.Event, tg: Any) -> None:
+            nonlocal winner
             try:
-                return await super().connect_tcp(
-                    candidate,
+                # No per-attempt timeout: the shared budget below bounds
+                # every attempt, and cancels whichever are still running.
+                stream = await connect(
+                    address,
                     port,
-                    timeout=timeout,
+                    timeout=None,
                     local_address=local_address,
                     socket_options=socket_options,
                 )
-            except Exception as e:  # noqa: BLE001 — must try every candidate before giving up
-                last_error = e
-        assert last_error is not None
-        raise last_error
+            except Exception as e:  # noqa: BLE001 — a failed candidate just yields to the next
+                errors.append(e)
+                return
+            finally:
+                done.set()
+            if winner is None:
+                winner = stream
+                tg.cancel_scope.cancel()
+            else:  # pragma: no cover — two attempts connected in the same instant
+                await stream.aclose()
+
+        with anyio.move_on_after(timeout) as budget:
+            async with anyio.create_task_group() as tg:
+                for address in self._pinned_addresses:
+                    if winner is not None:
+                        break  # don't open a connection only to close it
+                    done = anyio.Event()
+                    tg.start_soon(attempt, address, done, tg)
+                    with anyio.move_on_after(_HAPPY_EYEBALLS_DELAY):
+                        await done.wait()
+
+        if winner is not None:
+            return winner
+        if budget.cancelled_caught or not errors:
+            raise httpcore.ConnectTimeout(
+                f"timed out connecting to {self._pinned_host} at any of "
+                f"{', '.join(self._pinned_addresses)}"
+            ) from (errors[-1] if errors else None)
+        raise errors[-1]
 
 
 class _PinnedHTTPTransport(httpx.AsyncHTTPTransport):
-    """AsyncHTTPTransport that always connects to ``pinned_address``.
+    """AsyncHTTPTransport whose connections to ``pinned_host`` go only to
+    ``pinned_addresses`` — see ``_PinnedNetworkBackend`` for how several
+    addresses are raced and why other hosts are left unpinned.
 
     Deliberately does not call ``httpx.AsyncHTTPTransport.__init__`` —
     that always builds a pool with the default hostname-resolving
@@ -406,7 +462,12 @@ class SentinelMCPClient:
         # Derive the host exactly as httpx will hand it to the network
         # backend (lowercase, IDNA-encoded, v6 unbracketed); anything else
         # and the pin's host check would silently never match.
-        pinned_host = httpx.URL(validated.canonical_url).raw_host.decode("ascii")
+        try:
+            pinned_host = httpx.URL(validated.canonical_url).raw_host.decode("ascii")
+        except httpx.InvalidURL as e:
+            # The stdlib IDNA codec (used by validation) accepts some hosts
+            # httpx's stricter IDNA 2008 parser refuses, e.g. emoji labels.
+            raise MCPURLError(f"MCP server URL host is not a valid hostname: {e}") from e
         _refuse_if_env_proxy_applies(validated.canonical_url, pinned_host)
         return cls(
             transport=transport,
@@ -542,10 +603,21 @@ class SentinelMCPClient:
     def _pinned_client_factory(self) -> Any:
         """``_no_redirect_client`` with this session's pin baked in, in the
         ``(headers=, timeout=, auth=)`` factory shape the mcp transports use."""
+        pinned_host = self._transport_kwargs.get("pinned_host")
+        pinned_addresses = self._transport_kwargs.get("pinned_addresses")
+        if self._transport in _REMOTE_TRANSPORTS and not (pinned_host and pinned_addresses):
+            # Should be impossible — _remote() always sets both — but an
+            # empty pin would otherwise build a plain, re-resolving
+            # transport: a silent fail-open. Explicit raise, not assert,
+            # so it survives python -O.
+            raise AssertionError(
+                f"remote MCP transport {self._transport!r} has no connection pin; "
+                "refusing to build an unpinned client"
+            )
         return functools.partial(
             _no_redirect_client,
-            pinned_host=self._transport_kwargs.get("pinned_host"),
-            pinned_addresses=self._transport_kwargs.get("pinned_addresses"),
+            pinned_host=pinned_host,
+            pinned_addresses=pinned_addresses,
         )
 
     async def _finish_remote_session(self, read: Any, write: Any) -> None:

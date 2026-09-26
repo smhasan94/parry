@@ -34,12 +34,14 @@ is only ever as current as the last time someone read an RFC, and it
 already had a hole: 100.64.0.0/10 (carrier NAT) reports
 ``is_private`` False and would have sailed through.
 
-Two gaps remain by design. Redirects are refused by the caller
-(``follow_redirects=False``) rather than here, since a validated host
-can still answer with a 302 pointing somewhere this function never saw.
-And the transport re-resolves the name when it connects, so a record
-that changes between this check and that connection — DNS rebinding —
-is not caught; closing it needs connect-time pinning.
+Two things are enforced by the caller rather than here. Redirects are
+refused by the transport (``follow_redirects=False``), since a validated
+host can still answer with a 302 pointing somewhere this function never
+saw. And DNS rebinding — a record that changes between this check and
+the connection — is closed by connect-time pinning: ``validate_and_pin``
+returns every address it checked, and ``SentinelMCPClient``'s remote
+transports dial only those for the validated host instead of resolving
+the name again (see ``_PinnedNetworkBackend`` in ``client.py``).
 """
 
 from __future__ import annotations

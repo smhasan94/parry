@@ -10,8 +10,10 @@ trip to the Parry backend is stubbed via a MockTransport.
 from __future__ import annotations
 
 import json
+import time
 from contextlib import AsyncExitStack, asynccontextmanager
 
+import anyio
 import httpcore
 import httpx
 import httpx._transports.default as _httpx_default_transport
@@ -455,6 +457,81 @@ class TestPinnedNetworkBackend:
         assert dialled == ["auth.other-vendor.example"]
 
 
+class _FakeStream(str):
+    """Stands in for a connected stream; compares equal to its label."""
+
+    async def aclose(self) -> None:
+        pass
+
+
+def _patch_dialler(monkeypatch, behaviour: dict[str, str]) -> dict:
+    """Fake network layer: per address, "ok" connects at once, "fail"
+    refuses at once, "hang" blackholes until cancelled. Records every
+    dial and every attempt that was cancelled mid-connect."""
+    log: dict = {"dialled": [], "cancelled": []}
+
+    async def fake_connect_tcp(
+        self, host, port, timeout=None, local_address=None, socket_options=None
+    ):
+        log["dialled"].append(host)
+        mode = behaviour[host]
+        if mode == "fail":
+            raise httpcore.ConnectError(f"refused: {host}")
+        if mode == "hang":
+            try:
+                await anyio.sleep_forever()
+            finally:
+                log["cancelled"].append(host)
+        return _FakeStream(f"stream:{host}")
+
+    monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
+    return log
+
+
+class TestPinnedRaceBudget:
+    """Several pinned addresses share ONE connect budget, raced with a
+    short stagger — not tried one after another at a full timeout each,
+    which turned a blackholed IPv6 path into N x timeout of dead air."""
+
+    async def test_blackholed_first_address_costs_the_stagger_not_the_timeout(
+        self, monkeypatch
+    ) -> None:
+        log = _patch_dialler(monkeypatch, {"2001:db8::1": "hang", PUBLIC_IP: "ok"})
+        backend = _PinnedNetworkBackend("mcp.example.com", ("2001:db8::1", PUBLIC_IP))
+        start = time.monotonic()
+        stream = await backend.connect_tcp("mcp.example.com", 443, timeout=10.0)
+        elapsed = time.monotonic() - start
+        assert stream == f"stream:{PUBLIC_IP}"
+        assert elapsed < 1.0  # ~the 0.25s stagger; sequential would be 10s
+        assert log["cancelled"] == ["2001:db8::1"]  # the loser is torn down
+
+    async def test_fast_failure_starts_the_next_address_immediately(self, monkeypatch) -> None:
+        _patch_dialler(monkeypatch, {"::1": "fail", "127.0.0.1": "ok"})
+        backend = _PinnedNetworkBackend("localhost", ("::1", "127.0.0.1"))
+        start = time.monotonic()
+        stream = await backend.connect_tcp("localhost", 8000, timeout=10.0)
+        assert stream == "stream:127.0.0.1"
+        assert time.monotonic() - start < 0.2  # didn't sit out the stagger
+
+    async def test_all_blackholed_times_out_within_one_budget(self, monkeypatch) -> None:
+        addresses = ("2001:db8::1", "2001:db8::2", PUBLIC_IP)
+        log = _patch_dialler(monkeypatch, dict.fromkeys(addresses, "hang"))
+        backend = _PinnedNetworkBackend("mcp.example.com", addresses)
+        start = time.monotonic()
+        with pytest.raises(httpcore.ConnectTimeout):
+            await backend.connect_tcp("mcp.example.com", 443, timeout=0.6)
+        elapsed = time.monotonic() - start
+        assert elapsed < 1.2  # one 0.6s budget; sequential would be 1.8s
+        assert log["dialled"] == list(addresses)  # every address got a turn
+        assert sorted(log["cancelled"]) == sorted(addresses)
+
+    async def test_first_address_still_wins_when_it_connects(self, monkeypatch) -> None:
+        log = _patch_dialler(monkeypatch, {"::1": "ok", "127.0.0.1": "ok"})
+        backend = _PinnedNetworkBackend("localhost", ("::1", "127.0.0.1"))
+        assert await backend.connect_tcp("localhost", 8000, timeout=10.0) == "stream:::1"
+        assert log["dialled"] == ["::1"]  # no needless second connection
+
+
 class TestNoRedirectClientPinning:
     def test_no_pinning_matches_current_behavior(self) -> None:
         client = _no_redirect_client()
@@ -512,6 +589,64 @@ def test_pinned_host_matches_what_httpx_dials_for_idn_hosts() -> None:
         httpx.URL(client._transport_kwargs["url"]).raw_host.decode("ascii")
         == client._transport_kwargs["pinned_host"]
     )
+
+
+@pytest.mark.parametrize(
+    ("typed_url", "expected_dial"),
+    [
+        ("https://mcp.example.com/mcp", (PUBLIC_IP, 443)),
+        ("https://MCP.Example.com/mcp", (PUBLIC_IP, 443)),
+        ("https://mcp.example.com./mcp", (PUBLIC_IP, 443)),
+        ("https://bücher.example/mcp", (PUBLIC_IP, 443)),
+        ("https://[2606:4700:4700::1111]:8443/mcp", ("2606:4700:4700::1111", 8443)),
+    ],
+)
+async def test_real_request_through_pinned_client_dials_the_pin(
+    monkeypatch, typed_url, expected_dial
+) -> None:
+    """Send an actual request through the client the openers build and
+    record what httpcore asks the network layer to dial. If pinned_host
+    ever stopped matching the host httpcore passes at request time, every
+    request would fall through to normal resolution — silently — and
+    only a test at this level would notice."""
+    dials: list = []
+
+    async def fake_connect_tcp(
+        self, host, port, timeout=None, local_address=None, socket_options=None
+    ):
+        dials.append((host, port))
+        raise httpcore.ConnectError("recorded; no real network in tests")
+
+    monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
+    client = _remote(url=typed_url)
+    async with client._pinned_client_factory()(timeout=5.0) as http_client:
+        # Both the canonical URL the mcp transport requests and the URL
+        # exactly as the developer typed it.
+        for url in (client._transport_kwargs["url"], typed_url):
+            with pytest.raises(httpx.ConnectError):
+                await http_client.get(url)
+    assert dials == [expected_dial, expected_dial]
+
+
+def test_host_httpx_rejects_is_reported_as_url_error() -> None:
+    # The stdlib IDNA codec accepts this host, so validation passes, but
+    # httpx refuses to parse it. Callers catch MCPURLError, not httpx's.
+    with pytest.raises(MCPURLError, match="host"):
+        _remote(url="https://💩.la/mcp")
+
+
+@pytest.mark.parametrize("transport", ["http", "sse"])
+@pytest.mark.parametrize(
+    "broken", [{"pinned_addresses": ()}, {"pinned_addresses": None}, {"pinned_host": None}]
+)
+def test_remote_transport_without_a_pin_refuses_to_build_a_client(transport, broken) -> None:
+    # Can't happen via _remote() today; this is defence in depth so a
+    # missing pin fails loudly instead of quietly building an unpinned
+    # (re-resolving) transport.
+    client = _remote(transport)
+    client._transport_kwargs.update(broken)
+    with pytest.raises(AssertionError, match="pin"):
+        client._pinned_client_factory()
 
 
 class _OpenerReachedError(Exception):
