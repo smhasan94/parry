@@ -24,12 +24,24 @@ are artifacts of the same broken detokenization run. So this function
 measures local co-occurrence directly — for each case flip, whether an
 unusual symbol appears within ``_CLUSTER_WINDOW`` characters of it —
 rather than just checking that both signals appear somewhere in the
-text. Even so, this function must not be trusted as a confident
-verdict. Its caller (``adversarial_suffix.py``) deliberately keeps this
-in the pipeline's ambiguous-confidence band rather than self-triggering,
-because a realistic developer bug report (a Windows path plus a
-camelCase function name in the same sentence) can still score above
-zero.
+text.
+
+That said, this function does **not**, and cannot, cleanly separate a
+real GCG suffix from a Windows-path-plus-camelCase-identifier bug
+report by raw score alone: realistic terse phrasing of that false
+positive class (e.g. "getUserById fails on C:\\Users\\x\\y.json in prod
+builds today") routinely puts the identifier and the path within any
+window narrow enough to still catch a real short suffix. No fixed
+window generalizes past both. That is expected and is not this
+function's job to fix — the plan's own analysis (Problem Statement
+finding 4) already concluded this FP class "legitimately co-triggers
+the same AND-rule as the real attack." The actual safety guarantee
+lives one layer up, in the caller's confidence ceiling: Task 2's
+``adversarial_suffix.py`` maps this score into ``[0.45, 0.65]``, always
+below the default trigger threshold of ``0.7``, so this function
+returning ``1.0`` for the Windows-path shape can never cause a default
+self-trigger. This function must not be trusted as a confident verdict
+on its own — only its caller's confidence ceiling makes that promise.
 """
 
 from __future__ import annotations
@@ -58,17 +70,24 @@ MIN_SCORABLE_CHARS = 35
 # A case flip and an unusual symbol within this many characters of each
 # other are treated as the same local cluster. Chosen empirically: wide
 # enough to span a short adversarial fragment ("...\ + similarlyNow...",
-# distance 12; "...\\ describing.-- similarlyNOW...", distance 24) but
-# narrower than the gap in the Windows-path-plus-camelCase false
-# positive, where the flips in `getUserById` sit 42+ characters from the
-# backslashes in the path.
+# distance 12; "...\\ describing.-- similarlyNOW...", distance 24).
 _CLUSTER_WINDOW = 30
+
+# Code-stripping (below) must not itself manufacture a cluster: if a
+# case flip sits just before a stripped code block and an unusual
+# symbol sits just after it, collapsing that block down to a single
+# space would put them within _CLUSTER_WINDOW of each other even though
+# they were never actually close in the original text. Replacing a
+# stripped region with a whitespace run longer than the cluster window
+# guarantees that can never happen, regardless of what was removed or
+# how long it was.
+_STRIP_GAP = " " * (_CLUSTER_WINDOW + 1)
 
 
 def _strip_code(text: str) -> str:
-    text = _FENCED_CODE.sub(" ", text)
-    text = _INLINE_CODE.sub(" ", text)
-    text = _URL.sub(" ", text)
+    text = _FENCED_CODE.sub(_STRIP_GAP, text)
+    text = _INLINE_CODE.sub(_STRIP_GAP, text)
+    text = _URL.sub(_STRIP_GAP, text)
     return text
 
 
