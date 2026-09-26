@@ -163,9 +163,10 @@ async def _dispatch_async_report(
         )
     except Exception as e:  # pragma: no cover — broker outage
         log.error("compliance_report.enqueue_failed", job_id=job_id, error=str(e))
-        # Don't fail the API call — the job sits in "queued" state and
-        # a broker-recovery reprocess (or a manual retry) can pick it
-        # up; matches the red_team.start_run precedent.
+        # There is no reprocess path for a Redis-only job — mark it
+        # failed immediately rather than leaving the caller polling
+        # "queued" for a full hour until the TTL silently expires.
+        report_job_service.set_report_job_status(job_id, org_id=str(org.id), status="failed")
 
     import json
 

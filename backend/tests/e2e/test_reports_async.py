@@ -34,6 +34,33 @@ async def test_range_over_90_days_dispatches_async_job(
 
 
 @pytest.mark.asyncio
+async def test_enqueue_failure_marks_the_job_failed_not_stuck_queued(
+    admin_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A broker outage during .delay() must not leave the job polling
+    as "queued" for a full hour before silently 404ing when its Redis
+    TTL expires — there is no reprocess path that would ever pick a
+    Redis-only job state back up.
+    """
+    fake_task = MagicMock()
+    fake_task.delay.side_effect = RuntimeError("broker unreachable")
+    monkeypatch.setattr(
+        "app.workers.compliance_report_task.generate_compliance_report", fake_task
+    )
+
+    resp = await admin_client.get(
+        "/api/v1/reports/compliance",
+        params={"start": "2026-01-01", "end": "2026-06-01"},
+    )
+    assert resp.status_code == 202
+    job_id = resp.json()["job_id"]
+
+    status_resp = await admin_client.get(f"/api/v1/reports/compliance/jobs/{job_id}")
+    assert status_resp.status_code == 200
+    assert status_resp.json()["status"] == "failed"
+
+
+@pytest.mark.asyncio
 async def test_range_over_366_days_still_rejected(admin_client: AsyncClient) -> None:
     resp = await admin_client.get(
         "/api/v1/reports/compliance",

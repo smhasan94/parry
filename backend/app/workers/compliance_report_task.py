@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
+from celery.exceptions import SoftTimeLimitExceeded
 
 from app.workers.celery_app import celery_app
 
@@ -24,6 +25,12 @@ log = structlog.get_logger()
     name="generate_compliance_report",
     bind=True,
     autoretry_for=(Exception,),
+    # These will fail again identically on retry — a soft time limit
+    # means the same window is still too big, a missing org won't
+    # appear, and missing WeasyPrint native deps are a deployment
+    # issue, not a transient one. Retrying them only burns worker CPU
+    # for the full backoff schedule before giving up anyway.
+    dont_autoretry_for=(SoftTimeLimitExceeded, ValueError, ImportError, OSError),
     retry_backoff=True,
     retry_backoff_max=300,
     max_retries=2,
@@ -36,6 +43,15 @@ def generate_compliance_report(
     try:
         return asyncio.run(_generate(job_id, org_id, start_iso, end_iso))
     except Exception:
+        # Safety net: _generate's own except/finally does not run for
+        # every failure mode. A soft-time-limit interruption fires
+        # between the event loop's steps rather than inside the
+        # coroutine's own frame, so it can surface here without ever
+        # reaching _generate's try/except. Setting "failed" here too
+        # (harmless if _generate already did) closes that gap.
+        from app.services.report_job_service import set_report_job_status
+
+        set_report_job_status(job_id, org_id=org_id, status="failed")
         log.error(
             "compliance_report.task_failed",
             job_id=job_id,

@@ -63,6 +63,7 @@ celery_app = Celery(
         "app.workers.supplier_refresh_task",
         "app.workers.discovery_sync_task",
         "app.workers.auditor_bundle_task",
+        "app.workers.compliance_report_task",
         "app.workers.compliance_refresh_task",
         "app.workers.threat_intel_task",
         "app.workers.webhook_delivery_task",

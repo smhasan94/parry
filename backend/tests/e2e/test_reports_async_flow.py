@@ -5,15 +5,25 @@ another org cannot see or download the job.
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
+import fakeredis
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.db.models import Org, Plan
+from app.services import report_job_service as job_svc
 from app.workers.compliance_report_task import _generate
 from tests.e2e.conftest import TEST_DB_URL
+
+
+@pytest.fixture(autouse=True)
+def _fake_redis(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Same convention as tests/test_report_job_service.py — this file
+    should not depend on a real Redis being up on this machine.
+    """
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(job_svc, "sync_redis", lambda: fake)
+    monkeypatch.setattr(job_svc, "sync_redis_raw", lambda: fake)
 
 
 @pytest.mark.asyncio
@@ -52,6 +62,8 @@ async def test_full_async_report_round_trip(
     job_id, org_id, start_iso, end_iso = captured["args"]
     try:
         result = await _generate(job_id, org_id, start_iso, end_iso)
+    except (ImportError, OSError) as e:
+        pytest.skip(f"WeasyPrint native dependencies unavailable: {e}")
     finally:
         await task_engine.dispose()
     assert result["status"] == "completed"
@@ -89,6 +101,13 @@ async def test_other_org_cannot_poll_or_download_job(
         params={"start": "2026-01-01", "end": "2026-06-01"},
     )
     job_id = resp.json()["job_id"]
+
+    # Confirm the owning org actually sees the job before proving the
+    # other org can't — otherwise a broken store (e.g. Redis down)
+    # would make both orgs get 404 and this test would pass having
+    # verified nothing about isolation.
+    own_status_resp = await admin_client.get(f"/api/v1/reports/compliance/jobs/{job_id}")
+    assert own_status_resp.status_code == 200
 
     other_org = Org(
         name="Other Org", clerk_org_id="clerk_other_org", is_active=True, plan=Plan.GROWTH
