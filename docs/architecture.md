@@ -84,9 +84,8 @@
 | id | uuid | |
 | agent_id | uuid FK | |
 | session_id | uuid | |
-| prompt_hash | text | SHA-256 of original prompt |
-| prompt_preview | text | first 200 chars, PII-stripped |
-| response_preview | text | first 200 chars, PII-stripped |
+| prompt | text | full prompt text; PII stripping happens client-side in the SDK before send, not in this column |
+| response | text | full response text; same client-side PII note applies |
 | model | text | |
 | tool_calls | jsonb | |
 | token_count | int | |
