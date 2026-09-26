@@ -56,6 +56,7 @@ async def _deliver(
 
     import httpx
 
+    from app.core.url_safety import assert_public_https_url
     from app.db.models import WebhookDelivery, WebhookEndpoint
     from app.db.session import make_task_session_factory
     from app.services.webhook_dispatch_service import compute_signature
@@ -87,6 +88,7 @@ async def _deliver(
             error = None
 
             try:
+                assert_public_https_url(endpoint.url)
                 async with httpx.AsyncClient(timeout=DELIVERY_TIMEOUT_SECONDS) as client:
                     resp = await client.post(
                         endpoint.url,
