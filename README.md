@@ -141,7 +141,7 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
 - **SSO**: SAML via WorkOS, layered on Clerk auth, self-service IdP configuration via Admin Portal
 - **RBAC**: Three roles (owner/admin/viewer) with fine-grained route gating
 - **Billing**: Four tiers (Free/Growth/Pro/Enterprise) with Stripe metered billing
-- **Audit**: Tamper-evident hash-chained audit log with SOC 2 export
+- **Audit**: Verifiable hash-chained audit export (per-export chain, SOC 2 style) with tamper-evident append-only storage
 - **Compliance**: EU AI Act Article 26 module with auditor bundle
 
 ---
