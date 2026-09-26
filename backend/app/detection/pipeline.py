@@ -18,10 +18,16 @@ class DetectionPipeline:
     """Orchestrates the full detection pipeline for an event.
 
     Pipeline stages:
-    1. Run all rule-based detectors in parallel
-    2. Aggregate scores — if ambiguous (0.4–0.7), flag for LLM fallback
-    3. Check policy enforcement
-    4. Return all results
+    1. Filter to enabled detectors and normalize the prompt once
+       (shared across the thread-pool fan-out, not recomputed per detector)
+    2. Run all rule-based detectors in parallel via a thread pool
+    3. Aggregate scores — any ambiguous result (not triggered, confidence
+       0.4-0.7) is resolved by calling the LLM fallback (evaluate_ambiguous)
+       directly, appending its result if it fires
+
+    There is no separate policy-enforcement stage here: policy is merged
+    upstream and consumed inside individual detectors (tool-misuse,
+    policy-logic), not as a pipeline step.
     """
 
     async def run(self, event_data: dict[str, Any]) -> list[DetectionResult]:
