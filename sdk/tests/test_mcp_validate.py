@@ -258,26 +258,44 @@ def test_url_error_is_catchable_as_manifest_error() -> None:
 
 class TestValidateAndPin:
     """validate_and_pin returns the same canonical URL as validate_server_url,
-    plus the address that was actually checked — the one connect-time pinning
-    (client.py) will dial instead of letting the transport re-resolve.
+    plus every address that was actually checked — the ones connect-time
+    pinning (client.py) will dial instead of letting the transport re-resolve.
     """
 
-    def test_returns_canonical_url_and_pinned_address(self) -> None:
+    def test_returns_canonical_url_and_pinned_addresses(self) -> None:
         result = validate_and_pin(
             "https://mcp.example.com/mcp/", resolver=resolves_to(PUBLIC_IP)
         )
         assert result == ValidatedURL(
             canonical_url="https://mcp.example.com/mcp",
-            pinned_address=PUBLIC_IP,
+            pinned_addresses=(PUBLIC_IP,),
         )
 
-    def test_pins_first_resolved_address_when_host_has_several(self) -> None:
+    def test_pins_every_resolved_address_in_resolution_order(self) -> None:
+        # All of them, not just the first: the transport falls back
+        # across them at connect time, as a normal connect would.
         second_public = "93.184.216.35"
         result = validate_and_pin(
             "https://mcp.example.com/mcp",
             resolver=resolves_to(PUBLIC_IP, second_public),
         )
-        assert result.pinned_address == PUBLIC_IP
+        assert result.pinned_addresses == (PUBLIC_IP, second_public)
+
+    def test_duplicate_resolved_addresses_are_pinned_once(self) -> None:
+        result = validate_and_pin(
+            "https://mcp.example.com/mcp",
+            resolver=resolves_to(PUBLIC_IP, PUBLIC_IP),
+        )
+        assert result.pinned_addresses == (PUBLIC_IP,)
+
+    def test_one_unsafe_address_among_several_refuses_the_url(self) -> None:
+        # Pinning the whole list is only safe because every entry was
+        # checked — a single bad one must still refuse the URL outright.
+        with pytest.raises(MCPURLError):
+            validate_and_pin(
+                "https://mcp.example.com/mcp",
+                resolver=resolves_to(PUBLIC_IP, "169.254.169.254"),
+            )
 
     def test_pins_ipv6_literal_unbracketed(self) -> None:
         # A bare IPv6 literal in the URL is already an address — no
@@ -293,7 +311,7 @@ class TestValidateAndPin:
         # actually exercises "bare v6 literal, no resolver, unbracketed"
         # without needing allow_private=True.
         result = validate_and_pin("https://[2606:4700:4700::1111]/mcp")
-        assert result.pinned_address == "2606:4700:4700::1111"
+        assert result.pinned_addresses == ("2606:4700:4700::1111",)
 
     def test_still_refuses_unsafe_addresses(self) -> None:
         with pytest.raises(MCPURLError):

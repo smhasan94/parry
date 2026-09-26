@@ -198,16 +198,20 @@ def _addresses_for(host: str, resolver: Resolver | None) -> list[str]:
 class ValidatedURL:
     """Result of validating a remote MCP server URL.
 
-    ``pinned_address`` is the address ``canonical_url``'s host resolved
-    to and had checked against every rule in this module. Connecting to
-    it directly — instead of letting the transport resolve the hostname
-    again — is what closes the DNS-rebinding gap: there is no second
-    lookup left to race. When the URL already named a literal address
-    (IPv4 or IPv6, unbracketed), ``pinned_address`` is just that address.
+    ``pinned_addresses`` are every address ``canonical_url``'s host
+    resolved to, in resolution order, each checked against every rule in
+    this module. Connecting only to these — instead of letting the
+    transport resolve the hostname again — is what closes the
+    DNS-rebinding gap: there is no second lookup left to race. All of
+    them are kept, not just the first, so the transport can fall back
+    across them the way a normal connect would (``localhost`` commonly
+    resolves to ``::1`` first while dev servers listen on 127.0.0.1
+    only). When the URL already named a literal address (IPv4 or IPv6,
+    unbracketed), it is the only entry.
     """
 
     canonical_url: str
-    pinned_address: str
+    pinned_addresses: tuple[str, ...]
 
 
 def validate_server_url(
@@ -242,11 +246,11 @@ def validate_and_pin(
     allow_private: bool = False,
     resolver: Resolver | None = None,
 ) -> ValidatedURL:
-    """Like ``validate_server_url``, but also return the address to pin.
+    """Like ``validate_server_url``, but also return the addresses to pin.
 
     Used by ``SentinelMCPClient.http``/``.sse`` so the transport can
-    connect to the exact address that was checked, rather than letting
-    it re-resolve the hostname at dial time.
+    connect only to the exact addresses that were checked, rather than
+    letting it re-resolve the hostname at dial time.
     """
     return _validate(
         url,
@@ -318,4 +322,10 @@ def _validate(
         netloc = f"{netloc}:{port}"
 
     canonical_url = urlunsplit((scheme, netloc, parts.path.rstrip("/"), "", ""))
-    return ValidatedURL(canonical_url=canonical_url, pinned_address=addresses[0])
+    # Every entry already passed _check_address above, so keeping the
+    # whole list adds nothing unchecked. dict.fromkeys drops duplicates
+    # while preserving resolution order.
+    return ValidatedURL(
+        canonical_url=canonical_url,
+        pinned_addresses=tuple(dict.fromkeys(addresses)),
+    )

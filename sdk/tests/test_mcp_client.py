@@ -10,7 +10,9 @@ trip to the Parry backend is stubbed via a MockTransport.
 from __future__ import annotations
 
 import json
+from contextlib import AsyncExitStack, asynccontextmanager
 
+import httpcore
 import httpx
 import httpx._transports.default as _httpx_default_transport
 import pytest
@@ -70,6 +72,17 @@ def patch_httpx(monkeypatch):
         monkeypatch.setattr(httpx.AsyncClient, "__init__", new_init)
 
     return _apply
+
+
+@pytest.fixture(autouse=True)
+def _no_env_proxies(monkeypatch):
+    """Remote constructors refuse to run when an HTTP(S) proxy applies
+    (pinning bypasses it). Pin the proxy lookup to "none" so the suite
+    doesn't depend on the machine's environment; the proxy tests below
+    override it.
+    """
+    monkeypatch.setattr("urllib.request.getproxies", lambda: {})
+    monkeypatch.setattr("urllib.request.proxy_bypass", lambda host: False)
 
 
 def _fake_client(fake_manifest: dict, **overrides):
@@ -382,72 +395,216 @@ def test_private_httpx_internals_this_module_relies_on_still_exist() -> None:
     assert issubclass(_PinnedNetworkBackend, AnyIOBackend)
 
 
+def _record_connects(monkeypatch, refuse: frozenset[str] = frozenset()) -> list[str]:
+    """Patch the real network layer to record every host it is asked to
+    dial, raising ConnectError for any host in ``refuse``."""
+    dialled: list[str] = []
+
+    async def fake_connect_tcp(
+        self, host, port, timeout=None, local_address=None, socket_options=None
+    ):
+        dialled.append(host)
+        if host in refuse:
+            raise httpcore.ConnectError(f"refused: {host}")
+        return object()
+
+    monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
+    return dialled
+
+
 class TestPinnedNetworkBackend:
     async def test_connects_to_pinned_address_not_requested_host(self, monkeypatch) -> None:
-        seen: dict = {}
-
-        async def fake_connect_tcp(
-            self, host, port, timeout=None, local_address=None, socket_options=None
-        ):
-            seen["host"] = host
-            seen["port"] = port
-            return object()
-
-        monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
-        backend = _PinnedNetworkBackend("93.184.216.34")
+        dialled = _record_connects(monkeypatch)
+        backend = _PinnedNetworkBackend("mcp.example.com", (PUBLIC_IP,))
         await backend.connect_tcp("mcp.example.com", 443)
-        assert seen == {"host": "93.184.216.34", "port": 443}
+        assert dialled == [PUBLIC_IP]
+
+    async def test_host_match_is_case_insensitive(self, monkeypatch) -> None:
+        dialled = _record_connects(monkeypatch)
+        backend = _PinnedNetworkBackend("mcp.example.com", (PUBLIC_IP,))
+        await backend.connect_tcp("MCP.Example.COM", 443)
+        assert dialled == [PUBLIC_IP]
 
     async def test_connects_to_pinned_ipv6_address_unbracketed(self, monkeypatch) -> None:
-        seen: dict = {}
-
-        async def fake_connect_tcp(
-            self, host, port, timeout=None, local_address=None, socket_options=None
-        ):
-            seen["host"] = host
-            return object()
-
-        monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
-        backend = _PinnedNetworkBackend("2001:db8::1")
+        dialled = _record_connects(monkeypatch)
+        backend = _PinnedNetworkBackend("mcp.example.com", ("2001:db8::1",))
         await backend.connect_tcp("mcp.example.com", 443)
-        assert seen["host"] == "2001:db8::1"
+        assert dialled == ["2001:db8::1"]
+
+    async def test_falls_back_to_next_pinned_address(self, monkeypatch) -> None:
+        # localhost -> ('::1', '127.0.0.1') with a dev server bound to
+        # 127.0.0.1 only: the first attempt fails, the second must be tried.
+        dialled = _record_connects(monkeypatch, refuse=frozenset({"::1"}))
+        backend = _PinnedNetworkBackend("localhost", ("::1", "127.0.0.1"))
+        await backend.connect_tcp("localhost", 8000)
+        assert dialled == ["::1", "127.0.0.1"]
+
+    async def test_raises_last_error_when_every_pinned_address_fails(self, monkeypatch) -> None:
+        dialled = _record_connects(monkeypatch, refuse=frozenset({"::1", "127.0.0.1"}))
+        backend = _PinnedNetworkBackend("localhost", ("::1", "127.0.0.1"))
+        with pytest.raises(httpcore.ConnectError, match="127.0.0.1"):
+            await backend.connect_tcp("localhost", 8000)
+        assert dialled == ["::1", "127.0.0.1"]
+
+    async def test_other_hosts_resolve_normally(self, monkeypatch) -> None:
+        # e.g. an OAuth authorization server on another domain reached
+        # through the same client: never validated, so never pinned.
+        dialled = _record_connects(monkeypatch)
+        backend = _PinnedNetworkBackend("mcp.example.com", (PUBLIC_IP,))
+        await backend.connect_tcp("auth.other-vendor.example", 443)
+        assert dialled == ["auth.other-vendor.example"]
 
 
 class TestNoRedirectClientPinning:
-    def test_pinned_address_none_matches_current_behavior(self) -> None:
+    def test_no_pinning_matches_current_behavior(self) -> None:
         client = _no_redirect_client()
         transport = client._transport
         assert isinstance(transport, httpx.AsyncHTTPTransport)
         assert not isinstance(transport, _PinnedHTTPTransport)
 
-    def test_pinned_address_set_builds_pinned_transport(self) -> None:
-        client = _no_redirect_client(pinned_address="93.184.216.34")
+    def test_pinned_addresses_build_pinned_transport(self) -> None:
+        client = _no_redirect_client(pinned_host="mcp.example.com", pinned_addresses=(PUBLIC_IP,))
         transport = client._transport
         assert isinstance(transport, _PinnedHTTPTransport)
         backend = transport._pool._network_backend
         assert isinstance(backend, _PinnedNetworkBackend)
-        assert backend._pinned_address == "93.184.216.34"
+        assert backend._pinned_host == "mcp.example.com"
+        assert backend._pinned_addresses == (PUBLIC_IP,)
+
+    def test_pinned_addresses_without_host_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="pinned_host"):
+            _no_redirect_client(pinned_addresses=(PUBLIC_IP,))
 
     def test_pinned_transport_still_verifies_tls(self) -> None:
-        client = _no_redirect_client(pinned_address="93.184.216.34")
+        client = _no_redirect_client(pinned_host="mcp.example.com", pinned_addresses=(PUBLIC_IP,))
         ssl_context = client._transport._pool._ssl_context
         assert ssl_context.verify_mode.name == "CERT_REQUIRED"
 
     def test_pinned_transport_still_refuses_redirects(self) -> None:
-        client = _no_redirect_client(pinned_address="93.184.216.34")
+        client = _no_redirect_client(pinned_host="mcp.example.com", pinned_addresses=(PUBLIC_IP,))
         assert client.follow_redirects is False
 
 
-async def test_remote_client_stores_pinned_address(patch_httpx) -> None:
-    """SentinelMCPClient.http()/.sse() thread the validated address
-    through to transport_kwargs, where _open_http_session/_open_sse_session
-    read it back to build the pinned transport.
-    """
-    patch_httpx(_ok_handler({}))
-    client = SentinelMCPClient.http(
-        url="https://mcp.example.com/mcp",
+def _remote(transport: str = "http", url: str = "https://mcp.example.com/mcp", **kwargs):
+    factory = SentinelMCPClient.http if transport == "http" else SentinelMCPClient.sse
+    return factory(
+        url=url,
         agent_id="dev-assistant",
         api_key="sk-parry-test",
-        resolver=resolves_public,
+        resolver=kwargs.pop("resolver", resolves_public),
+        **kwargs,
     )
-    assert client._transport_kwargs["pinned_address"] == PUBLIC_IP
+
+
+def test_remote_client_stores_pinned_host_and_addresses() -> None:
+    client = _remote()
+    assert client._transport_kwargs["pinned_host"] == "mcp.example.com"
+    assert client._transport_kwargs["pinned_addresses"] == (PUBLIC_IP,)
+
+
+def test_pinned_host_matches_what_httpx_dials_for_idn_hosts() -> None:
+    # httpx hands connect_tcp the punycode host; if pinned_host kept the
+    # unicode spelling, the host gate would never match and pinning
+    # would silently switch off.
+    client = _remote(url="https://bücher.example/mcp")
+    assert client._transport_kwargs["pinned_host"] == "xn--bcher-kva.example"
+    assert (
+        httpx.URL(client._transport_kwargs["url"]).raw_host.decode("ascii")
+        == client._transport_kwargs["pinned_host"]
+    )
+
+
+class _OpenerReachedError(Exception):
+    """Raised by the fake transports once they've captured their client."""
+
+
+async def _run_opener(client: SentinelMCPClient, opener) -> None:
+    client._stack = AsyncExitStack()
+    try:
+        with pytest.raises(_OpenerReachedError):
+            await opener(client)
+    finally:
+        await client._stack.aclose()
+
+
+class TestRemoteOpenersUsePinnedTransport:
+    """Exercise the real openers, not just transport_kwargs: a kwargs-only
+    test is what let a broken streamable_http_client call go unnoticed."""
+
+    async def test_http_opener_hands_mcp_a_pinned_client(self, monkeypatch) -> None:
+        captured: dict = {}
+
+        @asynccontextmanager
+        async def fake_streamable_http_client(url, *, http_client=None, terminate_on_close=True):
+            captured["url"] = url
+            captured["client"] = http_client
+            raise _OpenerReachedError
+            yield  # pragma: no cover
+
+        monkeypatch.setattr(
+            "mcp.client.streamable_http.streamable_http_client", fake_streamable_http_client
+        )
+        client = _remote("http", headers={"Authorization": "Bearer t"})
+        await _run_opener(client, SentinelMCPClient._open_http_session)
+
+        http_client = captured["client"]
+        assert captured["url"] == "https://mcp.example.com/mcp"
+        assert isinstance(http_client._transport, _PinnedHTTPTransport)
+        assert http_client._transport._pool._network_backend._pinned_addresses == (PUBLIC_IP,)
+        assert http_client.follow_redirects is False
+        assert http_client.headers["Authorization"] == "Bearer t"
+
+    async def test_sse_opener_hands_mcp_a_pinned_client_factory(self, monkeypatch) -> None:
+        captured: dict = {}
+
+        @asynccontextmanager
+        async def fake_sse_client(url, headers=None, timeout=5, httpx_client_factory=None, **kw):
+            captured["client"] = httpx_client_factory(headers=headers, auth=None, timeout=timeout)
+            raise _OpenerReachedError
+            yield  # pragma: no cover
+
+        monkeypatch.setattr("mcp.client.sse.sse_client", fake_sse_client)
+        client = _remote("sse")
+        await _run_opener(client, SentinelMCPClient._open_sse_session)
+
+        http_client = captured["client"]
+        assert isinstance(http_client._transport, _PinnedHTTPTransport)
+        assert http_client._transport._pool._network_backend._pinned_addresses == (PUBLIC_IP,)
+        await http_client.aclose()
+
+
+class TestEnvProxyConflict:
+    """Pinning dials the validated address directly, which silently skips
+    any HTTP(S)_PROXY. Refuse up front instead of degrading quietly."""
+
+    @pytest.mark.parametrize("transport", ["http", "sse"])
+    def test_active_proxy_refuses_construction(self, monkeypatch, transport) -> None:
+        monkeypatch.setattr(
+            "urllib.request.getproxies", lambda: {"https": "http://proxy.example.com:8080"}
+        )
+        with pytest.raises(MCPURLError, match="proxy"):
+            _remote(transport)
+
+    def test_all_proxy_also_counts(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "urllib.request.getproxies", lambda: {"all": "socks5://proxy.example.com:1080"}
+        )
+        with pytest.raises(MCPURLError, match="proxy"):
+            _remote()
+
+    def test_proxy_for_other_scheme_does_not_apply(self, monkeypatch) -> None:
+        # An http-only proxy is never used for an https URL.
+        monkeypatch.setattr(
+            "urllib.request.getproxies", lambda: {"http": "http://proxy.example.com:8080"}
+        )
+        assert _remote()._transport_kwargs["pinned_addresses"] == (PUBLIC_IP,)
+
+    def test_bypassed_host_is_allowed(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "urllib.request.getproxies", lambda: {"https": "http://proxy.example.com:8080"}
+        )
+        monkeypatch.setattr("urllib.request.proxy_bypass", lambda host: host == "mcp.example.com")
+        assert _remote()._transport_kwargs["pinned_addresses"] == (PUBLIC_IP,)
+
+    def test_no_proxy_configured_is_allowed(self) -> None:
+        assert _remote()._transport_kwargs["pinned_addresses"] == (PUBLIC_IP,)

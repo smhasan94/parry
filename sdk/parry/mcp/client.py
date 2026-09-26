@@ -28,6 +28,7 @@ import functools
 import json
 import logging
 import os
+import urllib.request
 from contextlib import AsyncExitStack
 from typing import Any
 
@@ -37,7 +38,7 @@ import httpx
 from httpcore._backends.anyio import AnyIOBackend
 from httpx._transports.default import create_ssl_context
 
-from parry.mcp.errors import MCPBlockedError, MCPManifestError
+from parry.mcp.errors import MCPBlockedError, MCPManifestError, MCPURLError
 from parry.mcp.normalize import manifest_hash
 from parry.mcp.validate import Resolver, validate_and_pin
 
@@ -64,12 +65,19 @@ _DEFAULT_MANIFEST_TIMEOUT = 30.0
 MAX_MANIFEST_TOOLS = 500
 MAX_MANIFEST_CHARS = 1_000_000
 
+# Read timeout for the streamable-HTTP client. Server-sent event streams
+# stay open between messages, so reads need far more headroom than
+# connects; this matches the mcp package's own default (and what
+# sse_client uses).
+_SSE_READ_TIMEOUT = 300.0
+
 
 def _no_redirect_client(
     headers: dict[str, str] | None = None,
     timeout: Any = None,
     auth: Any = None,
-    pinned_address: str | None = None,
+    pinned_host: str | None = None,
+    pinned_addresses: tuple[str, ...] | None = None,
 ) -> httpx.AsyncClient:
     """httpx client for the MCP transports, with redirects disabled.
 
@@ -77,11 +85,15 @@ def _no_redirect_client(
     permitted host answering 302 → http://169.254.169.254/ would walk
     straight past every check, so the transport never follows.
 
-    ``pinned_address``, when given, forces the TCP connection to that
-    exact address instead of letting the transport re-resolve the
-    hostname — see ``_PinnedNetworkBackend``.
+    ``pinned_addresses``, when given, forces connections to
+    ``pinned_host`` onto those exact addresses instead of letting the
+    transport re-resolve the hostname — see ``_PinnedNetworkBackend``.
     """
-    transport = _PinnedHTTPTransport(pinned_address) if pinned_address else None
+    transport = None
+    if pinned_addresses:
+        if not pinned_host:
+            raise ValueError("pinned_addresses requires pinned_host")
+        transport = _PinnedHTTPTransport(pinned_host, pinned_addresses)
     return httpx.AsyncClient(
         headers=headers,
         timeout=timeout,
@@ -93,24 +105,30 @@ def _no_redirect_client(
 
 
 class _PinnedNetworkBackend(AnyIOBackend):
-    """TCP backend that dials a fixed address regardless of the requested host.
+    """TCP backend that dials the validated addresses for the validated host.
 
     ``validate_and_pin`` already resolved the MCP server's hostname and
     checked every address it returned against the SSRF rules. Connecting
-    here to that same address — instead of letting anyio resolve the
+    here to those same addresses — instead of letting anyio resolve the
     hostname again — is what closes the DNS-rebinding gap documented in
     ``docs/mcp-security.md``: a record that changes between validation
     and connection no longer matters, because there is no second lookup
     left to race.
+
+    Addresses are tried in resolution order, falling back on failure the
+    way a normal connect does (``localhost`` often resolves to ``::1``
+    first while dev servers listen on 127.0.0.1 only). Only hosts other
+    than ``pinned_host`` resolve normally.
 
     TLS server-name verification is unaffected: httpcore derives SNI
     from the request's origin host, not from what this backend dials,
     so the certificate is still checked against the real hostname.
     """
 
-    def __init__(self, pinned_address: str) -> None:
+    def __init__(self, pinned_host: str, pinned_addresses: tuple[str, ...]) -> None:
         super().__init__()
-        self._pinned_address = pinned_address
+        self._pinned_host = pinned_host
+        self._pinned_addresses = pinned_addresses
 
     async def connect_tcp(
         self,
@@ -120,13 +138,33 @@ class _PinnedNetworkBackend(AnyIOBackend):
         local_address: str | None = None,
         socket_options: Any = None,
     ) -> Any:
-        return await super().connect_tcp(
-            self._pinned_address,
-            port,
-            timeout=timeout,
-            local_address=local_address,
-            socket_options=socket_options,
-        )
+        if host.lower() != self._pinned_host.lower():
+            # A different host reached through this client (e.g. an OAuth
+            # authorization server on another domain) was never part of
+            # what this plan validated — let it resolve normally, exactly
+            # as it did before pinning existed. Widening this plan's scope
+            # to validate arbitrary auth-flow hosts is a separate concern.
+            return await super().connect_tcp(
+                host,
+                port,
+                timeout=timeout,
+                local_address=local_address,
+                socket_options=socket_options,
+            )
+        last_error: Exception | None = None
+        for candidate in self._pinned_addresses:
+            try:
+                return await super().connect_tcp(
+                    candidate,
+                    port,
+                    timeout=timeout,
+                    local_address=local_address,
+                    socket_options=socket_options,
+                )
+            except Exception as e:  # noqa: BLE001 — must try every candidate before giving up
+                last_error = e
+        assert last_error is not None
+        raise last_error
 
 
 class _PinnedHTTPTransport(httpx.AsyncHTTPTransport):
@@ -143,12 +181,36 @@ class _PinnedHTTPTransport(httpx.AsyncHTTPTransport):
     ``test_private_httpx_internals_this_module_relies_on_still_exist``.
     """
 
-    def __init__(self, pinned_address: str) -> None:
+    def __init__(self, pinned_host: str, pinned_addresses: tuple[str, ...]) -> None:
         self._pool = httpcore.AsyncConnectionPool(
             ssl_context=create_ssl_context(verify=True),
-            network_backend=_PinnedNetworkBackend(pinned_address),
+            network_backend=_PinnedNetworkBackend(pinned_host, pinned_addresses),
             retries=0,
         )
+
+
+def _refuse_if_env_proxy_applies(url: str, host: str) -> None:
+    """Refuse a remote MCP URL that an environment-configured proxy covers.
+
+    httpx only honours ``HTTP(S)_PROXY``/``ALL_PROXY`` when it builds its
+    own transport, so the pinned transport would quietly connect direct
+    instead. Routing through the proxy is no better: the proxy resolves
+    the hostname itself, which reopens the DNS-rebinding gap. Neither is
+    acceptable to do silently, so this refuses before any connection.
+
+    Uses ``urllib.request.getproxies`` — the same lookup httpx uses.
+    """
+    proxies = urllib.request.getproxies()
+    scheme = httpx.URL(url).scheme
+    proxy = proxies.get(scheme) or proxies.get("all")
+    if not proxy or urllib.request.proxy_bypass(host):
+        return
+    raise MCPURLError(
+        f"an HTTP(S)_PROXY / ALL_PROXY environment proxy applies to MCP server host {host!r}, "
+        "but remote MCP connections are pinned to the validated address and cannot go "
+        "through a proxy. Exclude this host from the proxy (e.g. add it to NO_PROXY) or "
+        "contact Parry about proxy support."
+    )
 
 
 def _check_manifest_bounds(manifest: dict[str, Any] | None) -> None:
@@ -341,6 +403,11 @@ class SentinelMCPClient:
             allow_private=allow_private,
             resolver=resolver,
         )
+        # Derive the host exactly as httpx will hand it to the network
+        # backend (lowercase, IDNA-encoded, v6 unbracketed); anything else
+        # and the pin's host check would silently never match.
+        pinned_host = httpx.URL(validated.canonical_url).raw_host.decode("ascii")
+        _refuse_if_env_proxy_applies(validated.canonical_url, pinned_host)
         return cls(
             transport=transport,
             transport_kwargs={
@@ -348,7 +415,8 @@ class SentinelMCPClient:
                 "headers": headers or {},
                 "auth": auth,
                 "server_uri": validated.canonical_url,
-                "pinned_address": validated.pinned_address,
+                "pinned_host": pinned_host,
+                "pinned_addresses": validated.pinned_addresses,
             },
             **parry_kwargs,
         )
@@ -419,28 +487,38 @@ class SentinelMCPClient:
     async def _open_http_session(self) -> None:
         """Streamable HTTP. Yields a 3-tuple; the session id is unused."""
         _require_mcp()
-        # Renamed in newer mcp releases; the old spelling still exists
-        # but emits a DeprecationWarning, so prefer the current one and
-        # fall back for anyone pinned to an older version.
+        assert self._stack is not None
+        # Renamed in newer mcp releases, and the new name takes a ready
+        # httpx client instead of headers/auth/timeout/factory kwargs.
+        # Prefer it; the old spelling (deprecated) is the fallback for
+        # anyone pinned to an older version.
         try:
             from mcp.client.streamable_http import streamable_http_client
         except ImportError:  # pragma: no cover — mcp < 1.16
-            from mcp.client.streamable_http import (
-                streamablehttp_client as streamable_http_client,
-            )
+            from mcp.client.streamable_http import streamablehttp_client
 
-        assert self._stack is not None
-        read, write, _get_session_id = await self._stack.enter_async_context(
-            streamable_http_client(
-                self._transport_kwargs["url"],
-                headers=self._transport_kwargs.get("headers") or None,
-                auth=self._transport_kwargs.get("auth"),
-                timeout=self.timeout,
-                httpx_client_factory=functools.partial(
-                    _no_redirect_client,
-                    pinned_address=self._transport_kwargs.get("pinned_address"),
-                ),
+            read, write, _get_session_id = await self._stack.enter_async_context(
+                streamablehttp_client(
+                    self._transport_kwargs["url"],
+                    headers=self._transport_kwargs.get("headers") or None,
+                    auth=self._transport_kwargs.get("auth"),
+                    timeout=self.timeout,
+                    httpx_client_factory=self._pinned_client_factory(),
+                )
             )
+            await self._finish_remote_session(read, write)
+            return
+
+        # A caller-supplied client is not closed by streamable_http_client,
+        # so the exit stack owns it (and closes it after the transport).
+        http_client = self._pinned_client_factory()(
+            headers=self._transport_kwargs.get("headers") or None,
+            timeout=httpx.Timeout(self.timeout, read=_SSE_READ_TIMEOUT),
+            auth=self._transport_kwargs.get("auth"),
+        )
+        await self._stack.enter_async_context(http_client)
+        read, write, _get_session_id = await self._stack.enter_async_context(
+            streamable_http_client(self._transport_kwargs["url"], http_client=http_client)
         )
         await self._finish_remote_session(read, write)
 
@@ -456,13 +534,19 @@ class SentinelMCPClient:
                 headers=self._transport_kwargs.get("headers") or None,
                 auth=self._transport_kwargs.get("auth"),
                 timeout=self.timeout,
-                httpx_client_factory=functools.partial(
-                    _no_redirect_client,
-                    pinned_address=self._transport_kwargs.get("pinned_address"),
-                ),
+                httpx_client_factory=self._pinned_client_factory(),
             )
         )
         await self._finish_remote_session(read, write)
+
+    def _pinned_client_factory(self) -> Any:
+        """``_no_redirect_client`` with this session's pin baked in, in the
+        ``(headers=, timeout=, auth=)`` factory shape the mcp transports use."""
+        return functools.partial(
+            _no_redirect_client,
+            pinned_host=self._transport_kwargs.get("pinned_host"),
+            pinned_addresses=self._transport_kwargs.get("pinned_addresses"),
+        )
 
     async def _finish_remote_session(self, read: Any, write: Any) -> None:
         """Handshake shared by both remote transports.
