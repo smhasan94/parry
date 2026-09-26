@@ -21,6 +21,7 @@ from typing import Any
 
 from app.db.models import Severity
 from app.detection.base import BaseDetector
+from app.detection.detectors.adversarial_suffix import AdversarialSuffixDetector
 from app.detection.detectors.exfil_intent import ExfiltrationIntentDetector
 from app.detection.detectors.indirect_injection import IndirectInjectionDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
@@ -38,6 +39,7 @@ BLOCKING_DETECTORS: list[BaseDetector] = [
     IndirectInjectionDetector(),
     ExfiltrationIntentDetector(),
     JailbreakDetector(),
+    AdversarialSuffixDetector(),
     ToolMisuseDetector(),
     PrivilegeEscalationDetector(),
 ]

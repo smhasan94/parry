@@ -85,9 +85,16 @@ def test_max_severity_is_highest():
 
 def test_all_detectors_return_results():
     res = _analyze("Hello world")
-    assert len(res.detections) == 5
+    assert len(res.detections) == 6
     detector_names = {d.detector for d in res.detections}
-    expected = {"prompt_injection", "jailbreak", "privilege_escalation", "data_exfiltration", "tool_misuse"}
+    expected = {
+        "prompt_injection",
+        "jailbreak",
+        "adversarial_suffix",
+        "privilege_escalation",
+        "data_exfiltration",
+        "tool_misuse",
+    }
     assert detector_names == expected
 
 

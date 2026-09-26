@@ -14,6 +14,7 @@ from app.core.dependencies import get_current_org
 from app.core.rbac import Role, require_role
 from app.db.models import Org
 from app.detection.base import BaseDetector, DetectionResult
+from app.detection.detectors.adversarial_suffix import AdversarialSuffixDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.jailbreak import JailbreakDetector
 from app.detection.detectors.privilege_esc import PrivilegeEscalationDetector
@@ -31,6 +32,7 @@ MAX_INPUT_LENGTH = 5_000
 _PLAYGROUND_DETECTORS: list[BaseDetector] = [
     PromptInjectionDetector(),
     JailbreakDetector(),
+    AdversarialSuffixDetector(),
     PrivilegeEscalationDetector(),
     DataExfiltrationDetector(),
     ToolMisuseDetector(),

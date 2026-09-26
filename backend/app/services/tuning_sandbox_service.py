@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.detection.base import BaseDetector
+from app.detection.detectors.adversarial_suffix import AdversarialSuffixDetector
 from app.detection.detectors.data_exfil import DataExfiltrationDetector
 from app.detection.detectors.exfil_intent import ExfiltrationIntentDetector
 from app.detection.detectors.indirect_injection import IndirectInjectionDetector
@@ -22,6 +23,7 @@ _DETECTORS: list[BaseDetector] = [
     IndirectInjectionDetector(),
     ExfiltrationIntentDetector(),
     JailbreakDetector(),
+    AdversarialSuffixDetector(),
     PrivilegeEscalationDetector(),
     DataExfiltrationDetector(),
     ToolMisuseDetector(),

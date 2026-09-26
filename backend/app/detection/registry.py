@@ -1,4 +1,5 @@
 from app.detection.base import BaseDetector
+from app.detection.detectors.adversarial_suffix import AdversarialSuffixDetector
 from app.detection.detectors.anomaly import AnomalyDetector
 from app.detection.detectors.cost_explosion import (
     CostExploitLoopDetector,
@@ -22,6 +23,7 @@ DETECTORS: list[BaseDetector] = [
     IndirectInjectionDetector(),
     ExfiltrationIntentDetector(),
     JailbreakDetector(),
+    AdversarialSuffixDetector(),
     ToolMisuseDetector(),
     DataExfiltrationDetector(),
     PrivilegeEscalationDetector(),
