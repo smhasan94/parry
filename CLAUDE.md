@@ -37,7 +37,7 @@ parry/
 │   │   ├── hooks/
 │   │   └── lib/
 │   └── package.json
-├── docs/             # Architecture, ADRs, API specs
+├── docs/             # Architecture, plans, API specs
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 └── CLAUDE.md
@@ -167,4 +167,4 @@ Critical ones: `DATABASE_URL`, `REDIS_URL`, `ANTHROPIC_API_KEY`, `CLERK_SECRET_K
 - Detection engine design: `docs/detection-engine.md`
 - API specification: `docs/api-spec.md`
 - Database schema: `docs/schema.md`
-- ADRs (Architecture Decision Records): `docs/adr/`
+- Architecture rationale: module docstrings (inline, next to the code they explain) and `docs/plans/` (design decisions made when a feature was planned). No `docs/adr/` directory — this repo doesn't keep separate ADRs.
