@@ -14,13 +14,22 @@ writer does not produce.
 
 Neither signal alone is safe: symbol density alone false-positives on
 Windows paths and regex; case flips alone false-positive on camelCase
-identifiers mentioned in prose. Only their co-occurrence, scaled by how
-much of the text either signal touches, is used here — and even then
-this function must not be trusted as a confident verdict. Its caller
-(``adversarial_suffix.py``) deliberately keeps this in the pipeline's
-ambiguous-confidence band rather than self-triggering, because a
-realistic developer bug report (a Windows path plus a camelCase
-function name in the same sentence) can still score high.
+identifiers mentioned in prose. Global presence of both isn't safe
+either — a Windows path (backslashes near the end of a sentence) and a
+camelCase identifier (earlier in the same sentence) both "exist" in the
+text without being part of the same adversarial span. What a real GCG
+suffix looks like is a *dense, local* cluster: the case flip and an
+unusual symbol sit within a few characters of each other, because both
+are artifacts of the same broken detokenization run. So this function
+measures local co-occurrence directly — for each case flip, whether an
+unusual symbol appears within ``_CLUSTER_WINDOW`` characters of it —
+rather than just checking that both signals appear somewhere in the
+text. Even so, this function must not be trusted as a confident
+verdict. Its caller (``adversarial_suffix.py``) deliberately keeps this
+in the pipeline's ambiguous-confidence band rather than self-triggering,
+because a realistic developer bug report (a Windows path plus a
+camelCase function name in the same sentence) can still score above
+zero.
 """
 
 from __future__ import annotations
@@ -39,8 +48,21 @@ _UNUSUAL_SYMBOLS = frozenset("\\|~^")
 _CASE_FLIP = re.compile(r"[a-z][A-Z]")
 
 # Below this many non-whitespace characters (after code-stripping),
-# there isn't enough text for either signal to mean anything.
-MIN_SCORABLE_CHARS = 20
+# there isn't enough text for either signal to mean anything. Must stay
+# above the non-whitespace length of any prompt whose only content is a
+# stripped fenced-code-block frame (e.g. "Here's the fix: / Does this
+# look right?", 31 chars) and below the shortest prompt that should
+# still be scored.
+MIN_SCORABLE_CHARS = 35
+
+# A case flip and an unusual symbol within this many characters of each
+# other are treated as the same local cluster. Chosen empirically: wide
+# enough to span a short adversarial fragment ("...\ + similarlyNow...",
+# distance 12; "...\\ describing.-- similarlyNOW...", distance 24) but
+# narrower than the gap in the Windows-path-plus-camelCase false
+# positive, where the flips in `getUserById` sit 42+ characters from the
+# backslashes in the path.
+_CLUSTER_WINDOW = 30
 
 
 def _strip_code(text: str) -> str:
@@ -50,21 +72,33 @@ def _strip_code(text: str) -> str:
     return text
 
 
+def _is_clustered(flip_pos: int, symbol_positions: list[int]) -> bool:
+    return any(abs(flip_pos - s) <= _CLUSTER_WINDOW for s in symbol_positions)
+
+
 def structural_anomaly_score(text: str) -> float | None:
     prose = _strip_code(text)
     non_whitespace = [c for c in prose if not c.isspace()]
     if len(non_whitespace) < MIN_SCORABLE_CHARS:
         return None
 
-    unusual_count = sum(1 for c in non_whitespace if c in _UNUSUAL_SYMBOLS)
-    case_flip_count = len(_CASE_FLIP.findall(prose))
+    symbol_positions = [i for i, c in enumerate(prose) if c in _UNUSUAL_SYMBOLS]
+    flip_positions = [m.start() for m in _CASE_FLIP.finditer(prose)]
 
-    if unusual_count == 0 or case_flip_count == 0:
+    if not symbol_positions or not flip_positions:
         return 0.0
 
-    unusual_ratio = unusual_count / len(non_whitespace)
-    # Both signals present: score scales with symbol density, capped at
-    # 1.0. A single stray symbol plus a single case flip in a long
-    # prompt (low ratio) still scores meaningfully above zero, matching
-    # what was observed for jb_006 (ratio 0.018, still the real attack).
-    return min(1.0, unusual_ratio * 20 + 0.3)
+    clustered_flips = sum(1 for f in flip_positions if _is_clustered(f, symbol_positions))
+    if clustered_flips == 0:
+        # Both signals are present somewhere in the text, but never
+        # close together — the Windows-path-plus-camelCase shape. Score
+        # low rather than zero: the co-occurrence is still a weak signal
+        # worth surfacing to the ambiguous-confidence LLM fallback, just
+        # not one this function should be confident about.
+        return 0.2
+
+    clustered_ratio = clustered_flips / len(flip_positions)
+    # At least one tight local cluster is the real signature of a GCG
+    # suffix, so it already clears the midpoint; more clustered flips
+    # push it toward full confidence.
+    return min(1.0, 0.5 + 0.5 * clustered_ratio)
