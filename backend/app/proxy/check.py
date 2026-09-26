@@ -51,10 +51,17 @@ BLOCKING_DETECTORS: list[BaseDetector] = [
 # instead of assuming the old value still fits.
 #
 # BLOCKING_DETECTORS now has seven entries (AdversarialSuffixDetector was
-# added after the six-detector measurement above). The 4.3ms figure and
-# this window have not been re-measured against that seventh detector yet
-# — see backend/tests/test_blocking_path_latency.py, which lands in a
-# later task and re-measures this budget for real before it is trusted.
+# added after the six-detector measurement above). The 4.3ms figure is
+# for the original six; backend/tests/test_blocking_path_latency.py now
+# guards the budget for all seven, including prompts of exactly this
+# window size (about 3.5-4.5ms worst case when last measured).
+#
+# AdversarialSuffixDetector never blocks here under default config: its
+# confidence is capped below its own default threshold, by design, so it
+# only ever lands in the async pipeline's LLM-fallback band. This path
+# also receives no org detector_config (see app/api/v1/proxy.py), so no
+# threshold override reaches it either. Its protection is the async
+# fallback, not this pre-call check.
 #
 # Still far wider than any real injection, which runs to hundreds of
 # characters rather than thousands.
