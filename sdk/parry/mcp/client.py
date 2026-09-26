@@ -24,6 +24,7 @@ a constructor is actually called, not at module import time.
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import os
@@ -31,11 +32,14 @@ from contextlib import AsyncExitStack
 from typing import Any
 
 import anyio
+import httpcore
 import httpx
+from httpcore._backends.anyio import AnyIOBackend
+from httpx._transports.default import create_ssl_context
 
 from parry.mcp.errors import MCPBlockedError, MCPManifestError
 from parry.mcp.normalize import manifest_hash
-from parry.mcp.validate import Resolver, validate_server_url
+from parry.mcp.validate import Resolver, validate_and_pin
 
 logger = logging.getLogger("parry.mcp")
 
@@ -65,20 +69,86 @@ def _no_redirect_client(
     headers: dict[str, str] | None = None,
     timeout: Any = None,
     auth: Any = None,
+    pinned_address: str | None = None,
 ) -> httpx.AsyncClient:
     """httpx client for the MCP transports, with redirects disabled.
 
     Validating the URL only proves the *first* hop is acceptable. A
     permitted host answering 302 → http://169.254.169.254/ would walk
     straight past every check, so the transport never follows.
+
+    ``pinned_address``, when given, forces the TCP connection to that
+    exact address instead of letting the transport re-resolve the
+    hostname — see ``_PinnedNetworkBackend``.
     """
+    transport = _PinnedHTTPTransport(pinned_address) if pinned_address else None
     return httpx.AsyncClient(
         headers=headers,
         timeout=timeout,
         auth=auth,
         follow_redirects=False,
         verify=True,
+        transport=transport,
     )
+
+
+class _PinnedNetworkBackend(AnyIOBackend):
+    """TCP backend that dials a fixed address regardless of the requested host.
+
+    ``validate_and_pin`` already resolved the MCP server's hostname and
+    checked every address it returned against the SSRF rules. Connecting
+    here to that same address — instead of letting anyio resolve the
+    hostname again — is what closes the DNS-rebinding gap documented in
+    ``docs/mcp-security.md``: a record that changes between validation
+    and connection no longer matters, because there is no second lookup
+    left to race.
+
+    TLS server-name verification is unaffected: httpcore derives SNI
+    from the request's origin host, not from what this backend dials,
+    so the certificate is still checked against the real hostname.
+    """
+
+    def __init__(self, pinned_address: str) -> None:
+        super().__init__()
+        self._pinned_address = pinned_address
+
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: Any = None,
+    ) -> Any:
+        return await super().connect_tcp(
+            self._pinned_address,
+            port,
+            timeout=timeout,
+            local_address=local_address,
+            socket_options=socket_options,
+        )
+
+
+class _PinnedHTTPTransport(httpx.AsyncHTTPTransport):
+    """AsyncHTTPTransport that always connects to ``pinned_address``.
+
+    Deliberately does not call ``httpx.AsyncHTTPTransport.__init__`` —
+    that always builds a pool with the default hostname-resolving
+    backend. This builds the same shape of pool with
+    ``_PinnedNetworkBackend`` instead; ``handle_async_request`` and
+    ``aclose`` are inherited unchanged since they only touch ``self._pool``.
+
+    ``create_ssl_context`` and ``AnyIOBackend`` are httpx/httpcore
+    internals, not public API — see the guard test
+    ``test_private_httpx_internals_this_module_relies_on_still_exist``.
+    """
+
+    def __init__(self, pinned_address: str) -> None:
+        self._pool = httpcore.AsyncConnectionPool(
+            ssl_context=create_ssl_context(verify=True),
+            network_backend=_PinnedNetworkBackend(pinned_address),
+            retries=0,
+        )
 
 
 def _check_manifest_bounds(manifest: dict[str, Any] | None) -> None:
@@ -265,7 +335,7 @@ class SentinelMCPClient:
         # Validate before construction so a refused URL fails at the
         # call site the developer wrote, not later inside a context
         # manager where the traceback points at our internals.
-        server_uri = validate_server_url(
+        validated = validate_and_pin(
             url,
             allow_insecure=allow_insecure,
             allow_private=allow_private,
@@ -274,10 +344,11 @@ class SentinelMCPClient:
         return cls(
             transport=transport,
             transport_kwargs={
-                "url": server_uri,
+                "url": validated.canonical_url,
                 "headers": headers or {},
                 "auth": auth,
-                "server_uri": server_uri,
+                "server_uri": validated.canonical_url,
+                "pinned_address": validated.pinned_address,
             },
             **parry_kwargs,
         )
@@ -365,7 +436,10 @@ class SentinelMCPClient:
                 headers=self._transport_kwargs.get("headers") or None,
                 auth=self._transport_kwargs.get("auth"),
                 timeout=self.timeout,
-                httpx_client_factory=_no_redirect_client,
+                httpx_client_factory=functools.partial(
+                    _no_redirect_client,
+                    pinned_address=self._transport_kwargs.get("pinned_address"),
+                ),
             )
         )
         await self._finish_remote_session(read, write)
@@ -382,7 +456,10 @@ class SentinelMCPClient:
                 headers=self._transport_kwargs.get("headers") or None,
                 auth=self._transport_kwargs.get("auth"),
                 timeout=self.timeout,
-                httpx_client_factory=_no_redirect_client,
+                httpx_client_factory=functools.partial(
+                    _no_redirect_client,
+                    pinned_address=self._transport_kwargs.get("pinned_address"),
+                ),
             )
         )
         await self._finish_remote_session(read, write)

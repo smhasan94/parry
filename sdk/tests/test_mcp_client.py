@@ -12,10 +12,17 @@ from __future__ import annotations
 import json
 
 import httpx
+import httpx._transports.default as _httpx_default_transport
 import pytest
 
 from parry.mcp import MCPBlockedError, SentinelMCPClient
-from parry.mcp.client import MAX_MANIFEST_CHARS, MAX_MANIFEST_TOOLS
+from parry.mcp.client import (
+    MAX_MANIFEST_CHARS,
+    MAX_MANIFEST_TOOLS,
+    _no_redirect_client,
+    _PinnedHTTPTransport,
+    _PinnedNetworkBackend,
+)
 from parry.mcp.errors import MCPManifestError, MCPURLError
 from parry.mcp.normalize import manifest_hash
 
@@ -357,3 +364,90 @@ async def test_oversized_manifest_bytes_are_refused(patch_httpx) -> None:
     with pytest.raises(MCPManifestError, match="characters"):
         async with _remote_client(fat, "http"):
             pass
+
+
+# ── Connection pinning (DNS-rebinding) ──────────────────────────────
+
+
+def test_private_httpx_internals_this_module_relies_on_still_exist() -> None:
+    """Guard test: _PinnedHTTPTransport reaches into httpx/httpcore
+    internals (create_ssl_context, AnyIOBackend) that aren't part of
+    httpx's public API. If an httpx/httpcore upgrade removes or renames
+    either, this fails here — loudly, at the source — instead of as a
+    confusing runtime error inside a real MCP connection attempt.
+    """
+    assert hasattr(_httpx_default_transport, "create_ssl_context")
+    from httpcore._backends.anyio import AnyIOBackend
+
+    assert issubclass(_PinnedNetworkBackend, AnyIOBackend)
+
+
+class TestPinnedNetworkBackend:
+    async def test_connects_to_pinned_address_not_requested_host(self, monkeypatch) -> None:
+        seen: dict = {}
+
+        async def fake_connect_tcp(
+            self, host, port, timeout=None, local_address=None, socket_options=None
+        ):
+            seen["host"] = host
+            seen["port"] = port
+            return object()
+
+        monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
+        backend = _PinnedNetworkBackend("93.184.216.34")
+        await backend.connect_tcp("mcp.example.com", 443)
+        assert seen == {"host": "93.184.216.34", "port": 443}
+
+    async def test_connects_to_pinned_ipv6_address_unbracketed(self, monkeypatch) -> None:
+        seen: dict = {}
+
+        async def fake_connect_tcp(
+            self, host, port, timeout=None, local_address=None, socket_options=None
+        ):
+            seen["host"] = host
+            return object()
+
+        monkeypatch.setattr("httpcore._backends.anyio.AnyIOBackend.connect_tcp", fake_connect_tcp)
+        backend = _PinnedNetworkBackend("2001:db8::1")
+        await backend.connect_tcp("mcp.example.com", 443)
+        assert seen["host"] == "2001:db8::1"
+
+
+class TestNoRedirectClientPinning:
+    def test_pinned_address_none_matches_current_behavior(self) -> None:
+        client = _no_redirect_client()
+        transport = client._transport
+        assert isinstance(transport, httpx.AsyncHTTPTransport)
+        assert not isinstance(transport, _PinnedHTTPTransport)
+
+    def test_pinned_address_set_builds_pinned_transport(self) -> None:
+        client = _no_redirect_client(pinned_address="93.184.216.34")
+        transport = client._transport
+        assert isinstance(transport, _PinnedHTTPTransport)
+        backend = transport._pool._network_backend
+        assert isinstance(backend, _PinnedNetworkBackend)
+        assert backend._pinned_address == "93.184.216.34"
+
+    def test_pinned_transport_still_verifies_tls(self) -> None:
+        client = _no_redirect_client(pinned_address="93.184.216.34")
+        ssl_context = client._transport._pool._ssl_context
+        assert ssl_context.verify_mode.name == "CERT_REQUIRED"
+
+    def test_pinned_transport_still_refuses_redirects(self) -> None:
+        client = _no_redirect_client(pinned_address="93.184.216.34")
+        assert client.follow_redirects is False
+
+
+async def test_remote_client_stores_pinned_address(patch_httpx) -> None:
+    """SentinelMCPClient.http()/.sse() thread the validated address
+    through to transport_kwargs, where _open_http_session/_open_sse_session
+    read it back to build the pinned transport.
+    """
+    patch_httpx(_ok_handler({}))
+    client = SentinelMCPClient.http(
+        url="https://mcp.example.com/mcp",
+        agent_id="dev-assistant",
+        api_key="sk-parry-test",
+        resolver=resolves_public,
+    )
+    assert client._transport_kwargs["pinned_address"] == PUBLIC_IP
