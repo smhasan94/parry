@@ -23,6 +23,10 @@ from app.services.detector_config_service import threshold_for
 # never at or above 0.7, so this detector cannot self-trigger under the
 # default threshold — only an explicit org override can lower the
 # threshold enough to let it.
+#
+# Only a tight local cluster produces a non-zero score (0.5-1.0, so
+# confidence 0.55-0.65); signals that merely co-occur far apart score
+# 0.0 and stay out of the band, so they never reach the paid fallback.
 _MAX_CONFIDENCE = 0.65
 _MIN_AMBIGUOUS_CONFIDENCE = 0.45
 
@@ -49,7 +53,7 @@ class AdversarialSuffixDetector:
         elif triggered:
             reason = "Detokenization-artifact structure exceeds configured threshold"
         else:
-            reason = "Possible detokenization-artifact structure (symbol + case-flip co-occurrence)"
+            reason = "Possible detokenization-artifact structure (clustered symbol + case flip)"
 
         return DetectionResult(
             triggered=triggered,

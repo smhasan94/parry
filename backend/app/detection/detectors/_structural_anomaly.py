@@ -47,6 +47,7 @@ on its own — only its caller's confidence ceiling makes that promise.
 from __future__ import annotations
 
 import re
+from bisect import bisect_left
 
 _FENCED_CODE = re.compile(r"```.*?```", re.S)
 _INLINE_CODE = re.compile(r"`[^`]*`")
@@ -92,7 +93,14 @@ def _strip_code(text: str) -> str:
 
 
 def _is_clustered(flip_pos: int, symbol_positions: list[int]) -> bool:
-    return any(abs(flip_pos - s) <= _CLUSTER_WINDOW for s in symbol_positions)
+    # symbol_positions is ascending (built by one left-to-right pass), so
+    # binary-search for the first symbol at or after the window's left
+    # edge; the flip is clustered iff that symbol is also inside the
+    # right edge. O(log symbols) per flip. A linear scan here made
+    # scoring O(flips x symbols) — seconds on a padded 40k prompt, which
+    # an attacker controls and which stalls the whole async pipeline.
+    i = bisect_left(symbol_positions, flip_pos - _CLUSTER_WINDOW)
+    return i < len(symbol_positions) and symbol_positions[i] <= flip_pos + _CLUSTER_WINDOW
 
 
 def structural_anomaly_score(text: str) -> float | None:
@@ -110,11 +118,14 @@ def structural_anomaly_score(text: str) -> float | None:
     clustered_flips = sum(1 for f in flip_positions if _is_clustered(f, symbol_positions))
     if clustered_flips == 0:
         # Both signals are present somewhere in the text, but never
-        # close together — the Windows-path-plus-camelCase shape. Score
-        # low rather than zero: the co-occurrence is still a weak signal
-        # worth surfacing to the ambiguous-confidence LLM fallback, just
-        # not one this function should be confident about.
-        return 0.2
+        # close together. This score measures *local* clustering (see
+        # the module docstring: global co-occurrence is not a usable
+        # signal), so no cluster is no signal. This used to return a
+        # flat 0.2 "weak signal", which the caller mapped into the
+        # ambiguous band and so sent any ordinary prompt with one stray
+        # "~" or "|" and one "JavaScript"/"iPhone" to the paid Claude
+        # fallback.
+        return 0.0
 
     clustered_ratio = clustered_flips / len(flip_positions)
     # At least one tight local cluster is the real signature of a GCG
