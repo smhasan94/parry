@@ -50,6 +50,12 @@ BLOCKING_DETECTORS: list[BaseDetector] = [
 # a function of that list — adding a detector shrinks it, so re-measure
 # instead of assuming the old value still fits.
 #
+# BLOCKING_DETECTORS now has seven entries (AdversarialSuffixDetector was
+# added after the six-detector measurement above). The 4.3ms figure and
+# this window have not been re-measured against that seventh detector yet
+# — see backend/tests/test_blocking_path_latency.py, which lands in a
+# later task and re-measures this budget for real before it is trusted.
+#
 # Still far wider than any real injection, which runs to hundreds of
 # characters rather than thousands.
 MAX_BLOCKING_SCAN_CHARS = 8_000
