@@ -8,9 +8,16 @@ no resolver at all.
 
 from __future__ import annotations
 
+import threading
+
 import pytest
 
-from app.core.url_safety import Resolver, UnsafeURLError, assert_public_https_url
+from app.core.url_safety import (
+    Resolver,
+    UnsafeURLError,
+    assert_public_https_url,
+    assert_public_https_url_async,
+)
 
 
 def resolves_to(*addresses: str) -> Resolver:
@@ -84,3 +91,29 @@ class TestNamesAreJudgedByWhatTheyResolveTo:
 
         with pytest.raises(UnsafeURLError, match="could not resolve"):
             assert_public_https_url("https://nowhere.example/hook", resolver=_fails)
+
+
+class TestAsyncWrapper:
+    """``assert_public_https_url`` resolves DNS synchronously. Called directly
+    from a coroutine on uvicorn's loop, a slow nameserver for a customer's
+    domain would stall every request on that worker, so async callers go
+    through ``assert_public_https_url_async``, which runs it in a thread."""
+
+    @pytest.mark.asyncio
+    async def test_resolves_off_the_event_loop_thread(self) -> None:
+        loop_thread = threading.get_ident()
+        seen: list[int] = []
+
+        def _record(host: str) -> list[str]:
+            seen.append(threading.get_ident())
+            return [PUBLIC_IP]
+
+        await assert_public_https_url_async("https://hooks.example/hook", resolver=_record)
+
+        assert seen, "resolver was never called"
+        assert all(thread != loop_thread for thread in seen)
+
+    @pytest.mark.asyncio
+    async def test_raises_for_an_unsafe_url(self) -> None:
+        with pytest.raises(UnsafeURLError, match="link-local"):
+            await assert_public_https_url_async("https://169.254.169.254/hook")

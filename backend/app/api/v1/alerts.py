@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.dependencies import Actor, get_current_actor, get_current_org
 from app.core.rbac import Role, require_role
-from app.core.url_safety import assert_public_https_url
+from app.core.url_safety import assert_public_https_url_async
 from app.db.models import Detection, Incident, IncidentStatus, Org, Severity
 from app.db.session import get_db
 from app.schemas.base import ParrySchema
@@ -138,14 +138,14 @@ async def update_alert_config(
 
     if body.slack_webhook_url is not None:
         config["slack_webhook_url"] = str(body.slack_webhook_url)
-        assert_public_https_url(config["slack_webhook_url"])
+        await assert_public_https_url_async(config["slack_webhook_url"])
 
     if body.alert_emails is not None:
         config["alert_emails"] = [str(e) for e in body.alert_emails]
 
     if body.webhook_url is not None:
         config["webhook_url"] = str(body.webhook_url)
-        assert_public_https_url(config["webhook_url"])
+        await assert_public_https_url_async(config["webhook_url"])
 
     if body.webhook_headers is not None:
         config["webhook_headers"] = body.webhook_headers

@@ -1,4 +1,5 @@
 import hashlib
+import threading
 import uuid
 from datetime import UTC, datetime
 
@@ -110,6 +111,25 @@ def injection_event_data() -> dict:
         "baseline": {},
         "policy": {},
     }
+
+
+@pytest.fixture
+def resolver_thread_ids(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Replace url_safety's live-DNS resolver with one that answers a public
+    address and records which thread each lookup ran on.
+
+    A test awaiting a call site compares these against its own thread (the
+    event loop's) to prove the lookup was offloaded rather than run on — and
+    blocking — the loop. Also keeps hostname-based tests off live DNS.
+    """
+    thread_ids: list[int] = []
+
+    def _record(host: str) -> list[str]:
+        thread_ids.append(threading.get_ident())
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr("app.core.url_safety._default_resolver", _record)
+    return thread_ids
 
 
 @pytest.fixture

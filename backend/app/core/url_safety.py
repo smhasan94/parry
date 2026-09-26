@@ -20,10 +20,16 @@ unwrapped and judged by what they route to.
 Unlike the MCP client, there is no allow_private here: every caller
 is an outbound notification target, and there is no legitimate case
 for one of those to be private or plaintext.
+
+Async code must call ``assert_public_https_url_async``, never the sync
+function directly: the check resolves DNS with a blocking
+``getaddrinfo``, and on uvicorn's loop a slow nameserver for one
+customer's domain would stall every tenant's requests on that worker.
 """
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import socket
 from collections.abc import Callable
@@ -45,7 +51,7 @@ class UnsafeURLError(ParryError):
 
 def _default_resolver(host: str) -> list[str]:
     infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
-    return [info[4][0] for info in infos]
+    return [str(info[4][0]) for info in infos]
 
 
 def _embedded_v4(ip: _IPAddress) -> list[ipaddress.IPv4Address]:
@@ -133,3 +139,9 @@ def assert_public_https_url(url: str, *, resolver: Resolver | None = None) -> No
 
     for address in _addresses_for(host, resolver):
         _check_address(address, host=host)
+
+
+async def assert_public_https_url_async(url: str, *, resolver: Resolver | None = None) -> None:
+    """``assert_public_https_url`` run in a worker thread, so its blocking
+    DNS lookup never stalls the calling event loop."""
+    await asyncio.to_thread(assert_public_https_url, url, resolver=resolver)

@@ -17,7 +17,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.url_safety import assert_public_https_url
+from app.core.url_safety import assert_public_https_url_async
 from app.db.models import WebhookDelivery, WebhookEndpoint
 
 log = structlog.get_logger()
@@ -141,7 +141,7 @@ async def create_endpoint(
     event_types: list[str],
     description: str | None = None,
 ) -> WebhookEndpoint:
-    assert_public_https_url(url)
+    await assert_public_https_url_async(url)
     endpoint = WebhookEndpoint(
         org_id=org_id,
         url=url,
@@ -169,7 +169,7 @@ async def update_endpoint(
         raise NotFoundError("WebhookEndpoint", str(endpoint_id))
 
     if updates.get("url") is not None:
-        assert_public_https_url(updates["url"])
+        await assert_public_https_url_async(updates["url"])
 
     for key, value in updates.items():
         if value is not None:

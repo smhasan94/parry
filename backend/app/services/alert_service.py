@@ -13,10 +13,12 @@ import structlog
 
 from app.core.config import settings
 from app.core.metrics import record_alert_sent
-from app.core.url_safety import UnsafeURLError, assert_public_https_url
+from app.core.url_safety import UnsafeURLError, assert_public_https_url_async
 from app.db.models import Incident, Org, Severity
 
 log = structlog.get_logger()
+
+_CUSTOMER_URL_TIMEOUT_SECONDS = 5.0
 
 SEVERITY_RANK = {
     Severity.LOW: 0,
@@ -104,6 +106,23 @@ def should_alert(org: Org, severity: Severity) -> bool:
     return _meets_min_severity(config, severity)
 
 
+async def _post_to_customer_url(
+    url: str, payload: dict[str, Any], headers: dict[str, str] | None = None
+) -> httpx.Response:
+    """POST JSON to a customer-configured URL (Slack or generic webhook).
+
+    Every such send goes through here so none can skip the SSRF check:
+    the URL is revalidated immediately before the request because its DNS
+    may have been repointed since it was saved. Raises ``UnsafeURLError``
+    or ``httpx.HTTPError``; callers fold both into their failure path.
+    """
+    await assert_public_https_url_async(url)
+    async with httpx.AsyncClient(timeout=_CUSTOMER_URL_TIMEOUT_SECONDS) as client:
+        resp = await client.post(url, json=payload, headers=headers)
+        resp.raise_for_status()
+    return resp
+
+
 def build_slack_payload(incident: Incident, dashboard_url: str | None = None) -> dict[str, Any]:
     """Build a Slack message payload for an incident."""
     severity = incident.severity
@@ -145,10 +164,7 @@ async def send_slack_alert(
     """POST the incident to a Slack incoming webhook. Returns True on success."""
     payload = build_slack_payload(incident, dashboard_url)
     try:
-        assert_public_https_url(webhook_url)
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.post(webhook_url, json=payload)
-            resp.raise_for_status()
+        await _post_to_customer_url(webhook_url, payload)
         log.info(
             "alert.slack_sent",
             incident_id=str(incident.id),
@@ -416,10 +432,7 @@ async def send_webhook_alert(
     """POST a generic JSON payload to an arbitrary webhook URL."""
     payload = build_webhook_payload(incident, dashboard_url)
     try:
-        assert_public_https_url(webhook_url)
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.post(webhook_url, json=payload, headers=headers or {})
-            resp.raise_for_status()
+        resp = await _post_to_customer_url(webhook_url, payload, headers=headers or {})
         log.info(
             "alert.webhook_sent",
             incident_id=str(incident.id),
@@ -575,11 +588,9 @@ async def dispatch_budget_alert(org: Org, ctx: BudgetAlertContext) -> None:
     if slack_url:
         payload = _build_budget_slack_payload(ctx)
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.post(slack_url, json=payload)
-                resp.raise_for_status()
+            await _post_to_customer_url(slack_url, payload)
             record_alert_sent(channel="slack", success=True)
-        except httpx.HTTPError as e:
+        except (httpx.HTTPError, UnsafeURLError) as e:
             log.warning("budget_alert.slack_failed", error=str(e))
             record_alert_sent(channel="slack", success=False)
 
@@ -610,10 +621,8 @@ async def dispatch_budget_alert(org: Org, ctx: BudgetAlertContext) -> None:
         payload = _build_budget_webhook_payload(ctx)
         webhook_headers: dict[str, str] = config.get("webhook_headers") or {}
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.post(webhook_url, json=payload, headers=webhook_headers)
-                resp.raise_for_status()
+            await _post_to_customer_url(webhook_url, payload, headers=webhook_headers)
             record_alert_sent(channel="webhook", success=True)
-        except httpx.HTTPError as e:
+        except (httpx.HTTPError, UnsafeURLError) as e:
             log.warning("budget_alert.webhook_failed", error=str(e))
             record_alert_sent(channel="webhook", success=False)
