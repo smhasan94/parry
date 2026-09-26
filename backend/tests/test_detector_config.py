@@ -120,6 +120,23 @@ class TestValidateConfig:
         result = validate_config({"jailbreak": {"enabled": False}})
         assert result == {"jailbreak": {"enabled": False}}
 
+    def test_adversarial_suffix_is_configurable(self) -> None:
+        """Regression: adversarial_suffix shipped without a registry entry,
+        so validate_config rejected any attempt to tune or disable it."""
+        config = {"adversarial_suffix": {"trigger_threshold": 0.3, "enabled": False}}
+        assert validate_config(config) == config
+
+    def test_adversarial_suffix_default_matches_detector_fallback(self) -> None:
+        # The registry default must equal the value the detector falls
+        # back to when no config is present (see the lockstep note on
+        # DEFAULT_DETECTOR_CONFIG), and must stay above the detector's
+        # confidence ceiling so it cannot self-trigger by default.
+        from app.detection.detectors.adversarial_suffix import _MAX_CONFIDENCE
+
+        default = DEFAULT_DETECTOR_CONFIG["adversarial_suffix"]
+        assert default == {"trigger_threshold": 0.7, "enabled": True}
+        assert default["trigger_threshold"] > _MAX_CONFIDENCE
+
     def test_unknown_detector_rejected(self) -> None:
         with pytest.raises(ValueError, match="unknown detector"):
             validate_config({"made_up_detector": {"trigger_threshold": 0.5}})

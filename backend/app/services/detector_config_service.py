@@ -14,6 +14,7 @@ DEFAULT_DETECTOR_CONFIG: dict[str, dict[str, Any]] = {
     "indirect_injection": {"trigger_threshold": 0.6, "enabled": True},
     "exfil_intent": {"trigger_threshold": 0.6, "enabled": True},
     "jailbreak": {"trigger_threshold": 0.7, "enabled": True},
+    "adversarial_suffix": {"trigger_threshold": 0.7, "enabled": True},
     "privilege_escalation": {"trigger_threshold": 0.7, "enabled": True},
     "tool_misuse": {"trigger_threshold": 0.5, "enabled": True},
     "data_exfiltration": {"trigger_threshold": 0.5, "enabled": True},
