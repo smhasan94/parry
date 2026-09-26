@@ -94,6 +94,7 @@ def sample_incident(org_id: uuid.UUID, sample_agent: Agent) -> Incident:
         title="[HIGH] prompt_injection: Instruction override attempt",
         severity=Severity.HIGH,
         status=IncidentStatus.OPEN,
+        created_at=datetime.now(UTC),
     )
 
 

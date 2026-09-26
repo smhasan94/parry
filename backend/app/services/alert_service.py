@@ -13,6 +13,7 @@ import structlog
 
 from app.core.config import settings
 from app.core.metrics import record_alert_sent
+from app.core.url_safety import UnsafeURLError, assert_public_https_url
 from app.db.models import Incident, Org, Severity
 
 log = structlog.get_logger()
@@ -144,6 +145,7 @@ async def send_slack_alert(
     """POST the incident to a Slack incoming webhook. Returns True on success."""
     payload = build_slack_payload(incident, dashboard_url)
     try:
+        assert_public_https_url(webhook_url)
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(webhook_url, json=payload)
             resp.raise_for_status()
@@ -154,7 +156,7 @@ async def send_slack_alert(
         )
         record_alert_sent(channel="slack", success=True)
         return True
-    except httpx.HTTPError as e:
+    except (httpx.HTTPError, UnsafeURLError) as e:
         log.warning(
             "alert.slack_failed",
             incident_id=str(incident.id),
@@ -414,6 +416,7 @@ async def send_webhook_alert(
     """POST a generic JSON payload to an arbitrary webhook URL."""
     payload = build_webhook_payload(incident, dashboard_url)
     try:
+        assert_public_https_url(webhook_url)
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(webhook_url, json=payload, headers=headers or {})
             resp.raise_for_status()
@@ -425,7 +428,7 @@ async def send_webhook_alert(
         )
         record_alert_sent(channel="webhook", success=True)
         return True
-    except httpx.HTTPError as e:
+    except (httpx.HTTPError, UnsafeURLError) as e:
         log.warning(
             "alert.webhook_failed",
             incident_id=str(incident.id),
