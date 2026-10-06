@@ -28,10 +28,10 @@ Top-level tenant. One per Clerk organization.
 | `stripe_customer_id` | varchar(255) nullable | created lazily on first billing action |
 | `is_active` | bool | |
 | `alert_config` | jsonb nullable | `slack_webhook_url`, `alert_emails`, `webhook_url`, `pagerduty_routing_key`, `opsgenie_api_key`, `min_severity` |
-| `detector_config` | jsonb nullable | per-detector thresholds + `custom_rules` list (plan-05) |
-| `blocking_enabled` | bool | plan-01 active blocking posture |
-| `response_scan_mode` | enum(off/redact/block) | plan-02 posture |
-| `plan` | enum(free/growth/pro/enterprise) | plan-11 subscription tier |
+| `detector_config` | jsonb nullable | per-detector thresholds + `custom_rules` list |
+| `blocking_enabled` | bool | active blocking posture |
+| `response_scan_mode` | enum(off/redact/block) | response scanning posture |
+| `plan` | enum(free/growth/pro/enterprise) | subscription tier |
 | `metadata` | jsonb nullable | |
 
 ---
@@ -74,7 +74,7 @@ Groups related events within one conversation/run of an agent.
 | --- | --- | --- |
 | `id` | uuid PK | |
 | `agent_id` | uuid FK → agents | cascade |
-| `ended_at` | timestamptz nullable | null = live (plan-12 replay polls every 5s) |
+| `ended_at` | timestamptz nullable | null = live (session replay polls every 5s) |
 | `metadata` | jsonb nullable | |
 
 ---

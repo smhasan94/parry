@@ -2,7 +2,7 @@
 
 Track progress here. Check off items as they're completed.
 
-Last updated: 2026-04-07 (plans 00–12 complete).
+Last updated: 2026-04-07 (MVP feature set complete).
 
 ---
 
@@ -130,15 +130,15 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 ### Auth (Clerk)
 - [x] Clerk org-based multi-tenancy
 - [x] JWT verification middleware in FastAPI
-- [x] RBAC: owner / admin / viewer roles *(plan-03)*
+- [x] RBAC: owner / admin / viewer roles
 - [x] API key creation scoped to org
 
 ### Billing (Stripe)
 - [x] Stripe customer created on org signup
-- [x] Metered billing: report agent_events count to Stripe daily *(plan-11)*
+- [x] Metered billing: report agent_events count to Stripe daily
 - [x] `GET /api/v1/billing/portal` — redirect to Stripe portal
-- [x] Plan enforcement: free tier limits (1 agent, 10K events/mo) *(plan-11)*
-- [x] Stripe webhook: handle `customer.subscription.updated` *(plan-11)*
+- [x] Plan enforcement: free tier limits (1 agent, 10K events/mo)
+- [x] Stripe webhook: handle `customer.subscription.updated`
 
 ### Launch prep
 - [x] Production `docker-compose.prod.yml`
@@ -151,14 +151,14 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 
 ## Phase 5 — Growth Features (Month 4–6)
 
-- [x] Compliance report export (PDF, EU AI Act format) *(plan-06)*
+- [x] Compliance report export (PDF, EU AI Act format)
 - [x] Slack integration (incident alerts)
-- [x] PagerDuty integration (CRITICAL incidents) *(plan-10)*
+- [x] PagerDuty integration (CRITICAL incidents)
 - [x] Webhook support (org-configurable)
-- [x] LangChain native integration *(plan-04)*
-- [x] CrewAI native integration *(plan-04)*
+- [x] LangChain native integration
+- [x] CrewAI native integration
 - [ ] REST API docs (auto-generated via FastAPI + Scalar)
-- [x] Usage analytics dashboard *(plan-08 behavioural graph)*
+- [x] Usage analytics dashboard *(behavioural graph)*
 - [x] Agent baseline visualization
 
 ---
@@ -167,7 +167,7 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 
 - [x] SSO (SAML via WorkOS) — see [sso.md](./sso.md)
 - [x] On-prem agent mode (Docker image, no data leaves network) — see [on-prem.md](./on-prem.md)
-- [x] Custom detection rules (org-defined regex/patterns via UI) *(plan-05)*
+- [x] Custom detection rules (org-defined regex/patterns via UI)
 - [x] SLA dashboard *(internal SLO page at /slo)*
 - [ ] SOC 2 audit trail export
 - [ ] Enterprise tier billing
@@ -175,21 +175,21 @@ Last updated: 2026-04-07 (plans 00–12 complete).
 
 ---
 
-## Completed in the plan-01 → plan-12 arc
+## Completed feature set
 
 Beyond the original MVP scope, these shipped as part of the 12-plan
 roadmap and are worth tracking separately:
 
-- [x] **plan-01** Active blocking mode (`/proxy/check`, SDK `ParryBlockedError`)
-- [x] **plan-02** Response scanning (off/redact/block three-way posture)
-- [x] **plan-03** Team RBAC (`VIEWER` / `ADMIN` / `OWNER`)
-- [x] **plan-04** Multi-framework SDK wrappers (CrewAI, AutoGen, LlamaIndex, Pydantic AI)
-- [x] **plan-05** Custom detection rules dashboard + `/custom-rules/test`
-- [x] **plan-06** Compliance report PDF export (WeasyPrint)
-- [x] **plan-07** Agent health score (Redis-cached, hourly Celery refresh)
-- [x] **plan-08** Agent behavioural graph (event volume, tool calls, anomaly trend)
-- [x] **plan-09** Real-time block feed (SSE fan-out via Redis pubsub)
-- [x] **plan-10** PagerDuty + Opsgenie alert integrations
-- [x] **plan-11** Billing plan enforcement + metered usage reporting
-- [x] **plan-12** Session replay timeline
-- [x] **plan-00** Stripe subscription sync, SDK publish workflow, api-spec + schema docs
+- [x] Active blocking mode (`/proxy/check`, SDK `ParryBlockedError`)
+- [x] Response scanning (off/redact/block three-way posture)
+- [x] Team RBAC (`VIEWER` / `ADMIN` / `OWNER`)
+- [x] Multi-framework SDK wrappers (CrewAI, AutoGen, LlamaIndex, Pydantic AI)
+- [x] Custom detection rules dashboard + `/custom-rules/test`
+- [x] Compliance report PDF export (WeasyPrint)
+- [x] Agent health score (Redis-cached, hourly Celery refresh)
+- [x] Agent behavioural graph (event volume, tool calls, anomaly trend)
+- [x] Real-time block feed (SSE fan-out via Redis pubsub)
+- [x] PagerDuty + Opsgenie alert integrations
+- [x] Billing plan enforcement + metered usage reporting
+- [x] Session replay timeline
+- [x] Stripe subscription sync, SDK publish workflow, api-spec + schema docs

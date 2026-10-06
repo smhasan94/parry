@@ -13,7 +13,7 @@ Lifecycle (stdio example; http and sse follow the same shape):
 3. ``list_tools()`` returns the cached manifest — no extra call.
 4. ``call_tool(name, args)`` invokes the underlying client, returns
    the raw result. (v1 does not scan tool results — that's the
-   indirect-injection detector work from plan 13 Task 5; deferred
+   indirect-injection detector work, which is deferred
    to keep the first release compact.)
 5. ``__aexit__`` closes everything cleanly even on error.
 

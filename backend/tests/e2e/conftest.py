@@ -61,7 +61,7 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 async def seeded_db(db: AsyncSession) -> dict:
     """Seed an org, API key, agent, and policy. Returns lookup dict."""
     # Use GROWTH tier so tests can freely create agents without
-    # tripping the Free-tier 1-agent quota enforcement from plan-11.
+    # tripping the Free-tier 1-agent quota enforcement.
     org = Org(
         name="E2E Test Org",
         clerk_org_id="clerk_e2e_test",

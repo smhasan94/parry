@@ -1,6 +1,6 @@
 """E2E: synchronous response scan flow via POST /api/v1/proxy/scan-response.
 
-Covers the 4 cases from plan-02. Skipped locally without docker-postgres,
+Covers the 4 response-scanning cases. Skipped locally without docker-postgres,
 runs in CI alongside the rest of the e2e suite.
 """
 

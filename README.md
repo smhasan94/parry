@@ -245,7 +245,7 @@ Library-agnostic OpenAI wrapper via `WrapOpenAI()` callback pattern. Includes `V
 | **Alerting** | Slack, PagerDuty, OpsGenie, custom webhooks (HMAC-signed) |
 | **Dashboard** | React 18, TypeScript, Tailwind CSS, shadcn/ui, Recharts, TanStack Query + Router |
 | **SDKs** | Python (8 wrappers), TypeScript (ESM/CJS), Go |
-| **Testing** | 1,600+ tests (backend unit + E2E, Python SDK, TypeScript SDK, Go, dashboard) — see `docs/codebase-breakdown.md` §4 for a per-suite breakdown, since per-suite numbers here go stale faster than this line |
+| **Testing** | 1,600+ tests (backend unit + E2E, Python SDK, TypeScript SDK, Go, dashboard) |
 | **CI** | GitHub Actions, pre-commit hooks (ruff + format + eslint) |
 | **Infra** | Docker Compose (dev), multi-stage Dockerfiles (prod) |
 

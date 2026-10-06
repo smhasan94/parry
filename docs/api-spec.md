@@ -16,7 +16,7 @@ Scalar API reference UI (search, try-it-out, schema drill-down).
 | SDK runtime | `X-Parry-Secret: <sk-parry-...>` |
 
 Quota errors return **HTTP 402** with `X-Upgrade-Required: true`
-(see plan-11). Role errors return **403**.
+(see billing plans). Role errors return **403**.
 
 ---
 
@@ -24,7 +24,7 @@ Quota errors return **HTTP 402** with `X-Upgrade-Required: true`
 
 ### `GET /api/v1/agents`
 List the caller's agents. Each record carries the live health score
-(plan-07) and a component breakdown.
+and a component breakdown.
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
@@ -38,11 +38,11 @@ Create a new agent. Enforced against the plan's `max_agents` limit.
 Full agent detail including baseline and health score breakdown.
 
 ### `GET /api/v1/agents/{agent_id}/stats?window=7d|30d|90d`
-Behavioural graph data (plan-08): event volume, tool-call counts,
+Behavioural graph data: event volume, tool-call counts,
 model usage, anomaly trend, detection counts. 5-minute cache.
 
 ### `GET /api/v1/agents/{agent_id}/sessions?limit=20`
-Recent sessions for the agent (plan-12), newest first.
+Recent sessions for the agent, newest first.
 
 ---
 
@@ -63,7 +63,7 @@ Per-agent SSE event stream used by AgentDetailPage.
 
 ### `GET /api/v1/events/live-stream`
 Org-wide SSE stream carrying blocked-call events from the Redis
-pubsub bus (plan-09). 15-second keepalive, max 5 concurrent
+pubsub bus. 15-second keepalive, max 5 concurrent
 connections per org.
 
 ---
@@ -77,7 +77,7 @@ trigger a pubsub publish on the live-stream channel.
 
 ### `POST /api/v1/proxy/scan-response` *(SDK)*
 Post-call scan returning `{blocked, response, findings, mode}` —
-off/redact/block three-way posture from plan-02.
+off/redact/block three-way posture.
 
 ---
 
@@ -87,7 +87,7 @@ off/redact/block three-way posture from plan-02.
 | --- | --- |
 | `GET /api/v1/incidents` | Cursor-paginated, filter by severity/status |
 | `PATCH /api/v1/incidents/{id}` | Update status (admin+) |
-| `GET /api/v1/sessions/{session_id}` | Full replay (plan-12). Viewer gets previews, admin gets full prompt+response |
+| `GET /api/v1/sessions/{session_id}` | Full session replay. Viewer gets previews, admin gets full prompt+response |
 
 ---
 
@@ -96,7 +96,7 @@ off/redact/block three-way posture from plan-02.
 | Route | Notes |
 | --- | --- |
 | `GET/POST/PATCH/DELETE /api/v1/policies` | Tool allowlist, blocked domains, forbidden patterns |
-| `GET/POST/PATCH/DELETE /api/v1/custom-rules` | Regex rules (plan-05). Feature-gated on GROWTH+ |
+| `GET/POST/PATCH/DELETE /api/v1/custom-rules` | Regex rules. Feature-gated on GROWTH+ |
 | `POST /api/v1/custom-rules/test` | Live regex preview |
 | `GET/PUT /api/v1/detector-config` | Per-detector thresholds and toggles |
 
@@ -106,10 +106,10 @@ off/redact/block three-way posture from plan-02.
 
 | Route | Notes |
 | --- | --- |
-| `GET/PUT/DELETE /api/v1/alerts` | Slack, email, webhook, PagerDuty (plan-10), Opsgenie (plan-10). Secrets returned masked |
+| `GET/PUT/DELETE /api/v1/alerts` | Slack, email, webhook, PagerDuty, Opsgenie. Secrets returned masked |
 | `POST /api/v1/alerts/test?channel=slack\|email\|webhook\|pagerduty\|opsgenie` | Send a synthetic test incident |
-| `GET /api/v1/reports/compliance?start=...&end=...` | PDF export (plan-06). Admin+, feature-gated, 90-day sync cap |
-| `GET /api/v1/billing/plan` | Current plan + limit table (plan-11) |
+| `GET /api/v1/reports/compliance?start=...&end=...` | PDF export. Admin+, feature-gated, 90-day sync cap |
+| `GET /api/v1/billing/plan` | Current plan + limit table |
 | `POST /api/v1/billing/checkout` | Stripe Checkout session |
 | `POST /api/v1/billing/portal` | Stripe Billing Portal link |
 | `POST /api/v1/webhooks/stripe` | Signed Stripe webhook receiver |

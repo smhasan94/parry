@@ -129,7 +129,7 @@ are cheap individually but expensive in aggregate.
   policy changes to confirm improvements.
 - **What to do with misses.** The `undetected` attacks are
   candidates for custom rules (`/api/v1/custom-rules`). The
-  policy regression simulator (plan-15) lets you preview a custom
+  policy regression simulator lets you preview a custom
   rule against historical events before you enable it.
 - **No live customer data is sent.** Sandbox mode does not call
   any LLM, does not touch your agent's runtime, and does not

@@ -101,8 +101,8 @@ Several plans are runtime-configurable without a redeploy:
 
 | Feature | How to disable |
 | --- | --- |
-| Active blocking (plan-01) | `UPDATE orgs SET blocking_enabled=false;` |
-| Response scanning (plan-02) | `UPDATE orgs SET response_scan_mode='off';` |
+| Active blocking | `UPDATE orgs SET blocking_enabled=false;` |
+| Response scanning | `UPDATE orgs SET response_scan_mode='off';` |
 | Per-detector toggle | Edit `org.detector_config` JSONB |
 | Custom rules | Edit `org.detector_config->'custom_rules'` |
 | Alerts (all channels) | `DELETE FROM … UPDATE orgs SET alert_config=NULL;` |
@@ -148,7 +148,7 @@ asyncio.run(go())
 
 ### "Ingest returns 402 Payment Required"
 
-The org hit a plan quota (plan-11). Check:
+The org hit a plan quota. Check:
 
 ```sql
 SELECT plan FROM orgs WHERE id='<org_id>';
@@ -186,7 +186,7 @@ Same pattern works for `stats:*` (agent behavioural graph cache, 5m TTL).
 
 ### "Live block feed is silent"
 
-The dashboard's live feed (plan-09) uses Redis pubsub on
+The dashboard's live feed uses Redis pubsub on
 `org:{org_id}:events`. If the feed shows "Connected" but no messages:
 
 ```bash
@@ -207,7 +207,7 @@ missing from the backend image. Verify:
 docker compose exec backend dpkg -l | grep -E 'libpango|libcairo|fonts-liberation'
 ```
 
-If empty, the image was built without the plan-06 Dockerfile changes.
+If empty, the image was built without the WeasyPrint (compliance PDF) Dockerfile changes.
 Rebuild with `docker compose build --no-cache backend`.
 
 ### "Alerts aren't firing"

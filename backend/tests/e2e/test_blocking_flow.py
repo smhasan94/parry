@@ -1,7 +1,7 @@
 """E2E: synchronous blocking proxy flow.
 
 Exercises POST /api/v1/proxy/check end to end through FastAPI with a
-real seeded org, API key, and policy. Covers the 5 cases from plan-01:
+real seeded org, API key, and policy. Covers the 5 active-blocking cases:
 
 1. blocking_enabled=False → allowed even for an injection attempt
 2. blocking_enabled=True + clean prompt → allowed
