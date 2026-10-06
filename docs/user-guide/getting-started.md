@@ -97,7 +97,7 @@ go get github.com/smhasan94/parry/sdk-go
 ```
 
 ```go
-import "github.com/smhasan94/parry/sdk-go/parry"
+import "github.com/smhasan94/parry/sdk-go"
 
 client := parry.NewClient("sk-parry-...", parry.WithAgentID("support-bot"))
 wrapped := parry.WrapOpenAI(client, yourCallFn, parry.WrapOptions{})

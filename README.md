@@ -6,17 +6,17 @@ Runtime security for AI agents. Parry sits between your AI agents and the LLMs t
 
 AI agents are powerful but dangerous. They execute tool calls, handle sensitive data, and operate with broad permissions. A single prompt injection can hijack an agent's actions. A misconfigured tool policy can leak customer data. A compromised MCP server can inject instructions into every tool description your agent reads. A runaway loop can burn thousands of dollars in LLM costs in minutes.
 
-Parry is a security layer that monitors every LLM call your agents make. Lightweight SDKs for **Python**, **TypeScript**, and **Go** wrap your existing LLM clients. Every prompt and response flows through a detection pipeline of 12 specialized detectors, policy enforcers, permission boundaries, a cross-org threat intelligence feed, and an LLM-powered fallback classifier. When something looks wrong, Parry creates an incident, alerts your team, optionally blocks the call in real time, and provides forensic replay for investigation.
+Parry is a security layer that monitors every LLM call your agents make. Lightweight SDKs for **Python**, **TypeScript**, and **Go** wrap your existing LLM clients. Every prompt and response flows through a detection pipeline of 15 specialized detectors, policy enforcers, permission boundaries, a cross-org threat intelligence feed, and an LLM-powered fallback classifier. When something looks wrong, Parry creates an incident, alerts your team, optionally blocks the call in real time, and provides forensic replay for investigation.
 
 Parry also finds the AI you *haven't* instrumented. A read-only SSO connection surfaces the AI systems your people already authorized — no code, no install — and files them into your EU AI Act register. See [Shadow AI Discovery](#shadow-ai-discovery).
 
-The SDKs add zero latency to your agent's calls. Events are sent asynchronously in the background. If Parry's backend goes down, your agent keeps running. Fail-open by design.
+Events are sent asynchronously in the background, off your agent's critical path. The wrappers do make one synchronous policy check before each LLM call (and, in Python and TypeScript, a response scan after it), each capped by a 2-second timeout. If Parry's backend is down or slow, the call goes through and your agent keeps running. Fail-open by design.
 
 **Python — two lines to integrate:**
 
 ```python
 import parry
-parry.init(api_key="sk-parry-...")
+parry.init(api_key="sk-parry-...", agent_id="my-agent")
 
 from parry.wrappers.openai import ParryOpenAI
 client = ParryOpenAI()  # drop-in replacement for openai.OpenAI()
@@ -28,7 +28,7 @@ client = ParryOpenAI()  # drop-in replacement for openai.OpenAI()
 import OpenAI from "openai";
 import { ParryClient, parryOpenAI } from "@parry/sdk";
 
-const parry = new ParryClient({ apiKey: "sk-parry-..." });
+const parry = new ParryClient({ apiKey: "sk-parry-...", agentId: "my-agent" });
 const openai = parryOpenAI(new OpenAI(), parry);
 ```
 
@@ -66,13 +66,14 @@ Unrecognized apps are kept as probe events for triage but never enter the regist
 
 ### Detection Engine
 
-14 detectors run in parallel on every event:
+15 detectors run in parallel on every event, and an LLM fallback reviews the ambiguous results:
 
 | Detector | What it catches | Method |
 |---|---|---|
-| **Prompt Injection** | "Ignore previous instructions", fake system prompts | 10 regex patterns, confidence-weighted |
+| **Prompt Injection** | "Ignore previous instructions", fake system prompts | 11 regex patterns, confidence-weighted |
 | **Indirect Injection** | Instructions smuggled in documents, search results, quoted email, MCP tool output | Content-boundary + embedded-payload scoring |
 | **Jailbreak** | DAN, AIM, developer mode, deceased-relative and persona pretexts | 10 known jailbreak families |
+| **Adversarial Suffix** | Optimizer-generated (GCG-style) jailbreak suffixes | Structural anomaly scoring, escalated to the LLM fallback |
 | **Tool Misuse** | Tools outside policy allowlist/blocklist | Policy comparison |
 | **Data Exfiltration** | Credit cards, SSNs, API keys, credentials in responses | 6 PII/secret patterns |
 | **Exfiltration Intent** | Prompts asking for the system prompt, credential files, bulk records, or conversation PII | 5 intent patterns, target-anchored |
@@ -90,7 +91,7 @@ Unrecognized apps are kept as probe events for triage but never enter the regist
 
 Define what each agent is allowed to do — allowlist/blocklist tool calls with deny-by-default mode. Enforced at the proxy layer independently of blocking mode. Three modes: **enforcing** (blocks violations), **dry_run** (logs only), **disabled**.
 
-Permission resolution: agent-specific → group → org default → allow-all.
+Permission resolution: agent-specific → org default → allow-all.
 
 ```
 ParryPermissionDeniedError: Tool 'delete_database' is explicitly blocked
@@ -98,7 +99,7 @@ ParryPermissionDeniedError: Tool 'delete_database' is explicitly blocked
 
 ### Cross-Agent Threat Intelligence
 
-Anonymized detection patterns aggregated across all Parry customers. When an attack pattern is confirmed across 3+ organizations, the `ThreatIntelDetector` fires for every org automatically. Pattern signatures decay over 30 days without re-sighting. Org-level opt-out for sharing while still consuming the feed.
+Anonymized detection patterns aggregated across all Parry customers. When an attack pattern is confirmed across 3+ organizations, the `ThreatIntelDetector` fires for every org automatically. Pattern scores decay daily without re-sighting; stale patterns drop out of the feed and are archived once they go 30 days unseen. Org-level opt-out for sharing while still consuming the feed.
 
 ### Agent Behavior Anomaly Replay
 
@@ -106,19 +107,19 @@ Forensic attack chain reconstruction for every incident. Smart windowing surface
 
 ### Active Blocking + Budget Enforcement
 
-Pre-call blocking via `/proxy/check` returns `allowed=false` for HIGH/CRITICAL detections. Budget enforcement blocks calls when rolling spend hits 95% of cap (hourly/daily/monthly).
+With blocking enabled for the org, pre-call checks via `/proxy/check` return `allowed=false` for HIGH/CRITICAL detections. Budget enforcement blocks calls when rolling spend hits 95% of cap (hourly/daily/monthly).
 
 ### MCP Server Security
 
-First security layer for the Model Context Protocol. `SentinelMCPClient` wraps MCP connections, scans manifests for injection and unicode smuggling, tracks server identity via manifest hashing, and enforces trust levels.
+A security layer for the Model Context Protocol. `SentinelMCPClient` wraps MCP connections, has Parry scan their manifests for injection and unicode smuggling, tracks server identity via manifest hashing, and enforces trust levels.
 
 ### Webhook Subscriptions
 
-Register webhook URLs to receive HMAC-signed HTTP POST notifications for: `detection.triggered`, `incident.created`, `incident.resolved`, `permission.denied`, `threat_intel.match`, `budget.exceeded`. Retry with exponential backoff, delivery history for debugging.
+Register webhook URLs to receive HMAC-signed HTTP POST notifications for: `detection.triggered`, `incident.created`, `incident.resolved`, `permission.denied`. Retry with exponential backoff, delivery history for debugging.
 
 ### Agent Groups
 
-Organize agents into named groups with inherited permissions and policies. Groups inherit org-wide defaults unless overridden.
+Organize agents into named groups.
 
 ### EU AI Act Article 26 Compliance
 
@@ -141,7 +142,7 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
 - **SSO**: SAML via WorkOS, layered on Clerk auth, self-service IdP configuration via Admin Portal
 - **RBAC**: Three roles (owner/admin/viewer) with fine-grained route gating
 - **Billing**: Four tiers (Free/Growth/Pro/Enterprise) with Stripe metered billing
-- **Audit**: Verifiable hash-chained audit export (per-export chain, SOC 2 style) with tamper-evident append-only storage
+- **Audit**: Verifiable hash-chained audit export (per-export chain, SOC 2 style) over an audit log the application only appends to
 - **Compliance**: EU AI Act Article 26 module with auditor bundle
 
 ---
@@ -156,7 +157,7 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
                     +-------------------------+
                     |       Parry SDK          |
                     |  Python / TypeScript / Go|
-                    |  8 framework wrappers    |
+                    |  7 framework wrappers    |
                     |  + MCP wrapper           |
                     |  + fail-open             |
                     +------------+------------+
@@ -172,7 +173,7 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
                                  v                       +--------------+
                     +-------------------------+
                     |   Detection Pipeline     |
-                    |  14 detectors parallel   |
+                    |  15 detectors parallel   |
                     |  + Threat intel feed     |
                     |  + Permission check      |
                     |  + LLM fallback          |
@@ -205,11 +206,11 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
 | `ParryOpenAI` | OpenAI | `from parry.wrappers.openai import ParryOpenAI` |
 | `ParryAnthropic` | Anthropic | `from parry.wrappers.anthropic import ParryAnthropic` |
 | `ParryCallbackHandler` | LangChain | `from parry.wrappers.langchain import ParryCallbackHandler` |
-| `ParryCrewAI` | CrewAI | `from parry.wrappers.crewai import ParryCrewAI` |
-| `ParryAutoGen` | AutoGen | `from parry.wrappers.autogen import ParryAutoGen` |
-| `ParryLlamaIndex` | LlamaIndex | `from parry.wrappers.llamaindex import ParryLlamaIndex` |
-| `ParryPydanticAI` | Pydantic AI | `from parry.wrappers.pydantic_ai import ParryPydanticAI` |
-| `SentinelMCPClient` | MCP (stdio) | `from parry.mcp import SentinelMCPClient` |
+| `ParryCrewAICallback` | CrewAI | `from parry.wrappers.crewai import ParryCrewAICallback` |
+| `ParryConversableAgent` | AutoGen | `from parry.wrappers.autogen import ParryConversableAgent` |
+| `ParryCallbackHandler` | LlamaIndex | `from parry.wrappers.llamaindex import ParryCallbackHandler` |
+| `parry_instrument` | Pydantic AI | `from parry.wrappers.pydantic_ai import parry_instrument` |
+| `SentinelMCPClient` | MCP (stdio, HTTP, SSE) | `from parry.mcp import SentinelMCPClient` |
 
 ### TypeScript SDK (`npm install @parry/sdk`)
 
@@ -217,7 +218,7 @@ Full event timeline replay, three-mode response scanning (off/redact/block), com
 import { ParryClient, parryOpenAI, ParryBlockedError, ParryPermissionDeniedError } from "@parry/sdk";
 ```
 
-Drop-in OpenAI wrapper via `parryOpenAI()`. ESM + CJS dual build.
+Drop-in OpenAI wrapper via `parryOpenAI()`, plus `parryAnthropic()`, a Vercel AI SDK wrapper (`parryWrap()`), a LangChain.js `ParryCallbackHandler`, and `SentinelMCPClient`. ESM + CJS dual build.
 
 ### Go SDK (`go get github.com/smhasan94/parry/sdk-go`)
 
@@ -236,16 +237,16 @@ Library-agnostic OpenAI wrapper via `WrapOpenAI()` callback pattern. Includes `V
 | Layer | Technology |
 |---|---|
 | **API** | FastAPI, Python 3.12, Pydantic v2 |
-| **ORM** | SQLAlchemy 2.x (async), Alembic (20 migrations) |
+| **ORM** | SQLAlchemy 2.x (async), Alembic (24 migrations) |
 | **Database** | PostgreSQL 16 + TimescaleDB |
-| **Queue** | Redis 7, Celery 5 (12 task types + Beat scheduler) |
-| **Detection** | 12 rule-based detectors + Claude LLM fallback + cross-org threat feed |
+| **Queue** | Redis 7, Celery 5 (17 tasks + Beat scheduler) |
+| **Detection** | 14 rule-based and statistical detectors + cross-org threat feed + Claude LLM fallback |
 | **Auth** | Clerk (JWT/JWKS), API keys (SHA256), WorkOS SAML SSO |
 | **Billing** | Stripe (metered billing, checkout, portal, webhooks) |
 | **Alerting** | Slack, PagerDuty, OpsGenie, custom webhooks (HMAC-signed) |
 | **Dashboard** | React 18, TypeScript, Tailwind CSS, shadcn/ui, Recharts, TanStack Query + Router |
-| **SDKs** | Python (8 wrappers), TypeScript (ESM/CJS), Go |
-| **Testing** | 1,600+ tests (backend unit + E2E, Python SDK, TypeScript SDK, Go, dashboard) |
+| **SDKs** | Python (7 framework wrappers + MCP), TypeScript (ESM/CJS), Go |
+| **Testing** | 1,900+ tests (backend unit + E2E, Python SDK, TypeScript SDK, Go, dashboard) |
 | **CI** | GitHub Actions, pre-commit hooks (ruff + format + eslint) |
 | **Infra** | Docker Compose (dev), multi-stage Dockerfiles (prod) |
 
@@ -258,7 +259,7 @@ Library-agnostic OpenAI wrapper via `WrapOpenAI()` callback pattern. Includes `V
 - Docker + Docker Compose
 - Python 3.12+
 - Node.js 20+
-- Go 1.22+ (for Go SDK development)
+- Go 1.25+ (for Go SDK development)
 - [uv](https://docs.astral.sh/uv/) (`pip install uv` or `brew install uv`)
 
 ### Docker Compose (recommended)
@@ -298,11 +299,11 @@ docker compose exec backend uv run python scripts/seed_shadow_ai_demo.py
 ### Running Tests
 
 ```bash
-# Backend (1,377 unit tests)
+# Backend (1,500+ tests; the E2E subset needs Postgres, see below)
 cd backend && uv run pytest
 
-# Python SDK (174 tests)
-cd sdk && uv run pytest
+# Python SDK (205 tests)
+cd sdk && uv run --extra dev --extra mcp --extra openai --extra anthropic --extra langchain pytest
 
 # TypeScript SDK (92 tests)
 cd sdk-ts && npm test
