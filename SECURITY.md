@@ -46,7 +46,7 @@ In scope:
 - The dashboard at `app.parry.dev`
 - The marketing site at `parry.dev`
 - The published SDK packages: `parry` (PyPI), `@parry/sdk` (npm),
-  `github.com/sharukhhasan/parry/sdk-go`
+  `github.com/smhasan94/parry/sdk-go`
 - The Docker images we publish for self-hosting
 
 Out of scope (please don't report):

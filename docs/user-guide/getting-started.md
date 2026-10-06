@@ -263,7 +263,7 @@ If you'd rather evaluate Parry without an account, the entire stack
 runs in Docker. From a fresh checkout:
 
 ```bash
-git clone https://github.com/parry-dev/parry
+git clone https://github.com/smhasan94/parry
 cd parry
 cp .env.example .env  # edit the Clerk + Anthropic keys, others optional
 make demo
