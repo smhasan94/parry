@@ -1,6 +1,7 @@
-"""E2E smoke test against parry-dev.sharukhhasan.com.
+"""E2E smoke test against a deployed Parry backend.
 
 Requires env:
+  PARRY_BASE_URL=https://parry.example.com
   PARRY_API_KEY=sk-parry-...
   OPENAI_API_KEY=sk-...
 """
@@ -16,13 +17,16 @@ import httpx
 from parry import init
 from parry.wrappers.openai import ParryOpenAI
 
-BASE = "https://parry-dev.sharukhhasan.com"
+BASE = os.environ.get("PARRY_BASE_URL", "").rstrip("/")
 AGENT_ID = "support-bot"
 
 
 def main() -> int:
     parry_key = os.environ.get("PARRY_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
+    if not BASE:
+        print("ERROR: PARRY_BASE_URL not set")
+        return 1
     if not parry_key:
         print("ERROR: PARRY_API_KEY not set")
         return 1
