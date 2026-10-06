@@ -30,9 +30,8 @@ EXCLUDED = {"cost_exploit"}
 
 
 # `jailbreak` is expected to stay below 100% here even after the
-# AdversarialSuffixDetector ships (see
-# docs/superpowers/plans/2026-09-25-jailbreak-perplexity-detector.md,
-# finding 6). That detector deliberately lands jb_006 in the pipeline's
+# AdversarialSuffixDetector ships. That detector deliberately lands
+# jb_006 in the pipeline's
 # ambiguous-confidence band rather than self-triggering, because a
 # confident verdict on symbol-density + case-flips alone false-positives
 # on real developer bug reports (a Windows path plus a camelCase
@@ -40,8 +39,8 @@ EXCLUDED = {"cost_exploit"}
 # benchmark_service._run_detectors, which runs only the synchronous
 # detector list — it never reaches pipeline.py's ambiguous-band
 # escalation to the LLM fallback, so it structurally cannot observe
-# that resolution. Task 6 in the same plan is the test that actually
-# proves jb_006 resolves end-to-end. Do not "fix" this by raising this
+# that resolution, and so cannot prove jb_006 resolves end-to-end.
+# Do not "fix" this by raising this
 # detector's confidence into a self-triggering range — that reintroduces
 # the false positive this design avoided.
 def _red_team_scores() -> dict[str, float]:

@@ -4,8 +4,7 @@ GCG-style adversarial suffixes (Zou et al. 2023, arXiv:2307.15043) are
 optimizer-generated token sequences, not language. Their letters still
 read as mostly-ordinary English (the optimizer keeps the words that
 survive the loss), so a language-model perplexity check over letters
-does not separate them from clean prose — see the plan this module
-implements for the measured numbers. What does not survive is
+does not separate them from clean prose. What does not survive is
 orthography: real BPE-detokenization garbage mixes symbols that almost
 never appear in prose (backslash, pipe, tilde, caret — chosen narrowly;
 ``* [ ] ( )`` are excluded because Markdown emphasis and links use them
@@ -33,10 +32,9 @@ positive class (e.g. "getUserById fails on C:\\Users\\x\\y.json in prod
 builds today") routinely puts the identifier and the path within any
 window narrow enough to still catch a real short suffix. No fixed
 window generalizes past both. That is expected and is not this
-function's job to fix — the plan's own analysis (Problem Statement
-finding 4) already concluded this FP class "legitimately co-triggers
-the same AND-rule as the real attack." The actual safety guarantee
-lives one layer up, in the caller's confidence ceiling: Task 2's
+function's job to fix: this FP class legitimately co-triggers the
+same AND-rule as the real attack. The actual safety guarantee
+lives one layer up, in the caller's confidence ceiling:
 ``adversarial_suffix.py`` maps this score into ``[0.45, 0.65]``, always
 below the default trigger threshold of ``0.7``, so this function
 returning ``1.0`` for the Windows-path shape can never cause a default

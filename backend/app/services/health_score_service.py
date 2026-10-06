@@ -5,7 +5,7 @@ the agent's most recent anomaly-detector confidence into a single
 integer. Lower scores mean more evidence of problems. New agents with
 no signal score 100 — we don't penalise them for being new.
 
-Scoring (matches docs/plans/plan-04-08-integrations-through-graphs.md):
+Scoring:
 
     health = 100
       - min(triggered_detections_last_7d * 5, 50)

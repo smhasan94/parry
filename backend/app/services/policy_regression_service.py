@@ -5,7 +5,7 @@ change against their historical events before committing. Pure read
 path — no writes, no detection records — so it's safe to run on a
 hot reader replica if we ever split them.
 
-Performance budget (see plan-15-17-next-wave.md):
+Performance budget:
 - 20 agents × 1k events/day × 30d = 600k events
 - ~5μs per event for compiled regex search
 - Hard cap: 500k events per simulation, then truncate

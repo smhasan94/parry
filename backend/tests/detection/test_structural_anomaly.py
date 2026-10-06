@@ -47,11 +47,9 @@ def test_clean_prompt_scores_low():
 def test_windows_path_with_camelcase_identifier_does_not_crash():
     # This FP class structurally resembles a real attack under any
     # local-clustering heuristic — realistic terser phrasings of the
-    # same class put the two signals within any reasonable window (see
-    # the plan's Problem Statement finding 4, and the ledger ruling in
-    # .superpowers/sdd/2026-09-25-jailbreak-perplexity-detector/progress.md).
+    # same class put the two signals within any reasonable window.
     # The real safety guarantee is downstream, in
-    # AdversarialSuffixDetector's confidence ceiling (Task 2): its
+    # AdversarialSuffixDetector's confidence ceiling: its
     # formula caps confidence at 0.65, always below the default trigger
     # threshold of 0.7, so a raw score of even 1.0 here can never cause
     # a default self-trigger. See

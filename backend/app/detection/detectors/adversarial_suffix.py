@@ -1,10 +1,8 @@
 """Flags optimizer-generated jailbreak suffixes (GCG-style attacks).
 
 Deliberately does not self-trigger on its own signal — see
-``_structural_anomaly.py`` and the plan this implements
-(docs/superpowers/plans/2026-09-25-jailbreak-perplexity-detector.md,
-finding 4) for why a confident verdict here would false-positive on
-ordinary developer bug reports. Confidence is calibrated to land in the
+``_structural_anomaly.py`` for why a confident verdict here would
+false-positive on ordinary developer bug reports. Confidence is calibrated to land in the
 pipeline's ambiguous band (``pipeline.py``, 0.4-0.7) so
 ``evaluate_ambiguous`` — the Claude-based fallback that already exists
 for exactly this "regex cannot score this honestly" situation — makes

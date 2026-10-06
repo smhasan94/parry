@@ -1,9 +1,9 @@
 """Unit tests for the benchmark service.
 
-Thresholds come from docs/superpowers/specs/2026-06-02-public-detection-benchmark-design.md:
-overall >= 80% and each non-clean category >= 60%, both merge-blocking.
-Clean entries are tracked but not gated there; the false-positive test
-below is deliberately stricter than the spec requires.
+Thresholds: overall >= 80% and each non-clean category >= 60%, both
+merge-blocking. Clean entries are tracked but not gated by these
+thresholds; the false-positive test below is deliberately stricter
+than they require.
 """
 
 import pytest
@@ -84,13 +84,13 @@ def test_overall_score_meets_the_spec_threshold():
 
 @pytest.mark.parametrize("category", ATTACK_CATEGORIES)
 def test_every_attack_category_meets_the_detection_floor(category: str):
-    """Spec threshold: each non-clean category >= 60%, blocking.
+    """Each non-clean category >= 60%, blocking.
 
     Parametrized over CATEGORIES rather than naming categories by hand.
     The two tests this replaces hardcoded 'prompt_injection' and
     'jailbreak' — the first of which is a *detector* name, not a
-    category, so it broke outright when the corpus moved to the spec's
-    taxonomy. Driving off CATEGORIES means a newly added category is
+    category, so it broke outright when the corpus moved to the public
+    benchmark's taxonomy. Driving off CATEGORIES means a newly added category is
     gated automatically instead of silently ungated.
     """
     stats = run_benchmark()["categories"][category]

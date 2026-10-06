@@ -19,7 +19,7 @@ def test_gcg_suffix_lands_in_ambiguous_band_not_confident_trigger():
     )
     result = AdversarialSuffixDetector().detect(_event(prompt))
     assert result.detector == "adversarial_suffix"
-    # Must NOT self-trigger — see plan finding 4 (Windows-path FP class).
+    # Must NOT self-trigger (Windows-path FP class).
     assert result.triggered is False
     assert 0.4 <= result.confidence <= 0.7
 

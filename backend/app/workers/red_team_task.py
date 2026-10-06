@@ -5,8 +5,7 @@ Sandbox mode replays the bundled corpus through the same
 `AgentEvent` or `Detection` rows. The run's outcome lives in
 `red_team_runs` + `red_team_results`.
 
-Live mode is reserved for a follow-up — see plan-13-17, plan 14
-"Task 13 — Live mode".
+Live mode is reserved for a follow-up.
 """
 
 from __future__ import annotations

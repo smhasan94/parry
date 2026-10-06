@@ -5,9 +5,9 @@ covers what you need to get a working development environment, the
 conventions we follow, and what to do before opening a pull
 request.
 
-For an architectural overview of the codebase, read `CLAUDE.md` at
-the repo root — it's the same file our AI development agents read,
-and it covers stack, layout, and house rules.
+For an architectural overview of the codebase, read
+[`docs/architecture.md`](docs/architecture.md); the detection engine
+is covered in [`docs/detection-engine.md`](docs/detection-engine.md).
 
 ## Repo layout (short version)
 
@@ -19,8 +19,7 @@ parry/
 ├── sdk-go/     # Go SDK
 ├── dashboard/  # React + TypeScript + Tailwind
 ├── landing/    # Astro marketing site
-├── docs/       # Architecture, ADRs, API specs, ops guides
-└── CLAUDE.md   # House rules (read this first)
+└── docs/       # Architecture, API specs, ops guides
 ```
 
 ## Local setup
@@ -84,7 +83,7 @@ before pushing — it's faster than waiting for the build.
 
 ## Code conventions
 
-The full set lives in `CLAUDE.md`. The ones you'll trip over first:
+The ones you'll trip over first:
 
 - **Python:** `uv` not pip; async everywhere; SQLAlchemy 2.x style
   (`select()`, not `session.query()`); Pydantic v2; no `print()`,
@@ -116,8 +115,6 @@ The full set lives in `CLAUDE.md`. The ones you'll trip over first:
   non-obvious tradeoff. Don't restate the diff.
 - PRs to `main`. We use squash merges, so PR titles become commit
   messages — write them carefully.
-- Link the PR description to relevant `docs/plans/*` entries if
-  the work is part of a planned feature.
 
 ## Tests are mandatory for new behaviour
 

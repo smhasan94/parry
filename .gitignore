@@ -51,8 +51,6 @@ dmypy.json
 # Ruff
 .ruff_cache/
 
-**/CLAUDE.md
-!CLAUDE.md
 .claude/
 
 # ── Node / Dashboard ─────────────────────────────────────────
@@ -145,8 +143,5 @@ temp/
 
 # Serena tooling index
 .serena/
-.agent/state/
-.agent/export/
-.agent/running/
 .claude/worktrees/
 .claude/settings.local.json
