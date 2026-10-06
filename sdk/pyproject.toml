@@ -3,7 +3,7 @@ name = "parry"
 version = "0.1.0"
 description = "Parry SDK — AI Agent Runtime Security"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = [
     # Upper bounds: parry.mcp imports httpx/httpcore internals directly
