@@ -1,0 +1,8 @@
+# Known false positives: fake keys in tests, docs and benchmark fixtures.
+# Fingerprints from 'gitleaks git' (commit:file:rule:line).
+1b3c4a5493efda6937f38ec5e4b4599fb6ccd0e7:docs/OPERATIONS.md:generic-api-key:30
+1edee1c06f905010897819090439fb0f0541be5c:backend/tests/detection/test_data_exfil.py:generic-api-key:23
+4d50685c11c740cb414064cadd5025b5fb52d9d0:backend/tests/conftest.py:generic-api-key:37
+57f582a137243514382acb226482859f255c3396:backend/tests/e2e/test_auth_flow.py:generic-api-key:22
+e1231e31fabe63040a48351a8eab812418207ec3:backend/app/services/benchmark_service.py:generic-api-key:162
+efe381a6d457eb6142191044bc26cb806ef22a9c:backend/tests/test_url_guard.py:generic-api-key:26
